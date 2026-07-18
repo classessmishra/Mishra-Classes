@@ -71,9 +71,9 @@ export default function CourseDetailsPage() {
                 TEST SERIES
               </div>
             )}
-            {course.course_type === 'notes' && (
+            {(course.course_type === 'offline' || course.course_type === 'notes') && (
               <div className="absolute top-3 left-3 bg-yellow-600 text-white text-[10px] uppercase font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-sm">
-                NOTES
+                OFFLINE CLASS
               </div>
             )}
           </div>

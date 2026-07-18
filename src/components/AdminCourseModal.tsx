@@ -132,7 +132,7 @@ export default function AdminCourseModal({ isOpen, onClose, onSave, initialData 
                 <option value="live">Live Batch</option>
                 <option value="recorded">Recorded Video</option>
                 <option value="test_series">Test Series</option>
-                <option value="notes">Notes</option>
+                <option value="offline">Offline/Classroom</option>
               </select>
             </div>
           </div>

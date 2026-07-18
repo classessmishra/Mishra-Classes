@@ -74,12 +74,12 @@ export default function CourseManagerPage() {
                   <span className={`px-2 py-1 rounded-md text-[10px] font-black tracking-wider shrink-0 ${
                     course.course_type === 'live' || course.is_live ? 'bg-red-100 text-red-600' : 
                     course.course_type === 'test_series' ? 'bg-purple-100 text-purple-600' : 
-                    course.course_type === 'notes' ? 'bg-yellow-100 text-yellow-700' : 
+                    course.course_type === 'offline' || course.course_type === 'notes' ? 'bg-yellow-100 text-yellow-700' : 
                     'bg-blue-100 text-blue-600'
                   }`}>
                     {course.course_type === 'live' || (course.is_live && !course.course_type) ? 'LIVE' : 
                      course.course_type === 'test_series' ? 'TEST SERIES' : 
-                     course.course_type === 'notes' ? 'NOTES' : 'VOD'}
+                     course.course_type === 'offline' || course.course_type === 'notes' ? 'OFFLINE CLASS' : 'VOD'}
                   </span>
                 </div>
                 <div className="space-y-1 mb-4">

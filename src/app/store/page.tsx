@@ -108,7 +108,7 @@ export default function StorePage() {
                       instructor={course.instructor_name || "Prof. A. Mishra"}
                       duration={course.validity_text || "Access for 1 Year"}
                       price={course.price}
-                      badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'notes' ? "NOTES" : "RECORDED"}
+                      badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'offline' || course.course_type === 'notes' ? "OFFLINE CLASS" : "RECORDED"}
                       imageUrl={course.thumbnail_url || "/images/course_thumb.png"}
                       buttonText="Go to Course"
                       customHref={`/student/courses/${course.id}`}
@@ -137,7 +137,7 @@ export default function StorePage() {
                       instructor={course.instructor_name || "Prof. A. Mishra"}
                       duration={course.validity_text || "Access for 1 Year"}
                       price={course.price}
-                      badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'notes' ? "NOTES" : "RECORDED"}
+                      badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'offline' || course.course_type === 'notes' ? "OFFLINE CLASS" : "RECORDED"}
                       imageUrl={course.thumbnail_url || "/images/course_thumb.png"}
                       buttonText={isEnrolled ? "Go to Course" : "Add to Cart"}
                       customHref={isEnrolled ? `/student/courses/${course.id}` : undefined}
