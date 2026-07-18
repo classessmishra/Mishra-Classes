@@ -162,6 +162,24 @@ export default function TestEditorPage() {
     setQuestions(updated);
   };
 
+  const addOption = () => {
+    if (activeQIndex < 0) return;
+    const updated = [...questions];
+    updated[activeQIndex].options.push("");
+    setQuestions(updated);
+  };
+
+  const removeOption = (optIndex: number) => {
+    if (activeQIndex < 0) return;
+    const updated = [...questions];
+    if (updated[activeQIndex].options.length <= 2) return; // Min 2 options
+    updated[activeQIndex].options.splice(optIndex, 1);
+    if (updated[activeQIndex].correct_option_index >= updated[activeQIndex].options.length) {
+       updated[activeQIndex].correct_option_index = 0;
+    }
+    setQuestions(updated);
+  };
+
   const updateOption = (optIndex: number, value: string) => {
     if (activeQIndex < 0) return;
     const updated = [...questions];
@@ -471,7 +489,10 @@ export default function TestEditorPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">Options (Select the correct one)</label>
+                  <div className="flex items-center justify-between mb-3">
+                     <label className="block text-sm font-semibold text-slate-700">Options (Select the correct one)</label>
+                     <button onClick={addOption} className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">+ Add Option</button>
+                  </div>
                   <div className="space-y-3">
                     {questions[activeQIndex].options.map((opt, i) => (
                       <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border ${questions[activeQIndex].correct_option_index === i ? "border-green-500 bg-green-50" : "border-slate-200"}`}>
@@ -489,6 +510,11 @@ export default function TestEditorPage() {
                           placeholder={`Option ${i + 1}`}
                           className="flex-1 bg-transparent border-none focus:outline-none text-sm"
                         />
+                        {questions[activeQIndex].options.length > 2 && (
+                            <button onClick={() => removeOption(i)} className="text-slate-400 hover:text-red-500 transition-colors p-1">
+                                <Trash2 size={16} />
+                            </button>
+                        )}
                       </div>
                     ))}
                   </div>
