@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AlertCircle, CheckCircle2, Plus, Trash2, Image as ImageIcon, Settings, Calendar, Layers } from "lucide-react";
+import { FileJson, AlertCircle, CheckCircle2, Plus, Trash2, Image as ImageIcon, Settings, Layers, Calendar } from "lucide-react";
 import { createTest, getTestById, assignTest } from "@/actions/tests";
 import { getBatches } from "@/actions/batches";
 import { getAllUsers } from "@/actions/users";
@@ -103,7 +103,6 @@ export default function DuplicateTestPage() {
     loadData();
   }, [testId]);
 
-  // Helper to re-sync all question marks if section configs or negative marking toggle change
   const syncMarks = (currentQs: Question[], newNegativeToggle: boolean, newSections: SectionConfig[]) => {
       return currentQs.map(q => {
           const sec = newSections.find(s => s.name === (q.section || "Default")) || newSections[0];
@@ -122,57 +121,74 @@ export default function DuplicateTestPage() {
   };
 
   const updateSectionConfig = (idx: number, field: keyof SectionConfig, val: any) => {
-      const updated = [...sectionsConfig];
-      updated[idx] = { ...updated[idx], [field]: val };
-      setSectionsConfig(updated);
-      setQuestions(syncMarks(questions, negativeMarkingEnabled, updated));
-  };
-
-  const addSectionConfig = () => {
-      const newName = "Section " + String.fromCharCode(65 + sectionsConfig.length);
-      const newSec = { name: newName, positive_marks: 4, negative_marks: 1 };
-      const updated = [...sectionsConfig, newSec];
-      setSectionsConfig(updated);
-      if (!activeBuilderSection) setActiveBuilderSection(newName);
-  };
-
-  const removeSectionConfig = (idx: number) => {
-      if (sectionsConfig.length <= 1) {
-          alert("Test must have at least one section.");
-          return;
+      const updatedSections = [...sectionsConfig];
+      if (field === 'name') {
+          const oldName = updatedSections[idx].name;
+          const newName = val as string;
+          updatedSections[idx].name = newName;
+          
+          const updatedQs = questions.map(q => {
+              if (q.section === oldName) return { ...q, section: newName };
+              return q;
+          });
+          setSectionsConfig(updatedSections);
+          setQuestions(syncMarks(updatedQs, negativeMarkingEnabled, updatedSections));
+      } else {
+          updatedSections[idx] = { ...updatedSections[idx], [field]: val };
+          setSectionsConfig(updatedSections);
+          setQuestions(syncMarks(questions, negativeMarkingEnabled, updatedSections));
       }
-      const removedName = sectionsConfig[idx].name;
+  };
+
+  const addSection = () => {
+      const newSec = { name: `Section ${sectionsConfig.length + 1}`, positive_marks: 4, negative_marks: 1 };
+      setSectionsConfig([...sectionsConfig, newSec]);
+  };
+  
+  const removeSection = (idx: number) => {
+      if (sectionsConfig.length <= 1) return;
       const updated = sectionsConfig.filter((_, i) => i !== idx);
       setSectionsConfig(updated);
-      
-      // Remove or reassign questions belonging to this section
-      const remainingQs = questions.filter(q => (q.section || "Default") !== removedName);
-      setQuestions(syncMarks(remainingQs, negativeMarkingEnabled, updated));
-
-      if (activeBuilderSection === removedName) {
-          setActiveBuilderSection(updated[0].name);
-      }
-  };
-
-  const handleAddQuestion = () => {
-      const currentSec = sectionsConfig.find(s => s.name === activeBuilderSection) || sectionsConfig[0];
-      const newQ: Question = {
-          id: Math.random().toString(36).substr(2, 9),
-          text: "",
-          options: ["", "", "", ""],
-          correct_option_index: 0,
-          positive_marks: currentSec.positive_marks,
-          negative_marks: negativeMarkingEnabled ? currentSec.negative_marks : 0,
-          section: currentSec.name
-      };
-      setQuestions([...questions, newQ]);
-      setActiveQIndex(questions.length);
+      setQuestions(syncMarks(questions, negativeMarkingEnabled, updated));
   };
 
   const updateActiveQuestion = (field: keyof Question, value: any) => {
     if (activeQIndex < 0) return;
     const updated = [...questions];
+    
+    if (field === "section") {
+       const sec = sectionsConfig.find(s => s.name === value);
+       if (sec) {
+         updated[activeQIndex] = { 
+           ...updated[activeQIndex], 
+           section: sec.name,
+           positive_marks: sec.positive_marks,
+           negative_marks: negativeMarkingEnabled ? sec.negative_marks : 0
+         };
+         setQuestions(updated);
+         return;
+       }
+    }
+
     updated[activeQIndex] = { ...updated[activeQIndex], [field]: value };
+    setQuestions(updated);
+  };
+
+  const addOption = () => {
+    if (activeQIndex < 0) return;
+    const updated = [...questions];
+    updated[activeQIndex].options.push("");
+    setQuestions(updated);
+  };
+
+  const removeOption = (optIndex: number) => {
+    if (activeQIndex < 0) return;
+    const updated = [...questions];
+    if (updated[activeQIndex].options.length <= 2) return;
+    updated[activeQIndex].options.splice(optIndex, 1);
+    if (updated[activeQIndex].correct_option_index >= updated[activeQIndex].options.length) {
+       updated[activeQIndex].correct_option_index = 0;
+    }
     setQuestions(updated);
   };
 
@@ -210,30 +226,26 @@ export default function DuplicateTestPage() {
     try {
       setStatus("saving");
       
+      let payloadQuestions = [...questions];
+      
       if (!testTitle) throw new Error("Test title is required.");
-      if (questions.length === 0) throw new Error("Add at least one question.");
+      if (payloadQuestions.length === 0) throw new Error("Add at least one question.");
       if (!selectedTargetId) throw new Error("Please select a batch or student to assign this to.");
       
-      const payloadQs = questions.map((q, idx) => {
-          if (idx === 0) {
-              return {
-                  ...q,
-                  test_config: {
-                      negative_marking_enabled: negativeMarkingEnabled,
-                      allow_section_switching: allowSectionSwitching,
-                      sections_config: sectionsConfig
-                  }
-              };
+      payloadQuestions[0] = {
+          ...payloadQuestions[0],
+          test_config: {
+              negative_marking_enabled: negativeMarkingEnabled,
+              allow_section_switching: allowSectionSwitching,
+              sections_config: sectionsConfig
           }
-          const { test_config, ...rest } = q;
-          return rest;
-      });
+      };
 
       const payload = {
         test_title: testTitle,
         duration_minutes: duration,
         scramble_enabled: scramble,
-        questions: payloadQs
+        questions: payloadQuestions
       };
 
       // 1. Create Brand New Test
@@ -263,17 +275,16 @@ export default function DuplicateTestPage() {
   };
 
   if (status === "loading") {
-    return <div className="flex justify-center p-12"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
+    return <div className="p-10 flex justify-center"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
   }
 
-  const activeSectionQs = questions.map((q, idx) => ({ q, idx })).filter(item => (item.q.section || "Default") === activeBuilderSection);
-
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+    <div className="max-w-7xl mx-auto space-y-6 pb-20">
+      
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Duplicate & Assign Test</h1>
-          <p className="text-muted-foreground text-sm mt-1">Review the old test details, make changes, and assign it to a new batch.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Duplicate & Assign Test</h1>
+          <p className="text-slate-500 text-sm mt-1">Review the old test details, make changes, and assign it to a new batch.</p>
         </div>
         <button
           onClick={handleSaveAndAssign}
@@ -306,199 +317,232 @@ export default function DuplicateTestPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Settings and Questions (3 cols) */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        {/* Left Sidebar: Test Settings & Question List */}
+        <div className="lg:col-span-3 space-y-4">
+          
+          {/* General Settings */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2 mb-4">
-              <Settings size={16} /> Basic Settings
+              <Settings size={16} /> Test Settings
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">New Test Title</label>
-                <input type="text" value={testTitle} onChange={e => setTestTitle(e.target.value)} className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" placeholder="e.g. Mock Test 1 - Revision" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1">Test Title</label>
+                <input type="text" value={testTitle} onChange={e => setTestTitle(e.target.value)} className="w-full p-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" placeholder="e.g. Mock Test 1" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Duration (Mins)</label>
-                <input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full p-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" />
+                <input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full p-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" />
               </div>
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between pt-2">
                 <label className="text-xs font-semibold text-slate-600">Auto Scramble</label>
-                <input type="checkbox" checked={scramble} onChange={e => setScramble(e.target.checked)} className="w-4 h-4 text-blue-600 rounded" />
+                <input type="checkbox" checked={scramble} onChange={e => setScramble(e.target.checked)} className="w-4 h-4 text-blue-600 rounded cursor-pointer" />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <label className="text-xs font-semibold text-slate-600">Enable -ve Marking</label>
+                <input type="checkbox" checked={negativeMarkingEnabled} onChange={e => handleToggleNegativeMarking(e.target.checked)} className="w-4 h-4 text-blue-600 rounded cursor-pointer" />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <label className="text-xs font-semibold text-slate-600">Allow Section Switch</label>
+                <input type="checkbox" checked={allowSectionSwitching} onChange={e => setAllowSectionSwitching(e.target.checked)} className="w-4 h-4 text-blue-600 rounded cursor-pointer" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-              <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2 mb-4">
-                  <Layers size={16} /> Advanced Config
+          {/* Sections Manager */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <Layers size={16} /> Sections Config
               </h3>
-              <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <input type="checkbox" id="negMarking" checked={negativeMarkingEnabled} onChange={e => handleToggleNegativeMarking(e.target.checked)} className="mt-1 w-4 h-4 text-blue-600 rounded" />
+              <button onClick={addSection} className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Add</button>
+            </div>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              {sectionsConfig.map((sec, idx) => (
+                  <div key={idx} className="border border-slate-100 bg-slate-50 p-3 rounded-lg space-y-2 relative">
+                      {sectionsConfig.length > 1 && (
+                          <button onClick={() => removeSection(idx)} className="absolute top-2 right-2 text-slate-400 hover:text-red-500">
+                              <Trash2 size={14} />
+                          </button>
+                      )}
                       <div>
-                          <label htmlFor="negMarking" className="text-xs font-bold text-slate-700 cursor-pointer">Enable Negative Marking</label>
-                          <p className="text-[10px] text-slate-500 leading-tight mt-0.5">If unchecked, all negative marks will be forced to 0 during the test.</p>
+                         <label className="block text-[10px] font-bold text-slate-500 uppercase">Section Name</label>
+                         <input type="text" value={sec.name} onChange={e => updateSectionConfig(idx, 'name', e.target.value)} className="w-full p-1.5 text-xs border border-slate-200 rounded focus:border-blue-500 outline-none" />
+                      </div>
+                      <div className="flex gap-2">
+                          <div className="flex-1">
+                             <label className="block text-[10px] font-bold text-green-600 uppercase">+ve</label>
+                             <input type="number" value={sec.positive_marks} onChange={e => updateSectionConfig(idx, 'positive_marks', Number(e.target.value))} className="w-full p-1 text-xs border border-slate-200 rounded outline-none" />
+                          </div>
+                          <div className="flex-1">
+                             <label className="block text-[10px] font-bold text-red-500 uppercase">-ve</label>
+                             <input type="number" value={sec.negative_marks} onChange={e => updateSectionConfig(idx, 'negative_marks', Number(e.target.value))} disabled={!negativeMarkingEnabled} className="w-full p-1 text-xs border border-slate-200 rounded outline-none disabled:opacity-50" />
+                          </div>
                       </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <input type="checkbox" id="secSwitching" checked={allowSectionSwitching} onChange={e => setAllowSectionSwitching(e.target.checked)} className="mt-1 w-4 h-4 text-blue-600 rounded" />
-                      <div>
-                          <label htmlFor="secSwitching" className="text-xs font-bold text-slate-700 cursor-pointer">Allow Section Switching</label>
-                          <p className="text-[10px] text-slate-500 leading-tight mt-0.5">If unchecked, students must submit a section before moving to the next (Nimcet pattern).</p>
-                      </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-100">
-                      <div className="flex justify-between items-center mb-3">
-                          <label className="text-xs font-bold text-slate-700">Sections Config</label>
-                          <button onClick={addSectionConfig} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold hover:bg-blue-100">+ Add</button>
-                      </div>
-                      <div className="space-y-3">
-                          {sectionsConfig.map((sec, idx) => (
-                              <div key={idx} className="p-3 border border-slate-200 rounded-lg bg-white shadow-sm relative group">
-                                  {sectionsConfig.length > 1 && (
-                                      <button onClick={() => removeSectionConfig(idx)} className="absolute -top-2 -right-2 bg-red-100 text-red-600 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12}/></button>
-                                  )}
-                                  <input type="text" value={sec.name} onChange={e => updateSectionConfig(idx, 'name', e.target.value)} className="w-full text-xs font-bold p-1.5 border-b border-slate-200 focus:border-blue-500 outline-none mb-2" placeholder="Section Name" />
-                                  <div className="flex gap-2">
-                                      <div className="flex-1">
-                                          <label className="text-[9px] text-slate-500 font-semibold block mb-0.5">+ve Marks</label>
-                                          <input type="number" value={sec.positive_marks} onChange={e => updateSectionConfig(idx, 'positive_marks', Number(e.target.value))} className="w-full p-1 text-xs border border-slate-200 rounded" />
-                                      </div>
-                                      <div className="flex-1">
-                                          <label className="text-[9px] text-slate-500 font-semibold block mb-0.5">-ve Marks</label>
-                                          <input type="number" value={sec.negative_marks} onChange={e => updateSectionConfig(idx, 'negative_marks', Number(e.target.value))} disabled={!negativeMarkingEnabled} className="w-full p-1 text-xs border border-slate-200 rounded disabled:bg-slate-100 disabled:text-slate-400" />
-                                      </div>
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-              </div>
+              ))}
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col h-[400px]">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-sm text-slate-800">Questions ({questions.length})</h3>
-              <button onClick={handleAddQuestion} className="bg-blue-100 text-blue-700 p-1.5 rounded-lg hover:bg-blue-200 transition-colors">
-                <Plus size={16} />
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[500px] overflow-hidden">
+            {sectionsConfig.length > 1 && (
+              <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50 no-scrollbar">
+                 {sectionsConfig.map(sec => (
+                    <button 
+                       key={sec.name} 
+                       onClick={() => setActiveBuilderSection(sec.name)}
+                       className={`px-4 py-3 text-xs font-bold whitespace-nowrap transition-colors ${activeBuilderSection === sec.name ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                       {sec.name} ({questions.filter(q => (q.section || sectionsConfig[0].name) === sec.name).length})
+                    </button>
+                 ))}
+              </div>
+            )}
+            <div className="p-4 flex justify-between items-center border-b border-slate-100 bg-white">
+              <h3 className="font-bold text-sm text-slate-800">
+                 Questions {activeBuilderSection && `(${questions.filter(q => (q.section || sectionsConfig[0].name) === activeBuilderSection).length})`}
+              </h3>
+              <button onClick={() => {
+                 const defaultSection = sectionsConfig.find(s => s.name === activeBuilderSection) || sectionsConfig[0];
+                 const newQ = {
+                   id: Math.random().toString(36).substr(2, 9),
+                   text: "",
+                   options: ["", "", "", ""],
+                   correct_option_index: 0,
+                   positive_marks: defaultSection.positive_marks,
+                   negative_marks: negativeMarkingEnabled ? defaultSection.negative_marks : 0,
+                   section: defaultSection.name
+                 };
+                 setQuestions([...questions, newQ]);
+                 setActiveQIndex(questions.length);
+              }} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1 text-xs font-bold">
+                <Plus size={14} /> Add
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-              {questions.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-sm">No questions added yet.</div>
+            <div className="flex-1 overflow-y-auto space-y-2 p-4 bg-slate-50/50 pr-2">
+              {questions.filter(q => (q.section || sectionsConfig[0].name) === (activeBuilderSection || sectionsConfig[0].name)).length === 0 ? (
+                <p className="text-xs text-slate-400 text-center mt-10">No questions in this section.</p>
               ) : (
-                questions.map((q, idx) => (
-                  <div 
-                    key={q.id} 
-                    onClick={() => setActiveQIndex(idx)}
-                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all flex justify-between items-start ${activeQIndex === idx ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-blue-200 bg-white'}`}
-                  >
-                    <div className="flex gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${activeQIndex === idx ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                        {idx + 1}
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium text-slate-700 line-clamp-2 leading-snug break-all">
-                          {q.text || "Empty Question..."}
-                        </p>
-                        <span className="text-[10px] text-slate-400 mt-1 block font-semibold">{q.section || "Default"}</span>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); removeQuestion(idx); }}
-                      className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                questions.map((q, idx) => {
+                  const s = q.section || sectionsConfig[0].name;
+                  if (s !== (activeBuilderSection || sectionsConfig[0].name)) return null;
+                  return (
+                    <div
+                      key={q.id}
+                      onClick={() => setActiveQIndex(idx)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveQIndex(idx); } }}
+                      className={`w-full text-left p-3 rounded-xl border flex items-center gap-3 transition-all cursor-pointer ${activeQIndex === idx ? 'bg-blue-50 border-blue-600 shadow-sm' : 'bg-white border-slate-200 hover:border-blue-300'}`}
                     >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${activeQIndex === idx ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <p className="text-sm font-semibold text-slate-800 truncate">{q.text || "Empty Question"}</p>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeQuestion(idx); }} 
+                        className="text-slate-400 hover:text-red-500 p-1 shrink-0 z-10"
+                        aria-label="Delete question"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
         </div>
 
-        {/* Middle Column: Question Editor (6 cols) */}
+        {/* Middle Area: Question Editor */}
         <div className="lg:col-span-6">
           {activeQIndex >= 0 && questions[activeQIndex] ? (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-8">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
               
-              <div className="flex gap-2 mb-6 border-b border-slate-100 overflow-x-auto no-scrollbar pb-2">
-                  {sectionsConfig.map(sec => (
-                      <button 
-                          key={sec.name} 
-                          onClick={() => setActiveBuilderSection(sec.name)}
-                          className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${activeBuilderSection === sec.name ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-500 hover:bg-slate-50 border border-transparent'}`}
-                      >
-                          {sec.name} <span className="ml-1 text-[10px] bg-white px-1.5 py-0.5 rounded-full border border-slate-200">{questions.filter(q => (q.section || "Default") === sec.name).length}</span>
-                      </button>
-                  ))}
-              </div>
-
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-bold text-slate-800">Question {activeQIndex + 1}</h2>
-                <div className="flex gap-3 text-sm">
-                    <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full font-semibold border border-green-100">+{questions[activeQIndex].positive_marks}</span>
-                    <span className="bg-red-50 text-red-700 px-3 py-1 rounded-full font-semibold border border-red-100">-{questions[activeQIndex].negative_marks}</span>
-                    <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-semibold">{questions[activeQIndex].section || "Default"}</span>
+              <div className="border-b border-slate-100 pb-4">
+                <div className="flex justify-between items-center mb-6">
+                   <h2 className="text-lg font-bold text-slate-800">Question {activeQIndex + 1}</h2>
+                   <div className="flex gap-4 text-sm font-bold">
+                       <span className="text-green-600 bg-green-50 px-3 py-1 rounded">+{questions[activeQIndex].positive_marks}</span>
+                       <span className="text-red-500 bg-red-50 px-3 py-1 rounded">-{questions[activeQIndex].negative_marks}</span>
+                   </div>
+                </div>
+                
+                <div className="mb-4">
+                    <label className="text-sm font-semibold text-slate-700 block mb-2">Section</label>
+                    <select 
+                       value={questions[activeQIndex].section || sectionsConfig[0].name}
+                       onChange={(e) => updateActiveQuestion('section', e.target.value)}
+                       className="w-full md:w-1/2 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-500 outline-none bg-white"
+                    >
+                       {sectionsConfig.map((sec, idx) => (
+                           <option key={idx} value={sec.name}>{sec.name}</option>
+                       ))}
+                    </select>
+                    <p className="text-[10px] text-slate-400 mt-2">Marks are automatically applied based on the section.</p>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Question Text</label>
-                  <textarea 
-                    value={questions[activeQIndex].text}
-                    onChange={e => updateActiveQuestion('text', e.target.value)}
-                    className="w-full p-4 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 min-h-[120px] resize-y text-slate-800"
-                    placeholder="Enter question content here..."
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Question Text</label>
+                <textarea 
+                  value={questions[activeQIndex].text}
+                  onChange={e => updateActiveQuestion('text', e.target.value)}
+                  className="w-full p-4 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 min-h-[120px] resize-y text-slate-800"
+                  placeholder="Write your question here..."
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Image (Optional)</label>
-                  {questions[activeQIndex].image_url ? (
-                    <div className="relative inline-block border-2 border-slate-200 rounded-xl p-2 group">
-                      <img src={questions[activeQIndex].image_url} alt="Question" className="max-h-48 rounded-lg" />
-                      <button 
-                        onClick={() => updateActiveQuestion('image_url', undefined)}
-                        className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                      >
-                        <Trash2 size={16} />
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">Or Upload Image for Question</label>
+                {questions[activeQIndex].image_url ? (
+                  <div className="relative inline-block border-2 border-slate-200 rounded-xl p-2 group">
+                    <img src={questions[activeQIndex].image_url} alt="Question" className="max-h-48 rounded-lg" />
+                    <button 
+                      onClick={() => updateActiveQuestion('image_url', undefined)}
+                      className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 border-dashed rounded-xl cursor-pointer hover:bg-slate-100 transition-colors text-slate-600 font-semibold w-fit text-sm">
+                    <ImageIcon size={18} /> Choose Image
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  </label>
+                )}
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                    <label className="block text-sm font-semibold text-slate-700">Options (Select the correct one)</label>
+                    <button onClick={addOption} className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg">+ Add Option</button>
+                </div>
+                <div className="space-y-3">
+                  {questions[activeQIndex].options.map((opt, i) => (
+                    <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${questions[activeQIndex].correct_option_index === i ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white focus-within:border-blue-500'}`}>
+                      <input 
+                        type="radio" 
+                        name="correctOption" 
+                        checked={questions[activeQIndex].correct_option_index === i}
+                        onChange={() => updateActiveQuestion('correct_option_index', i)}
+                        className="w-5 h-5 ml-2 accent-green-600 cursor-pointer"
+                      />
+                      <input 
+                        type="text" 
+                        value={opt}
+                        onChange={e => updateOption(i, e.target.value)}
+                        className="flex-1 p-2 bg-transparent focus:outline-none text-slate-800 text-sm"
+                        placeholder={`Option ${i + 1}`}
+                      />
+                      <button onClick={() => removeOption(i)} className="text-slate-300 hover:text-red-500 transition-colors p-2">
+                          <Trash2 size={16}/>
                       </button>
                     </div>
-                  ) : (
-                    <label className="flex items-center gap-2 px-4 py-3 bg-slate-50 border border-slate-200 border-dashed rounded-xl cursor-pointer hover:bg-slate-100 transition-colors text-slate-600 font-semibold w-fit text-sm">
-                      <ImageIcon size={18} /> Add Image
-                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                    </label>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3">Options (Select the correct one)</label>
-                  <div className="space-y-3">
-                    {questions[activeQIndex].options.map((opt, i) => (
-                      <div key={i} className={`flex items-center gap-3 p-2 rounded-xl border-2 transition-all ${questions[activeQIndex].correct_option_index === i ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white focus-within:border-blue-500'}`}>
-                        <input 
-                          type="radio" 
-                          name="correctOption" 
-                          checked={questions[activeQIndex].correct_option_index === i}
-                          onChange={() => updateActiveQuestion('correct_option_index', i)}
-                          className="w-5 h-5 ml-3 accent-green-600"
-                        />
-                        <span className="font-bold text-slate-400 text-sm">{(i+10).toString(36).toUpperCase()}</span>
-                        <input 
-                          type="text" 
-                          value={opt}
-                          onChange={e => updateOption(i, e.target.value)}
-                          className="flex-1 p-2 bg-transparent focus:outline-none text-slate-800"
-                          placeholder={`Option ${i + 1}`}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -510,7 +554,7 @@ export default function DuplicateTestPage() {
           )}
         </div>
 
-        {/* Right Column: Assignment Rules (3 cols) */}
+        {/* Right Column: Assignment Rules */}
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-2 mb-4">
@@ -554,7 +598,7 @@ export default function DuplicateTestPage() {
                 />
               </div>
               
-              <div className="p-3 bg-blue-50 text-blue-700 rounded-lg text-[10px] leading-relaxed">
+              <div className="p-3 bg-blue-50 text-blue-700 rounded-lg text-[10px] leading-relaxed mt-4">
                 When you click "Save & Assign", this will be saved as a brand new independent test and then assigned to the selected target.
               </div>
             </div>
