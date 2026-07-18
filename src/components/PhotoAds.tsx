@@ -70,24 +70,28 @@ export default function PhotoAds({ previewData, isPreview = false }: { previewDa
             onClick={(e) => isPreview && e.preventDefault()}
             className={`w-[85vw] max-w-[320px] md:w-full flex-shrink-0 snap-start h-[200px] md:h-full group relative rounded-2xl md:rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 block ${poster.span} ${poster.aspectRatio}`}
           >
-            {/* Image (or fallback gradient if image fails/not present) */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${poster.fallbackGradient} flex flex-col justify-end p-6`}>
-              {poster.imageUrl && (
+            {poster.imageUrl ? (
+              <>
                 <img 
                   src={poster.imageUrl} 
                   alt={poster.title}
-                  className="absolute inset-0 w-full h-[200px] md:h-full object-cover mix-blend-overlay opacity-50 group-hover:scale-105 transition-transform duration-500 rounded-2xl md:rounded-none"
+                  className="absolute inset-0 w-full h-[200px] md:h-full object-cover group-hover:scale-105 transition-transform duration-500 rounded-2xl md:rounded-none"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                 />
-              )}
-              
-              {/* Overlay for readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent pointer-events-none" />
-              
-              {/* Content */}
-              <div className="relative z-10 flex justify-between items-end w-full">
+                <div className={`absolute inset-0 bg-gradient-to-br ${poster.fallbackGradient} opacity-30 mix-blend-multiply`} />
+              </>
+            ) : (
+              <div className={`absolute inset-0 bg-gradient-to-br ${poster.fallbackGradient}`} />
+            )}
+            
+            {/* Overlay for readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent pointer-events-none" />
+            
+            {/* Content */}
+            <div className="absolute inset-0 flex flex-col justify-end p-6 pointer-events-none">
+              <div className="relative z-10 flex justify-between items-end w-full pointer-events-auto">
                 <h3 className="text-white font-bold text-xl md:text-2xl max-w-[80%] leading-tight">
                   {poster.title}
                 </h3>
