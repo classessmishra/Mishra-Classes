@@ -94,6 +94,10 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
   const sections = Array.from(new Set(questions.map(q => q.section || "Default")));
   const activeSection = questions[currentQ]?.section || "Default";
   
+  // New Config State
+  const [testConfig, setTestConfig] = useState<any>({ allow_section_switching: true });
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
+  
   // UI State
   const [panelOpen, setPanelOpen] = useState(true);
   const [filterType, setFilterType] = useState<"all" | "correct" | "wrong" | "skipped">("all");
@@ -185,7 +189,7 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
       };
       localStorage.setItem(storageKey, JSON.stringify(state));
     }
-  }, [answers, reviewStatus, timeSpent, timeLeft, stage, isReviewMode, testData]);
+  }, [answers, reviewStatus, timeSpent, timeLeft, stage, isReviewMode, testData, completedSections]);
 
   const handleReportQuestion = async () => {
     if (!reportReason.trim() || !studentId || !testData.id) return;

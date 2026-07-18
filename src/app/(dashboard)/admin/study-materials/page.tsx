@@ -101,7 +101,7 @@ export default function StudyMaterialsPage() {
       const ytId = extractYouTubeId(newVODLink);
       await addManualVOD({
         title: newVODTitle,
-        youtubeVideoId: ytId,
+        youtubeVideoId: ytId || "",
         courseId: newVODCourseId || undefined,
         duration: newVODDuration || undefined
       });
