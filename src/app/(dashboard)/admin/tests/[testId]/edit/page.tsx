@@ -47,6 +47,7 @@ export default function TestEditorPage() {
   // Questions State
   const [questions, setQuestions] = useState<Question[]>([]);
   const [activeQIndex, setActiveQIndex] = useState<number>(-1);
+  const [activeBuilderSection, setActiveBuilderSection] = useState<string>("");
 
   // JSON State
   const [jsonInput, setJsonInput] = useState("");
@@ -64,7 +65,11 @@ export default function TestEditorPage() {
         if (qs.length > 0 && qs[0].test_config) {
             setNegativeMarkingEnabled(qs[0].test_config.negative_marking_enabled ?? true);
             setAllowSectionSwitching(qs[0].test_config.allow_section_switching ?? true);
-            setSectionsConfig(qs[0].test_config.sections_config ?? [{ name: "Default", positive_marks: 4, negative_marks: 1 }]);
+            const sc = qs[0].test_config.sections_config ?? [{ name: "Default", positive_marks: 4, negative_marks: 1 }];
+            setSectionsConfig(sc);
+            setActiveBuilderSection(sc[0]?.name || "Default");
+        } else {
+            setActiveBuilderSection("Default");
         }
         setQuestions(qs);
         if (qs.length > 0) setActiveQIndex(0);
@@ -125,20 +130,7 @@ export default function TestEditorPage() {
       setQuestions(syncMarks(questions, negativeMarkingEnabled, updated));
   };
 
-  const handleAddQuestion = () => {
-    const defaultSection = sectionsConfig[0];
-    const newQ: Question = {
-      id: Math.random().toString(36).substr(2, 9),
-      text: "",
-      options: ["", "", "", ""],
-      correct_option_index: 0,
-      positive_marks: defaultSection.positive_marks,
-      negative_marks: negativeMarkingEnabled ? defaultSection.negative_marks : 0,
-      section: defaultSection.name
-    };
-    setQuestions([...questions, newQ]);
-    setActiveQIndex(questions.length);
-  };
+
 
   const updateActiveQuestion = (field: keyof Question, value: any) => {
     if (activeQIndex < 0) return;
@@ -386,20 +378,49 @@ export default function TestEditorPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col h-[400px]">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-bold text-sm text-slate-800">Questions ({questions.length})</h3>
-                <button onClick={handleAddQuestion} className="bg-blue-100 text-blue-700 p-1.5 rounded-lg hover:bg-blue-200 transition-colors">
-                  <Plus size={16} />
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-[500px] overflow-hidden">
+              {sectionsConfig.length > 1 && (
+                <div className="flex overflow-x-auto border-b border-slate-200 bg-slate-50 no-scrollbar">
+                   {sectionsConfig.map(sec => (
+                      <button 
+                         key={sec.name} 
+                         onClick={() => setActiveBuilderSection(sec.name)}
+                         className={`px-4 py-3 text-xs font-bold whitespace-nowrap transition-colors ${activeBuilderSection === sec.name ? 'text-blue-600 border-b-2 border-blue-600 bg-white' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                         {sec.name} ({questions.filter(q => (q.section || sectionsConfig[0].name) === sec.name).length})
+                      </button>
+                   ))}
+                </div>
+              )}
+              <div className="p-4 flex justify-between items-center border-b border-slate-100 bg-white">
+                <h3 className="font-bold text-sm text-slate-800">
+                   Questions {activeBuilderSection && `(${questions.filter(q => (q.section || sectionsConfig[0].name) === activeBuilderSection).length})`}
+                </h3>
+                <button onClick={() => {
+                   const defaultSection = sectionsConfig.find(s => s.name === activeBuilderSection) || sectionsConfig[0];
+                   const newQ = {
+                     id: Math.random().toString(36).substr(2, 9),
+                     text: "",
+                     options: ["", "", "", ""],
+                     correct_option_index: 0,
+                     positive_marks: defaultSection.positive_marks,
+                     negative_marks: negativeMarkingEnabled ? defaultSection.negative_marks : 0,
+                     section: defaultSection.name
+                   };
+                   setQuestions([...questions, newQ]);
+                   setActiveQIndex(questions.length);
+                }} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1 text-xs font-bold">
+                  <Plus size={14} /> Add
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                {questions.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center mt-10">No questions added.</p>
+              <div className="flex-1 overflow-y-auto space-y-2 p-4 bg-slate-50/50 pr-2">
+                {questions.filter(q => (q.section || sectionsConfig[0].name) === (activeBuilderSection || sectionsConfig[0].name)).length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center mt-10">No questions in this section.</p>
                 ) : (
                   questions.map((q, idx) => {
                     const s = q.section || sectionsConfig[0].name;
+                    if (s !== (activeBuilderSection || sectionsConfig[0].name)) return null;
                     return (
                       <div
                         key={q.id}
@@ -414,7 +435,6 @@ export default function TestEditorPage() {
                         </div>
                         <div className="flex-1 overflow-hidden">
                           <p className="text-sm font-semibold text-slate-800 truncate">{q.text || "Empty Question"}</p>
-                          <p className="text-xs text-slate-400 mt-0.5 truncate">{s}</p>
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); removeQuestion(idx); }} 
@@ -524,7 +544,20 @@ export default function TestEditorPage() {
             ) : (
               <div className="bg-slate-50 rounded-xl border border-slate-200 border-dashed h-full min-h-[400px] flex flex-col items-center justify-center text-slate-400">
                 <p className="mb-4">Select a question or add a new one.</p>
-                <button onClick={handleAddQuestion} className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg font-semibold hover:bg-slate-100 flex items-center gap-2 shadow-sm">
+                <button onClick={() => {
+                   const defaultSection = sectionsConfig.find(s => s.name === activeBuilderSection) || sectionsConfig[0];
+                   const newQ = {
+                     id: Math.random().toString(36).substr(2, 9),
+                     text: "",
+                     options: ["", "", "", ""],
+                     correct_option_index: 0,
+                     positive_marks: defaultSection.positive_marks,
+                     negative_marks: negativeMarkingEnabled ? defaultSection.negative_marks : 0,
+                     section: defaultSection.name
+                   };
+                   setQuestions([...questions, newQ]);
+                   setActiveQIndex(questions.length);
+                }} className="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors mx-auto shadow-sm">
                   <Plus size={16} /> Add First Question
                 </button>
               </div>
