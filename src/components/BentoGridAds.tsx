@@ -41,8 +41,8 @@ export default function BentoGridAds({ previewData, isPreview = false }: { previ
 
   const ad1 = getAd(1) || { title: "Premium Courses", subtitle: "Unlock your full potential with our top courses.", bg_gradient: "from-indigo-500 via-purple-500 to-pink-500", badge_text: "FEATURED" } as any;
   const ad2 = getAd(2) || { title: "New Batches Starting", subtitle: "Enroll today", bg_gradient: "from-blue-600 to-cyan-500" } as any;
-  const ad3 = getAd(3) || { title: "Study Materials", bg_gradient: "from-slate-700 to-slate-800" } as any;
-  const ad4 = getAd(4) || { title: "Join Community", bg_gradient: "from-orange-500 to-amber-500" } as any;
+  const ad3 = getAd(3) || { title: "Study Materials", subtitle: "follow on insta", bg_gradient: "from-amber-400 to-orange-500" } as any;
+  const ad4 = getAd(4) || { title: "Join Community", subtitle: "STUDY GROUP", bg_gradient: "from-slate-700 to-slate-800" } as any;
 
   return (
     <div className="w-full mb-16">
@@ -58,18 +58,19 @@ export default function BentoGridAds({ previewData, isPreview = false }: { previ
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[200px] md:auto-rows-[250px]">
         {/* Large Main Feature */}
         {ad1 && (
-        <Link href={ad1.link_url || "/store"} {...((ad1.link_url || "").startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})} onClick={(e) => isPreview && e.preventDefault()} className="group relative col-span-1 md:col-span-2 row-span-2 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100">
-          <div className={`absolute inset-0 bg-gradient-to-br ${ad1.bg_gradient || 'from-indigo-500 via-purple-500 to-pink-500'}`} />
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-          
-          {ad1.image_url && (
-            <img 
-              src={ad1.image_url} 
-              alt="Feature" 
-              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-60 group-hover:scale-105 group-hover:opacity-80 transition-all duration-700" 
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+        <Link href={ad1.link_url || "/store"} {...((ad1.link_url || "").startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})} onClick={(e) => isPreview && e.preventDefault()} className="group relative col-span-1 md:col-span-2 row-span-2 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100 bg-slate-900">
+          {ad1.image_url ? (
+            <>
+              <img src={ad1.image_url} alt="Feature" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${ad1.bg_gradient || 'from-indigo-500 to-pink-500'} opacity-30 mix-blend-multiply`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            </>
+          ) : (
+            <>
+              <div className={`absolute inset-0 bg-gradient-to-br ${ad1.bg_gradient || 'from-indigo-500 via-purple-500 to-pink-500'}`} />
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            </>
           )}
 
           <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-end">
@@ -96,15 +97,14 @@ export default function BentoGridAds({ previewData, isPreview = false }: { previ
         {/* Top Right Rectangle */}
         {ad2 && (
         <Link href={ad2.link_url || "/store"} {...((ad2.link_url || "").startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})} onClick={(e) => isPreview && e.preventDefault()} className="group relative col-span-1 md:col-span-2 row-span-1 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 bg-slate-900">
-          <div className={`absolute inset-0 bg-gradient-to-r ${ad2.bg_gradient || 'from-blue-600 to-cyan-500'} opacity-90 group-hover:opacity-100 transition-opacity`} />
-          
-          {ad2.image_url && (
-            <img 
-              src={ad2.image_url} 
-              alt="Feature" 
-              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40 group-hover:scale-105 transition-transform duration-700" 
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+          {ad2.image_url ? (
+            <>
+              <img src={ad2.image_url} alt="Feature" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div className={`absolute inset-0 bg-gradient-to-r ${ad2.bg_gradient || 'from-blue-600 to-cyan-500'} opacity-40 mix-blend-multiply group-hover:opacity-50 transition-opacity`} />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/20" />
+            </>
+          ) : (
+            <div className={`absolute inset-0 bg-gradient-to-r ${ad2.bg_gradient || 'from-blue-600 to-cyan-500'} opacity-90 group-hover:opacity-100 transition-opacity`} />
           )}
 
           <div className="relative h-full p-5 md:p-8 flex items-center justify-between z-10">
@@ -112,7 +112,7 @@ export default function BentoGridAds({ previewData, isPreview = false }: { previ
               <h3 className="text-2xl md:text-4xl font-extrabold text-white mb-1 leading-tight">{ad2.title}</h3>
               <p className="text-blue-100 font-medium text-sm md:text-base">{ad2.subtitle}</p>
             </div>
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white text-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white text-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform shrink-0 ml-4">
               <Zap size={24} className="fill-current" />
             </div>
           </div>
@@ -122,46 +122,49 @@ export default function BentoGridAds({ previewData, isPreview = false }: { previ
         {/* Bottom Small Square 1 */}
         {ad3 && (
         <Link href={ad3.link_url || "/store"} {...((ad3.link_url || "").startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})} onClick={(e) => isPreview && e.preventDefault()} className="group relative col-span-1 row-span-1 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 bg-white">
-          <div className={`absolute inset-0 bg-gradient-to-br ${ad3.bg_gradient || 'from-amber-400 to-orange-500'} opacity-10 group-hover:opacity-100 transition-opacity duration-500`} />
+          {ad3.image_url ? (
+            <>
+              <img src={ad3.image_url} alt="Feature" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${ad3.bg_gradient || 'from-amber-400 to-orange-500'} opacity-30 mix-blend-multiply`} />
+              <div className="absolute inset-0 bg-black/50 group-hover:bg-black/40 transition-colors" />
+            </>
+          ) : (
+            <div className={`absolute inset-0 bg-gradient-to-br ${ad3.bg_gradient || 'from-amber-400 to-orange-500'} opacity-10 group-hover:opacity-100 transition-opacity duration-500`} />
+          )}
+
           <div className="relative h-full p-6 flex flex-col justify-between z-10">
-            <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center group-hover:bg-white transition-colors">
+            <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center group-hover:bg-white transition-colors shadow-sm">
               <Flame size={20} className="fill-current" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-slate-900 group-hover:text-white transition-colors">{ad3.title}</h3>
-              <p className="text-slate-500 text-sm font-medium group-hover:text-white/80 transition-colors">{ad3.subtitle}</p>
+              <h3 className={`text-xl font-black transition-colors ${ad3.image_url ? 'text-white' : 'text-slate-900 group-hover:text-white'}`}>{ad3.title}</h3>
+              <p className={`text-sm font-medium transition-colors ${ad3.image_url ? 'text-white/90' : 'text-slate-500 group-hover:text-white/80'}`}>{ad3.subtitle}</p>
             </div>
           </div>
-          {ad3.image_url && (
-            <img 
-              src={ad3.image_url} 
-              alt="Feature" 
-              className="absolute inset-0 w-full h-full object-cover mix-blend-multiply opacity-0 group-hover:opacity-30 transition-opacity duration-500" 
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          )}
         </Link>
         )}
 
         {/* Bottom Small Square 2 */}
         {ad4 && (
         <Link href={ad4.link_url || "/store"} {...((ad4.link_url || "").startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})} onClick={(e) => isPreview && e.preventDefault()} className="group relative col-span-1 row-span-1 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 bg-slate-900">
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
-          
-          {ad4.image_url && (
-            <img 
-              src={ad4.image_url} 
-              alt="Feature" 
-              className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-110 transition-transform duration-700" 
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+          {ad4.image_url ? (
+            <>
+              <img src={ad4.image_url} alt="Feature" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${ad4.bg_gradient || 'from-slate-700 to-slate-800'} opacity-30 mix-blend-multiply`} />
+              <div className="absolute inset-0 bg-black/60 group-hover:bg-black/40 transition-colors" />
+            </>
+          ) : (
+            <>
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent" />
+            </>
           )}
-          
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent" />
           
           <div className="relative h-full p-6 flex flex-col justify-end z-10 text-center items-center">
             <h3 className="text-xl font-black text-white mb-2">{ad4.title}</h3>
-            <span className="text-xs font-bold bg-white text-slate-900 px-3 py-1.5 rounded-full uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-colors">{ad4.subtitle}</span>
+            {ad4.subtitle && (
+              <span className="text-xs font-bold bg-white text-slate-900 px-3 py-1.5 rounded-full uppercase tracking-wider group-hover:bg-primary group-hover:text-white transition-colors">{ad4.subtitle}</span>
+            )}
           </div>
         </Link>
         )}
