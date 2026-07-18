@@ -6,7 +6,7 @@ export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // Define public paths that don't require authentication
-  const publicPaths = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email'];
+  const publicPaths = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email', '/terms', '/about'];
 
   if (publicPaths.includes(path)) {
     if (authRole) {
