@@ -93,6 +93,8 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
   // Sections
   const sections = Array.from(new Set(questions.map(q => q.section || "Default")));
   const activeSection = questions[currentQ]?.section || "Default";
+  const firstIdxOfActiveSection = questions.findIndex(q => (q.section || "Default") === activeSection);
+  const localQNum = currentQ - (firstIdxOfActiveSection !== -1 ? firstIdxOfActiveSection : 0) + 1;
   
   // New Config State
   const [testConfig, setTestConfig] = useState<any>({ allow_section_switching: true });
@@ -118,17 +120,32 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
 
   // Initialize and Scramble
   useEffect(() => {
-    let qs = [...testData.questions];
-    // Attach original index for tracking if scrambled
-    qs = qs.map((q, i) => ({ ...q, original_index: i }));
+    let finalQs: Question[] = [];
+    const sectionGroups: Record<string, Question[]> = {};
+    const sectionOrder: string[] = [];
     
-    if (testData.scramble_enabled) {
-      // Basic Fisher-Yates shuffle for questions
-      for (let i = qs.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [qs[i], qs[j]] = [qs[j], qs[i]];
+    testData.questions.forEach((q, i) => {
+      const sec = q.section || "Default";
+      if (!sectionGroups[sec]) {
+        sectionGroups[sec] = [];
+        sectionOrder.push(sec);
       }
-    }
+      sectionGroups[sec].push({ ...q, original_index: i });
+    });
+
+    sectionOrder.forEach(sec => {
+      let secQs = sectionGroups[sec];
+      if (testData.scramble_enabled) {
+        // Basic Fisher-Yates shuffle for questions within section
+        for (let i = secQs.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [secQs[i], secQs[j]] = [secQs[j], secQs[i]];
+        }
+      }
+      finalQs = [...finalQs, ...secQs];
+    });
+    
+    let qs = finalQs;
     // Check local storage for saved state
     const storageKey = `test_state_${testData.id || testData.test_title}`;
     const saved = localStorage.getItem(storageKey);
@@ -728,7 +745,7 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
             <div className="flex justify-between items-center mb-8 border-b border-slate-100 pb-4 flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <span className="bg-blue-50 text-blue-700 font-bold px-4 py-1.5 rounded-lg border border-blue-100">
-                  Question {currentQ + 1}
+                  Question {localQNum}
                 </span>
                 {isReviewMode && (
                   <span className="text-sm font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2">
@@ -854,7 +871,9 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
           )}
 
           <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
-            {sections.map(sec => {
+            {(() => {
+              const sec = activeSection;
+              const firstIdx = questions.findIndex(q => (q.section || "Default") === sec);
               const secQuestions = questions.map((q, idx) => ({ q, idx })).filter(item => (item.q.section || "Default") === sec);
               
               let visibleInSec = 0;
@@ -896,7 +915,7 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
                     onClick={() => setCurrentQ(idx)}
                     className={`w-10 h-10 rounded-lg border text-sm transition-all flex items-center justify-center ${statusClass}`}
                   >
-                    {idx + 1}
+                    {idx - firstIdx + 1}
                   </button>
                 );
               });
@@ -911,7 +930,7 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
                   </div>
                 </div>
               );
-            })}
+            })()}
           </div>
 
           {/* Submit Button at Bottom */}
