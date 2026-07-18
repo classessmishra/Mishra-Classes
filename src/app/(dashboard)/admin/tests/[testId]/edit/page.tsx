@@ -464,20 +464,6 @@ export default function TestEditorPage() {
                          <span className="text-red-500 bg-red-50 px-3 py-1 rounded">-{questions[activeQIndex].negative_marks}</span>
                      </div>
                   </div>
-                  
-                  <div className="mb-4">
-                      <label className="text-sm font-semibold text-slate-700 block mb-2">Section</label>
-                      <select 
-                         value={questions[activeQIndex].section || sectionsConfig[0].name}
-                         onChange={(e) => updateActiveQuestion('section', e.target.value)}
-                         className="w-full md:w-1/2 border border-slate-200 rounded-lg p-3 text-sm focus:border-blue-500 outline-none bg-white"
-                      >
-                         {sectionsConfig.map((sec, idx) => (
-                             <option key={idx} value={sec.name}>{sec.name}</option>
-                         ))}
-                      </select>
-                      <p className="text-xs text-slate-500 mt-2">Marks are automatically applied based on the section.</p>
-                  </div>
                 </div>
 
                 <div>
