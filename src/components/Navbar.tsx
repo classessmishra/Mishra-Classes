@@ -140,7 +140,9 @@ export default function Navbar() {
     router.push("/login");
   };
 
-  if (pathname?.startsWith("/test/") || pathname?.startsWith("/admin") || pathname?.startsWith("/chats/admin") || pathname === "/login" || pathname === "/signup" || pathname?.startsWith("/student/live-class")) return null;
+  const isAuthOrPublicPage = ['/about', '/terms', '/forgot-password', '/reset-password', '/login', '/signup', '/verify-email'].includes(pathname || '');
+
+  if (pathname?.startsWith("/test/") || pathname?.startsWith("/admin") || pathname?.startsWith("/chats/admin") || pathname?.startsWith("/student/live-class")) return null;
 
   return (
     <nav className="fixed md:sticky top-0 z-[100] md:z-50 w-full bg-[#5B58FF] md:bg-white/80 md:backdrop-blur-md border-b border-[#5B58FF] md:border-border/40 print:hidden shadow-md md:shadow-none">
@@ -160,7 +162,7 @@ export default function Navbar() {
 
         {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-6">
-          {(role === 'admin' ? [
+          {!isAuthOrPublicPage && (role === 'admin' ? [
             { name: "Home", href: "/" },
             { name: "Dashboard", href: "/admin", badge: "ADMIN" },
             { name: "Store", href: "/store", badge: "NEW" },
@@ -199,16 +201,18 @@ export default function Navbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-4">
-          <div>
-            {/* Desktop Bell */}
-            <div className="hidden md:block">
-              <NotificationBell iconSize={20} buttonClassName="relative p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors" />
+          {!isAuthOrPublicPage && (
+            <div>
+              {/* Desktop Bell */}
+              <div className="hidden md:block">
+                <NotificationBell iconSize={20} buttonClassName="relative p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors" />
+              </div>
+              {/* Mobile Bell */}
+              <div className="md:hidden block">
+                <NotificationBell iconSize={24} buttonClassName="relative text-white cursor-pointer" />
+              </div>
             </div>
-            {/* Mobile Bell */}
-            <div className="md:hidden block">
-              <NotificationBell iconSize={24} buttonClassName="relative text-white cursor-pointer" />
-            </div>
-          </div>
+          )}
           
           {!role ? (
             <>

@@ -22,7 +22,9 @@ export default function BottomNav() {
     if (match) setRole(match[2]);
   }, []);
 
-  if (pathname?.startsWith("/test/") || pathname?.startsWith("/admin") || pathname?.startsWith("/chats/admin") || pathname === "/login" || pathname === "/signup" || pathname?.startsWith("/student/live-class")) return null;
+  const isAuthOrPublicPage = ['/about', '/terms', '/forgot-password', '/reset-password', '/login', '/signup', '/verify-email'].includes(pathname || '');
+
+  if (pathname?.startsWith("/test/") || pathname?.startsWith("/admin") || pathname?.startsWith("/chats/admin") || pathname?.startsWith("/student/live-class") || isAuthOrPublicPage) return null;
 
   const filteredItems = role === 'admin'
     ? [
