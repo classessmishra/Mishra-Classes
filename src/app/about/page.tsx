@@ -9,22 +9,22 @@ export const metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#0A0F1C] relative overflow-hidden text-slate-100 font-sans selection:bg-primary/30">
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans selection:bg-primary/20">
       
       {/* Background Decorators */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
-      <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[60%] h-[20%] bg-purple-500/10 blur-[100px] rounded-full mix-blend-screen pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/20 blur-[100px] rounded-full mix-blend-multiply pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-400/20 blur-[100px] rounded-full mix-blend-multiply pointer-events-none" />
+      <div className="absolute top-[40%] left-[50%] translate-x-[-50%] w-[60%] h-[20%] bg-indigo-300/20 blur-[100px] rounded-full mix-blend-multiply pointer-events-none" />
 
       {/* Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none opacity-50" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none opacity-60" />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         
         {/* Back Button */}
         <Link 
           href="/login" 
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-medium transition-all hover:scale-105 active:scale-95 backdrop-blur-md mb-12"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-600 text-sm font-medium transition-all hover:scale-105 active:scale-95 shadow-sm mb-12"
         >
           <ArrowLeft size={16} />
           <span>Back to Login</span>
@@ -32,14 +32,14 @@ export default function AboutPage() {
 
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-24 relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-6">
-            <Sparkles size={16} />
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-bold mb-6 shadow-sm">
+            <Sparkles size={16} className="text-blue-500" />
             <span>Excellence in Education</span>
           </div>
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-indigo-200 leading-[1.1]">
-            Redefining English Coaching
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight mb-6 text-slate-900 leading-[1.15]">
+            Redefining <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">English Coaching</span>
           </h1>
-          <p className="text-lg sm:text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
             Mishra Classes is a premier educational institution dedicated to mastering English. 
             We provide exclusive, high-quality coaching for students from Class 9th to 12th, along with specialized Spoken English programs.
           </p>
@@ -53,81 +53,90 @@ export default function AboutPage() {
               icon: BookOpen,
               title: "Comprehensive Curriculum",
               desc: "Expertly crafted study materials and detailed video lectures covering every aspect of the syllabus.",
-              color: "from-blue-500/20 to-blue-600/5",
-              border: "border-blue-500/20",
-              iconColor: "text-blue-400",
+              color: "bg-blue-50",
+              border: "border-blue-100",
+              iconColor: "text-blue-600",
+              iconBg: "bg-blue-100",
             },
             {
               icon: Users,
               title: "Live Interactive Sessions",
               desc: "Engage directly with expert teachers in real-time classes, with chat, doubt solving, and polls.",
-              color: "from-indigo-500/20 to-indigo-600/5",
-              border: "border-indigo-500/20",
-              iconColor: "text-indigo-400",
+              color: "bg-indigo-50",
+              border: "border-indigo-100",
+              iconColor: "text-indigo-600",
+              iconBg: "bg-indigo-100",
             },
             {
               icon: Target,
               title: "Performance Tracking",
               desc: "Regular automated tests and detailed analytics help identify weaknesses and track improvement.",
-              color: "from-emerald-500/20 to-emerald-600/5",
-              border: "border-emerald-500/20",
-              iconColor: "text-emerald-400",
+              color: "bg-emerald-50",
+              border: "border-emerald-100",
+              iconColor: "text-emerald-600",
+              iconBg: "bg-emerald-100",
             },
             {
               icon: ShieldCheck,
               title: "Secure & Trusted",
               desc: "A modern, reliable, and highly secure digital platform for a seamless learning experience.",
-              color: "from-purple-500/20 to-purple-600/5",
-              border: "border-purple-500/20",
-              iconColor: "text-purple-400",
+              color: "bg-purple-50",
+              border: "border-purple-100",
+              iconColor: "text-purple-600",
+              iconBg: "bg-purple-100",
             },
             {
               icon: GraduationCap,
               title: "Spoken English",
               desc: "Specialized programs designed to build confidence and fluency in spoken English.",
-              color: "from-pink-500/20 to-pink-600/5",
-              border: "border-pink-500/20",
-              iconColor: "text-pink-400",
+              color: "bg-pink-50",
+              border: "border-pink-100",
+              iconColor: "text-pink-600",
+              iconBg: "bg-pink-100",
             },
             {
               icon: Award,
               title: "Proven Results",
               desc: "Years of experience and a track record of producing top scorers and confident speakers.",
-              color: "from-amber-500/20 to-amber-600/5",
-              border: "border-amber-500/20",
-              iconColor: "text-amber-400",
+              color: "bg-amber-50",
+              border: "border-amber-100",
+              iconColor: "text-amber-600",
+              iconBg: "bg-amber-100",
             }
           ].map((feature, idx) => {
             const Icon = feature.icon;
             return (
               <div 
                 key={idx}
-                className={`group relative p-8 rounded-3xl bg-gradient-to-br ${feature.color} border ${feature.border} backdrop-blur-sm overflow-hidden hover:scale-[1.02] transition-transform duration-300`}
+                className={`group relative p-8 rounded-[2rem] bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-${feature.iconColor}/5 transition-all duration-300 hover:-translate-y-1 overflow-hidden`}
               >
-                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity group-hover:scale-110 duration-500">
-                  <Icon size={120} />
+                <div className={`absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-500 group-hover:scale-110 ${feature.iconColor}`}>
+                  <Icon size={140} />
                 </div>
-                <div className={`w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 shadow-xl ${feature.iconColor}`}>
-                  <Icon size={24} />
+                <div className={`w-14 h-14 rounded-2xl ${feature.iconBg} flex items-center justify-center mb-6 shadow-sm border border-white`}>
+                  <Icon size={26} className={feature.iconColor} />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{feature.desc}</p>
+                <h3 className="text-xl font-extrabold text-slate-800 mb-3">{feature.title}</h3>
+                <p className="text-slate-600 text-sm leading-relaxed">{feature.desc}</p>
               </div>
             );
           })}
         </div>
 
         {/* CTA Section */}
-        <div className="relative rounded-3xl overflow-hidden border border-primary/20 bg-primary/5 p-8 sm:p-12 text-center backdrop-blur-md">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-primary/10" />
+        <div className="relative rounded-[2.5rem] overflow-hidden bg-white border border-slate-100 shadow-xl p-8 sm:p-14 text-center">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 opacity-50" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px]" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-[80px]" />
+          
           <div className="relative z-10">
-            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4">Start Your Journey Today</h3>
-            <p className="text-slate-300 mb-8 max-w-xl mx-auto">
+            <h3 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-6">Start Your Journey Today</h3>
+            <p className="text-slate-600 mb-10 max-w-xl mx-auto text-lg">
               Join thousands of students who have transformed their English skills with Mishra Classes.
             </p>
             <Link 
               href="/login" 
-              className="inline-flex items-center justify-center px-8 py-4 text-base font-bold rounded-xl text-white bg-primary hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(91,88,255,0.4)] hover:shadow-[0_0_60px_rgba(91,88,255,0.6)]"
+              className="inline-flex items-center justify-center px-8 py-4 text-base font-bold rounded-2xl text-white bg-primary hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all shadow-lg hover:shadow-primary/30"
             >
               Get Started Now
             </Link>
