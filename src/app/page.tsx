@@ -59,7 +59,7 @@ export default async function Home() {
               instructor="Prof. A. Mishra"
               duration="Access for 1 Year"
               price={course.price}
-              badge={course.is_live ? "LIVE" : "RECORDED"}
+              badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'offline' || course.course_type === 'notes' ? "CLASSROOM" : "RECORDED"}
               imageUrl={course.thumbnail_url || "/images/course_thumb.png"}
             />
           )) : (

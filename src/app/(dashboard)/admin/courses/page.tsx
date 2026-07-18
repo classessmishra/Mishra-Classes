@@ -79,7 +79,7 @@ export default function CourseManagerPage() {
                   }`}>
                     {course.course_type === 'live' || (course.is_live && !course.course_type) ? 'LIVE' : 
                      course.course_type === 'test_series' ? 'TEST SERIES' : 
-                     course.course_type === 'offline' || course.course_type === 'notes' ? 'OFFLINE CLASS' : 'VOD'}
+                     course.course_type === 'offline' || course.course_type === 'notes' ? 'CLASSROOM' : 'VOD'}
                   </span>
                 </div>
                 <div className="space-y-1 mb-4">
