@@ -202,12 +202,17 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-slate-100">
-              <p className="text-center text-sm text-slate-500">
-                By continuing, you agree to our{" "}
-                <Link href="#" className="text-primary hover:underline">terms and conditions</Link>
-              </p>
-              <p className="text-center text-sm text-slate-500 mt-3">
+            <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col items-center gap-3">
+              <div className="flex gap-4 text-sm text-slate-500">
+                <Link href="/about" className="hover:text-primary hover:underline transition-colors">
+                  About Us
+                </Link>
+                <span>•</span>
+                <Link href="/terms" className="hover:text-primary hover:underline transition-colors">
+                  Terms & Conditions
+                </Link>
+              </div>
+              <p className="text-center text-sm text-slate-500 mt-1">
                 Don&apos;t have an account?{" "}
                 <Link href="/signup" className="text-primary font-semibold hover:underline">
                   Register here
