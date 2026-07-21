@@ -220,7 +220,7 @@ export default function AdvertisementBuilder() {
   const showImage = isHero || isBento || isPhoto || isMarquee;
 
   // Live preview injection
-  let mergedPreviewData = [...ads];
+  const mergedPreviewData = [...ads];
   
   // 1. Overlay all drafts for the active section
   const sectionDrafts = Object.values(drafts).filter(d => d.section_type === activeSection);

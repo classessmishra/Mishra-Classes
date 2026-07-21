@@ -418,7 +418,7 @@ export async function resolveReport(reportId: string, testId: string, newCorrect
       if (!sub.answers || sub.answers[questionIndex] === undefined || sub.answers[questionIndex] === null) continue;
       
       let newScore = 0;
-      let newAnswers = [...sub.answers]; // same
+      const newAnswers = [...sub.answers]; // same
       
       testInfo.questions.forEach((question: any, idx: number) => {
         const a = newAnswers[idx];

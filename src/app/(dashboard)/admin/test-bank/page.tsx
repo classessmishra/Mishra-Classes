@@ -76,7 +76,7 @@ export default function TestBankPage() {
   // Group tests by Month and Year
   const groupedTests = tests.reduce((acc, test) => {
     // We use start_date or fallback to created_at if exists, else "Unknown Date"
-    let dateStr = test.start_date || test.created_at;
+    const dateStr = test.start_date || test.created_at;
     let monthYear = "Unknown Date";
     if (dateStr) {
       const d = new Date(dateStr);

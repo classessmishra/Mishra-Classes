@@ -8,38 +8,26 @@ import { getAdvertisements } from "@/actions/advertisements";
 const posters: any[] = [];
 
 export default function PhotoAds({ previewData, isPreview = false }: { previewData?: any[], isPreview?: boolean }) {
-  const [ads, setAds] = useState<any[]>(() => {
-    if (previewData && previewData.length > 0) {
-      return previewData.map((ad, idx) => ({
-        id: ad.id || idx,
-        imageUrl: ad.image_url,
-        fallbackGradient: ad.bg_gradient || "from-slate-500 to-slate-700",
-        title: ad.headline || ad.title || "Special Offer",
-        span: idx === 0 ? "col-span-1 md:col-span-2 row-span-2" : "col-span-1",
-        aspectRatio: idx === 0 ? "aspect-[2/1] md:aspect-auto h-full" : "aspect-square",
-        link: ad.cta_link || ad.link || "/store"
-      }));
-    }
-    return [];
-  });
+  const [fetchedAds, setFetchedAds] = useState<any[]>([]);
+
+  const ads = previewData ? (previewData.length > 0 ? previewData.map((ad, idx) => ({
+    id: ad.id || idx,
+    imageUrl: ad.image_url,
+    fallbackGradient: ad.bg_gradient || "from-slate-500 to-slate-700",
+    title: ad.headline || ad.title || "Special Offer",
+    span: idx === 0 ? "col-span-1 md:col-span-2 row-span-2" : "col-span-1",
+    aspectRatio: idx === 0 ? "aspect-[2/1] md:aspect-auto h-full" : "aspect-square",
+    link: ad.cta_link || ad.link || "/store"
+  })) : []) : fetchedAds;
 
   useEffect(() => {
     if (previewData) {
-      setAds(previewData.length > 0 ? previewData.map((ad, idx) => ({
-        id: ad.id || idx,
-        imageUrl: ad.image_url,
-        fallbackGradient: ad.bg_gradient || "from-slate-500 to-slate-700",
-        title: ad.headline || ad.title || "Special Offer",
-        span: idx === 0 ? "col-span-1 md:col-span-2 row-span-2" : "col-span-1",
-        aspectRatio: idx === 0 ? "aspect-[2/1] md:aspect-auto h-full" : "aspect-square",
-        link: ad.cta_link || ad.link || "/store"
-      })) : []);
       return;
     }
     async function loadAds() {
       const dbAds = await getAdvertisements('photo');
       if (dbAds && dbAds.length > 0) {
-        setAds(dbAds.map((ad, idx) => ({
+        setFetchedAds(dbAds.map((ad, idx) => ({
           id: ad.id,
           imageUrl: ad.image_url,
           fallbackGradient: ad.bg_gradient || "from-slate-500 to-slate-700",

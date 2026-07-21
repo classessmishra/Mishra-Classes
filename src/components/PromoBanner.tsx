@@ -7,17 +7,17 @@ import { useState, useEffect } from "react";
 import { getAdvertisements } from "@/actions/advertisements";
 
 export default function PromoBanner({ previewData, isPreview = false }: { previewData?: any, isPreview?: boolean }) {
-  const [ad, setAd] = useState<any>(previewData || null);
+  const [fetchedAd, setFetchedAd] = useState<any>(null);
+  const ad = previewData || fetchedAd;
 
   useEffect(() => {
     if (previewData) {
-      setAd(previewData);
       return;
     }
     async function loadAds() {
       const dbAds = await getAdvertisements('promo');
       if (dbAds && dbAds.length > 0) {
-        setAd(dbAds[0]);
+        setFetchedAd(dbAds[0]);
       }
     }
     loadAds();

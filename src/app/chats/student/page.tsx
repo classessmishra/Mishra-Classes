@@ -318,7 +318,7 @@ export default function StudentChatPage() {
       .select('chat_groups(*)')
       .eq('user_id', userId);
 
-    let fetchedGroups: any[] = (memberGroups || []).map((mg: any) => {
+    const fetchedGroups: any[] = (memberGroups || []).map((mg: any) => {
       return Array.isArray(mg.chat_groups) ? mg.chat_groups[0] : mg.chat_groups;
     }).filter(Boolean);
 

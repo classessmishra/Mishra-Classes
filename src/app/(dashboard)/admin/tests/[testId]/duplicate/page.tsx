@@ -13,6 +13,7 @@ type SectionConfig = {
   name: string;
   positive_marks: number;
   negative_marks: number;
+  duration_minutes: number;
 };
 
 type Question = {
@@ -53,8 +54,15 @@ export default function DuplicateTestPage() {
   const [negativeMarkingEnabled, setNegativeMarkingEnabled] = useState(true);
   const [allowSectionSwitching, setAllowSectionSwitching] = useState(true);
   const [sectionsConfig, setSectionsConfig] = useState<SectionConfig[]>([
-    { name: "Default", positive_marks: 4, negative_marks: 1 }
+    { name: "Default", positive_marks: 4, negative_marks: 1, duration_minutes: 60 }
   ]);
+
+  useEffect(() => {
+    if (!allowSectionSwitching) {
+       const totalDuration = sectionsConfig.reduce((acc, sec) => acc + (sec.duration_minutes || 0), 0);
+       setDuration(totalDuration);
+    }
+  }, [allowSectionSwitching, sectionsConfig]);
 
   // Questions State
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -82,7 +90,7 @@ export default function DuplicateTestPage() {
           if (qs.length > 0 && qs[0].test_config) {
               setNegativeMarkingEnabled(qs[0].test_config.negative_marking_enabled ?? true);
               setAllowSectionSwitching(qs[0].test_config.allow_section_switching ?? true);
-              const sc = qs[0].test_config.sections_config ?? [{ name: "Default", positive_marks: 4, negative_marks: 1 }];
+              const sc = qs[0].test_config.sections_config ?? [{ name: "Default", positive_marks: 4, negative_marks: 1, duration_minutes: 60 }];
               setSectionsConfig(sc);
               setActiveBuilderSection(sc[0]?.name || "Default");
           } else {
@@ -141,7 +149,7 @@ export default function DuplicateTestPage() {
   };
 
   const addSection = () => {
-      const newSec = { name: `Section ${sectionsConfig.length + 1}`, positive_marks: 4, negative_marks: 1 };
+      const newSec = { name: `Section ${sectionsConfig.length + 1}`, positive_marks: 4, negative_marks: 1, duration_minutes: 30 };
       setSectionsConfig([...sectionsConfig, newSec]);
   };
   
@@ -226,7 +234,7 @@ export default function DuplicateTestPage() {
     try {
       setStatus("saving");
       
-      let payloadQuestions = [...questions];
+      const payloadQuestions = [...questions];
       
       if (!testTitle) throw new Error("Test title is required.");
       if (payloadQuestions.length === 0) throw new Error("Add at least one question.");
@@ -245,6 +253,7 @@ export default function DuplicateTestPage() {
         test_title: testTitle,
         duration_minutes: duration,
         scramble_enabled: scramble,
+        allow_section_switching: allowSectionSwitching,
         questions: payloadQuestions
       };
 
@@ -332,7 +341,7 @@ export default function DuplicateTestPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">Duration (Mins)</label>
-                <input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} className="w-full p-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" />
+                  <input type="number" value={duration} onChange={e => setDuration(Number(e.target.value))} disabled={!allowSectionSwitching} className="w-full p-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:bg-slate-100" />
               </div>
               <div className="flex items-center justify-between pt-2">
                 <label className="text-xs font-semibold text-slate-600">Auto Scramble</label>
@@ -376,8 +385,14 @@ export default function DuplicateTestPage() {
                           </div>
                           <div className="flex-1">
                              <label className="block text-[10px] font-bold text-red-500 uppercase">-ve</label>
-                             <input type="number" value={sec.negative_marks} onChange={e => updateSectionConfig(idx, 'negative_marks', Number(e.target.value))} disabled={!negativeMarkingEnabled} className="w-full p-1 text-xs border border-slate-200 rounded outline-none disabled:opacity-50" />
+                             <input type="number" value={sec.negative_marks} onChange={e => updateSectionConfig(idx, 'negative_marks', Number(e.target.value))} disabled={!negativeMarkingEnabled} className="w-full p-1 text-xs border border-slate-200 rounded outline-none disabled:opacity-50 disabled:bg-slate-100" />
                           </div>
+                          {!allowSectionSwitching && (
+                            <div className="flex-1">
+                               <label className="block text-[10px] font-bold text-blue-600 uppercase">Mins</label>
+                               <input type="number" value={sec.duration_minutes || 0} onChange={e => updateSectionConfig(idx, 'duration_minutes', Number(e.target.value))} className="w-full p-1 text-xs border border-slate-200 rounded outline-none focus:border-blue-500" />
+                            </div>
+                            )}
                       </div>
                   </div>
               ))}

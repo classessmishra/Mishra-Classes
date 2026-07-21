@@ -15,6 +15,7 @@ type Question = {
   negative_marks: number;
   original_index?: number;
   section?: string;
+  test_config?: any;
 };
 
 type TestConfig = {
@@ -27,7 +28,7 @@ type TestConfig = {
   initial_time_spent?: number[];
 };
 
-export default function TestPlayer({ testData, studentId, initialMode = false, leaderboard: initialLeaderboard, courseId }: { testData: TestConfig, studentId?: string, initialMode?: boolean, leaderboard?: any[], courseId?: string }) {
+export default function TestPlayer({ testData, studentId, studentName, studentPhoto, initialMode = false, leaderboard: initialLeaderboard, courseId }: { testData: TestConfig, studentId?: string, studentName?: string, studentPhoto?: string, initialMode?: boolean, leaderboard?: any[], courseId?: string }) {
   const [stage, setStage] = useState<"start" | "running" | "result">(initialMode ? "result" : "start");
   
   // Leaderboard State
@@ -85,10 +86,22 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
   const [answers, setAnswers] = useState<(number | null)[]>(testData.initial_answers || []);
   const [reviewStatus, setReviewStatus] = useState<boolean[]>([]);
   const [timeSpent, setTimeSpent] = useState<number[]>(testData.initial_time_spent || []);
+  const [visitedStatus, setVisitedStatus] = useState<boolean[]>([]);
   const [timeLeft, setTimeLeft] = useState(testData.duration_minutes * 60);
+  const [totalTimeLeft, setTotalTimeLeft] = useState(testData.duration_minutes * 60);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [hasSavedState, setHasSavedState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (questions.length > 0) {
+      setVisitedStatus(prev => {
+        const next = [...prev];
+        if (!next[currentQ]) next[currentQ] = true;
+        return next;
+      });
+    }
+  }, [currentQ, questions]);
   
   // Sections
   const sections = Array.from(new Set(questions.map(q => q.section || "Default")));
@@ -114,6 +127,8 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
   
   // Declaration State
   const [agreed, setAgreed] = useState(false);
+  const [lang, setLang] = useState<"en" | "hi">("en");
+  const [switchWarning, setSwitchWarning] = useState("");
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isSubmittingRef = useRef(false);
@@ -124,7 +139,7 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
     const sectionGroups: Record<string, Question[]> = {};
     const sectionOrder: string[] = [];
     
-    testData.questions.forEach((q, i) => {
+    testData.questions.forEach((q: any, i: number) => {
       const sec = q.section || "Default";
       if (!sectionGroups[sec]) {
         sectionGroups[sec] = [];
@@ -141,10 +156,22 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
           const j = Math.floor(Math.random() * (i + 1));
           [secQs[i], secQs[j]] = [secQs[j], secQs[i]];
         }
+        
+        // Scramble options within each question
+        secQs.forEach((q: any) => {
+          if (q.options && Array.isArray(q.options)) {
+            let indices = q.options.map((_: any, idx: number) => idx);
+            for (let i = indices.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            q.display_options_order = indices;
+          }
+        });
       }
       finalQs = [...finalQs, ...secQs];
     });
-    
+
     let qs = finalQs;
     // Check local storage for saved state
     const storageKey = `test_state_${testData.id || testData.test_title}`;
@@ -154,26 +181,51 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
       setHasSavedState(true);
     }
     
-    
+    // Fix: Read from original testData to avoid losing config during question scrambling
+    let config = { allow_section_switching: true, sections_config: [] as any[] };
+    if (testData.questions && testData.questions.length > 0 && testData.questions[0].test_config) {
+      config = testData.questions[0].test_config;
+      setTestConfig(config);
+    } else {
+      setTestConfig(config);
+    }
+
     if (initialMode) {
       setQuestions(qs);
       return;
     }
 
     setQuestions(qs);
-    setAnswers(new Array(qs.length).fill(null));
-    setReviewStatus(new Array(qs.length).fill(false));
-    setTimeSpent(new Array(qs.length).fill(0));
+    if (!saved) {
+      setAnswers(new Array(qs.length).fill(null));
+      setReviewStatus(new Array(qs.length).fill(false));
+      setTimeSpent(new Array(qs.length).fill(0));
+      const initialVisited = new Array(qs.length).fill(false);
+      initialVisited[0] = true;
+      setVisitedStatus(initialVisited);
+      
+      if (config.allow_section_switching === false && config.sections_config && config.sections_config.length > 0) {
+         setTimeLeft((config.sections_config[0].duration_minutes || 0) * 60);
+      } else {
+         setTimeLeft(testData.duration_minutes * 60);
+      }
+      setTotalTimeLeft(testData.duration_minutes * 60);
+    }
   }, [testData, initialMode]);
 
   // Timer Logic & Time Spent Tracking
   useEffect(() => {
     if (stage === "running" && !warningActive) {
       timerRef.current = setInterval(() => {
+        setTotalTimeLeft(prev => Math.max(0, prev - 1));
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timerRef.current!);
-            handleAutoSubmit();
+            if (testConfig?.allow_section_switching === false && testConfig?.sections_config?.length > 0) {
+               handleSectionSubmit();
+            } else {
+               handleAutoSubmit();
+            }
             return 0;
           }
           return prev - 1;
@@ -202,11 +254,13 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
         answers,
         reviewStatus,
         timeSpent,
-        timeLeft
+        visitedStatus,
+        timeLeft,
+        totalTimeLeft
       };
       localStorage.setItem(storageKey, JSON.stringify(state));
     }
-  }, [answers, reviewStatus, timeSpent, timeLeft, stage, isReviewMode, testData, completedSections]);
+  }, [answers, reviewStatus, timeSpent, visitedStatus, timeLeft, totalTimeLeft, stage, isReviewMode, testData, completedSections]);
 
   const handleReportQuestion = async () => {
     if (!reportReason.trim() || !studentId || !testData.id) return;
@@ -271,14 +325,26 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
       setAnswers(new Array(questions.length).fill(null));
       setReviewStatus(new Array(questions.length).fill(false));
       setTimeSpent(new Array(questions.length).fill(0));
-      setTimeLeft(testData.duration_minutes * 60);
+      const initialVisited = new Array(questions.length).fill(false);
+      initialVisited[0] = true;
+      setVisitedStatus(initialVisited);
+      
+      if (testConfig?.allow_section_switching === false && testConfig?.sections_config?.length > 0) {
+         setTimeLeft((testConfig.sections_config[0].duration_minutes || 0) * 60);
+      } else {
+         setTimeLeft(testData.duration_minutes * 60);
+      }
+      setTotalTimeLeft(testData.duration_minutes * 60);
     } else if (resume) {
       try {
         const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
         if (saved.answers) setAnswers(saved.answers);
         if (saved.reviewStatus) setReviewStatus(saved.reviewStatus);
         if (saved.timeSpent) setTimeSpent(saved.timeSpent);
+        if (saved.visitedStatus) setVisitedStatus(saved.visitedStatus);
         if (saved.timeLeft) setTimeLeft(saved.timeLeft);
+        if (saved.totalTimeLeft) setTotalTimeLeft(saved.totalTimeLeft);
+        else setTotalTimeLeft(testData.duration_minutes * 60);
       } catch (e) {
         console.error("Failed to parse saved state", e);
       }
@@ -286,6 +352,34 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
     
     enterFullscreen();
     setStage("running");
+  };
+
+  
+  const handleSectionSubmit = () => {
+    if (testConfig?.allow_section_switching !== false || !testConfig?.sections_config) return;
+    
+    const sectionsList = testConfig.sections_config.map((s: any) => s.name);
+    const activeSectionIndex = sectionsList.indexOf(activeSection);
+    
+    // Add current section to completed
+    setCompletedSections(prev => [...prev, activeSection]);
+    
+    if (activeSectionIndex !== -1 && activeSectionIndex < sectionsList.length - 1) {
+      // Move to next section
+      const nextSectionName = sectionsList[activeSectionIndex + 1];
+      const nextSecDuration = testConfig.sections_config[activeSectionIndex + 1].duration_minutes || 0;
+      
+      const nextQIdx = questions.findIndex(q => (q.section || "Default") === nextSectionName);
+      if (nextQIdx !== -1) {
+        setCurrentQ(nextQIdx);
+        setTimeLeft(nextSecDuration * 60);
+      } else {
+        handleAutoSubmit(); // fallback
+      }
+    } else {
+      // Last section, submit test
+      handleAutoSubmit();
+    }
   };
 
   const handleAutoSubmit = async () => {
@@ -391,81 +485,246 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
 
   const currentQuestionData = questions[currentQ];
 
+  
   // --------- START SCREEN (DECLARATION) ---------
   if (stage === "start") {
     return (
-      <div className="min-h-screen bg-slate-50 absolute inset-0 z-[200] flex flex-col h-full w-full">
-        {/* Header */}
-        <header className="bg-white border-b border-slate-200 p-4 px-8 flex items-center justify-between shrink-0 shadow-sm">
-          <div>
-            <h1 className="text-xl font-bold text-slate-800 uppercase tracking-wider">{testData.test_title}</h1>
-            <p className="text-sm text-slate-500">Duration: {testData.duration_minutes} Minutes | Total Questions: {testData.questions.length}</p>
-          </div>
-          <div className="text-sm font-semibold text-slate-600 bg-slate-100 px-4 py-2 rounded-lg">
-            Candidate ID: {studentId || "Guest"}
+      <div className="min-h-screen bg-white absolute inset-0 z-[200] flex flex-col h-full w-full font-sans">
+        {/* NTA / TCS iON style Header */}
+        <header className="bg-[#337ab7] text-white p-3 flex items-center justify-between shrink-0 shadow">
+          <div className="text-lg font-bold">
+            {testData.test_title}
           </div>
         </header>
 
-        {/* Instructions Content */}
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-          <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
-            <div className="bg-blue-600 text-white p-4 font-bold text-lg">
-              General Instructions
-            </div>
-            <div className="p-8 space-y-6 text-slate-700 text-sm leading-relaxed">
-              <p><strong>Please read the following instructions carefully before starting the exam:</strong></p>
-              
-              <ul className="list-decimal pl-5 space-y-3">
-                <li>Total duration of this test is <strong>{testData.duration_minutes} minutes</strong>.</li>
-                <li>The clock will be set at the server. The countdown timer in the top right corner of screen will display the remaining time available for you to complete the examination. When the timer reaches zero, the examination will end by itself. You will not be required to end or submit your examination.</li>
-                <li>Each question has 4 options, out of which only one is correct.</li>
-                <li>For each correct answer, you will be awarded positive marks. For each wrong answer, negative marks may be deducted as per the question's rules. Unanswered questions will receive 0 marks.</li>
-                <li>You can navigate to any question directly by clicking on the question number palette on the right side of the screen.</li>
-                <li><span className="text-red-600 font-bold">WARNING:</span> Do not exit Fullscreen mode. Your test will auto-submit after {MAX_VIOLATIONS} warnings.</li>
-                <li>Do not refresh the page or close the browser window during the test. Doing so may result in your answers being lost or early submission of the test.</li>
-                <li>Ensure you have a stable internet connection before starting the test.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Declaration and Action */}
-        <div className="bg-white border-t border-slate-200 p-6 shrink-0 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)]">
-          <div className="max-w-4xl mx-auto">
-            <label className="flex items-start gap-3 cursor-pointer p-4 border border-blue-100 bg-blue-50/50 rounded-xl mb-6 hover:bg-blue-50 transition-colors">
-              <input 
-                type="checkbox" 
-                checked={agreed} 
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-1 w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
-              />
-              <span className="text-sm text-slate-700 font-medium">
-                I have read and understood the instructions. All computer hardware allotted to me are in proper working condition. I declare that I am not in possession of / not wearing / not carrying any prohibited gadget like mobile phone, bluetooth devices etc. I agree that in case of not adhering to the instructions, I shall be liable to be debarred from this Test and/or to disciplinary action.
-              </span>
-            </label>
-            
-            <div className="flex justify-end gap-4">
-              {hasSavedState && (
-                <button 
-                  onClick={() => startTest(true)} 
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-8 py-3 rounded-xl font-bold text-lg shadow-sm transition-colors"
-                >
-                  Resume Previous Session
-                </button>
-              )}
-              <button 
-                onClick={() => startTest(false)}
-                disabled={!agreed}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-10 py-3 rounded-xl font-bold text-lg shadow-sm transition-colors"
+        {/* Content area */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Main Instructions Panel */}
+          <div className="flex-1 flex flex-col h-full bg-white relative">
+            {/* View In Dropdown */}
+            <div className="flex justify-end items-center p-2 border-b border-gray-200 text-sm">
+              <span className="mr-2 text-gray-700 font-semibold">View In:</span>
+              <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value as "en" | "hi")}
+                className="border border-gray-300 rounded p-1 text-sm bg-white text-gray-800 focus:outline-none focus:border-[#337ab7]"
               >
-                I am ready to begin
-              </button>
+                <option value="en">English</option>
+                <option value="hi">हिंदी</option>
+              </select>
+            </div>
+
+            {/* Scrollable Instructions */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar text-gray-800 text-[13px] leading-relaxed">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-center text-lg font-bold mb-4 uppercase underline underline-offset-4 decoration-gray-300">
+                  {lang === "en" ? "Please read the instructions carefully" : "कृपया निर्देशों को ध्यान से पढ़ें"}
+                </h2>
+                
+                <h3 className="font-bold underline mb-2">
+                  {lang === "en" ? "General Instructions:" : "सामान्य निर्देश:"}
+                </h3>
+                
+                <ol className="list-decimal pl-5 space-y-3 mb-6">
+                  <li>
+                    {lang === "en" 
+                      ? `Total duration of examination is ${testData.duration_minutes} minutes.` 
+                      : `परीक्षा की कुल अवधि ${testData.duration_minutes} मिनट है।`}
+                  </li>
+                  <li>
+                    {lang === "en" 
+                      ? "The clock will be set at the server. The countdown timer in the top right corner of screen will display the remaining time available for you to complete the examination. When the timer reaches zero, the examination will end by itself. You will not be required to end or submit your examination."
+                      : "घड़ी सर्वर पर सेट की जाएगी। स्क्रीन के ऊपरी दाएं कोने में उलटी गिनती टाइमर आपको परीक्षा पूरी करने के लिए शेष समय प्रदर्शित करेगा। टाइमर शून्य पर पहुंचने पर, परीक्षा स्वतः समाप्त हो जाएगी। आपको अपनी परीक्षा समाप्त या सबमिट करने की आवश्यकता नहीं होगी।"}
+                  </li>
+                  <li>
+                    {lang === "en" ? "The Question Palette displayed on the right side of screen will show the status of each question using one of the following symbols:" : "स्क्रीन के दाईं ओर प्रदर्शित प्रश्न पैलेट निम्नलिखित प्रतीकों में से किसी एक का उपयोग करके प्रत्येक प्रश्न की स्थिति दिखाएगा:"}
+                    
+                    <ul className="mt-3 space-y-2 list-none pl-0">
+                      <li className="flex items-center gap-3">
+                        <div className="w-8 h-8 flex items-center justify-center border border-gray-300 bg-white shadow-sm clip-polygon-gray">1</div>
+                        <span>{lang === "en" ? "You have not visited the question yet." : "आपने अभी तक प्रश्न नहीं देखा है।"}</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="w-8 h-8 flex items-center justify-center bg-[#ea4335] text-white shadow-sm clip-polygon-red">3</div>
+                        <span>{lang === "en" ? "You have not answered the question." : "आपने प्रश्न का उत्तर नहीं दिया है।"}</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="w-8 h-8 flex items-center justify-center bg-[#34a853] text-white shadow-sm clip-polygon-green">5</div>
+                        <span>{lang === "en" ? "You have answered the question." : "आपने प्रश्न का उत्तर दिया है।"}</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="w-8 h-8 flex items-center justify-center bg-[#9c27b0] text-white shadow-sm clip-circle-purple">7</div>
+                        <span>{lang === "en" ? "You have NOT answered the question, but have marked the question for review." : "आपने प्रश्न का उत्तर नहीं दिया है, लेकिन समीक्षा के लिए प्रश्न को चिह्नित किया है।"}</span>
+                      </li>
+                      <li className="flex items-center gap-3">
+                        <div className="relative w-8 h-8 flex items-center justify-center bg-[#9c27b0] text-white shadow-sm clip-circle-purple">
+                           <span>9</span>
+                           <div className="absolute bottom-1 right-1 w-2 h-2 bg-[#34a853] rounded-full"></div>
+                        </div>
+                        <span>{lang === "en" ? "The question(s) 'Answered and Marked for Review' will be considered for evaluation." : "'उत्तर दिया और समीक्षा के लिए चिह्नित' प्रश्न(ओं) पर मूल्यांकन के लिए विचार किया जाएगा।"}</span>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    {lang === "en" ? "You can click on the '>' arrow which appears to the left of question palette to collapse the question palette thereby maximizing the question window. To view the question palette again, you can click on '<' which appears on the right side of question window." : "आप प्रश्न पैलेट को ढहने और प्रश्न विंडो को अधिकतम करने के लिए प्रश्न पैलेट के बाईं ओर दिखाई देने वाले '>' तीर पर क्लिक कर सकते हैं। प्रश्न पैलेट को फिर से देखने के लिए, आप प्रश्न विंडो के दाईं ओर दिखाई देने वाले '<' पर क्लिक कर सकते हैं।"}
+                  </li>
+                  <li>
+                    {lang === "en" ? "You can click on your 'Profile' image on top right corner of your screen to change the language during the exam for entire question paper. On clicking of Profile image you will get a drop-down to change the question content to the desired language." : "पूरी प्रश्न पत्र के लिए परीक्षा के दौरान भाषा बदलने के लिए आप अपनी स्क्रीन के ऊपरी दाएं कोने में अपने 'प्रोफाइल' चित्र पर क्लिक कर सकते हैं। प्रोफाइल चित्र पर क्लिक करने पर आपको प्रश्न सामग्री को वांछित भाषा में बदलने के लिए एक ड्रॉप-डाउन मिलेगा।"}
+                  </li>
+                </ol>
+
+                <h3 className="font-bold underline mb-2">
+                  {lang === "en" ? "Navigating to a Question:" : "प्रश्न पर नेविगेट करना:"}
+                </h3>
+                <ol className="list-decimal pl-5 space-y-2 mb-6" start={6}>
+                  <li>
+                    {lang === "en" ? "To answer a question, do the following:" : "प्रश्न का उत्तर देने के लिए, निम्नलिखित करें:"}
+                    <ul className="list-[lower-alpha] pl-5 space-y-1 mt-1">
+                      <li>{lang === "en" ? "Click on the question number in the Question Palette at the right of your screen to go to that numbered question directly. Note that using this option does NOT save your answer to the current question." : "अपनी स्क्रीन के दाईं ओर प्रश्न पैलेट में प्रश्न संख्या पर क्लिक करके सीधे उस क्रमांकित प्रश्न पर जाएं। ध्यान दें कि इस विकल्प का उपयोग करने से आपके वर्तमान प्रश्न का उत्तर सहेजा नहीं जाता है।"}</li>
+                      <li>{lang === "en" ? "Click on Save & Next to save your answer for the current question and then go to the next question." : "वर्तमान प्रश्न के लिए अपना उत्तर सहेजने और फिर अगले प्रश्न पर जाने के लिए सहेजें और अगला पर क्लिक करें।"}</li>
+                      <li>{lang === "en" ? "Click on Mark for Review & Next to save your answer for the current question, mark it for review, and then go to the next question." : "वर्तमान प्रश्न के लिए अपना उत्तर सहेजने के लिए समीक्षा और अगला के लिए चिह्नित करें पर क्लिक करें, इसे समीक्षा के लिए चिह्नित करें, और फिर अगले प्रश्न पर जाएं।"}</li>
+                    </ul>
+                  </li>
+                </ol>
+
+                <h3 className="font-bold underline mb-2">
+                  {lang === "en" ? "Answering a Question:" : "प्रश्न का उत्तर देना:"}
+                </h3>
+                <ol className="list-decimal pl-5 space-y-2 mb-6" start={7}>
+                  <li>
+                    {lang === "en" ? "Procedure for answering a multiple choice type question:" : "बहुविकल्पीय प्रकार के प्रश्न का उत्तर देने की प्रक्रिया:"}
+                    <ul className="list-[lower-alpha] pl-5 space-y-1 mt-1">
+                      <li>{lang === "en" ? "To select your answer, click on the button of one of the options" : "अपना उत्तर चुनने के लिए, विकल्पों में से किसी एक के बटन पर क्लिक करें"}</li>
+                      <li>{lang === "en" ? "To deselect your chosen answer, click on the button of the chosen option again or click on the Clear Response button" : "अपने चुने हुए उत्तर को अचयनित करने के लिए, चुने हुए विकल्प के बटन पर फिर से क्लिक करें या स्पष्ट प्रतिक्रिया बटन पर क्लिक करें"}</li>
+                      <li>{lang === "en" ? "To change your chosen answer, click on the button of another option" : "अपने चुने हुए उत्तर को बदलने के लिए, किसी अन्य विकल्प के बटन पर क्लिक करें"}</li>
+                      <li>{lang === "en" ? "To save your answer, you MUST click on the Save & Next button" : "अपना उत्तर सहेजने के लिए, आपको सहेजें और अगला बटन पर क्लिक करना होगा"}</li>
+                      <li>{lang === "en" ? "To mark the question for review, click on the Mark for Review & Next button." : "समीक्षा के लिए प्रश्न को चिह्नित करने के लिए, समीक्षा और अगला के लिए चिह्नित करें बटन पर क्लिक करें।"}</li>
+                    </ul>
+                  </li>
+                </ol>
+
+                <h3 className="font-bold underline mb-2">
+                  {lang === "en" ? "Exam Specific Instructions:" : "परीक्षा विशिष्ट निर्देश:"}
+                </h3>
+                
+                <div className="mb-6">
+                  <table className="w-full border-collapse border border-gray-400 text-sm">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border border-gray-400 p-2 text-left">{lang === "en" ? "Section Name" : "अनुभाग का नाम"}</th>
+                        <th className="border border-gray-400 p-2 text-center">{lang === "en" ? "No. of Questions" : "प्रश्नों की संख्या"}</th>
+                        <th className="border border-gray-400 p-2 text-center">{lang === "en" ? "Positive Marks" : "सकारात्मक अंक"}</th>
+                        <th className="border border-gray-400 p-2 text-center">{lang === "en" ? "Negative Marks" : "नकारात्मक अंक"}</th>
+                        <th className="border border-gray-400 p-2 text-center">{lang === "en" ? "Duration" : "अवधि"}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(testConfig?.sections_config && testConfig.sections_config.length > 0) ? testConfig.sections_config.map((sec: any, idx: number) => {
+                         const sectionQuestions = testData.questions.filter((q: any) => (q.section || "Default") === sec.name).length;
+                         return (
+                           <tr key={idx} className="hover:bg-gray-50">
+                              <td className="border border-gray-400 p-2 font-semibold">{sec.name}</td>
+                              <td className="border border-gray-400 p-2 text-center">{sectionQuestions}</td>
+                              <td className="border border-gray-400 p-2 text-center text-green-700">+{sec.positive_marks}</td>
+                              <td className="border border-gray-400 p-2 text-center text-red-600">{testConfig.negative_marking_enabled ? `-${sec.negative_marks}` : "0"}</td>
+                              <td className="border border-gray-400 p-2 text-center">
+                                {testConfig.allow_section_switching ? (lang === "en" ? "Shared" : "साझा") : `${sec.duration_minutes || testData.duration_minutes} min`}
+                              </td>
+                           </tr>
+                         );
+                      }) : (
+                        <tr>
+                           <td colSpan={5} className="border border-gray-400 p-4 text-center text-gray-500 italic">
+                             {lang === "en" ? "No sections defined for this test." : "इस परीक्षा के लिए कोई अनुभाग परिभाषित नहीं है।"}
+                           </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                  <div className="mt-2 text-[12px] font-bold">
+                    {testConfig?.allow_section_switching === false 
+                      ? (lang === "en" ? "* Section switching is RESTRICTED. You must complete one section before moving to the next. The system will auto-switch when the section time is up." : "* अनुभाग स्विचिंग प्रतिबंधित है। आपको अगले पर जाने से पहले एक अनुभाग पूरा करना होगा। अनुभाग का समय समाप्त होने पर सिस्टम स्वतः स्विच करेगा।")
+                      : (lang === "en" ? "* Section switching is ALLOWED. You can freely switch between sections during the shared time." : "* अनुभाग स्विचिंग की अनुमति है। आप साझा समय के दौरान अनुभागों के बीच स्वतंत्र रूप से स्विच कर सकते हैं।")
+                    }
+                  </div>
+
+                  
+                  {/* Total Marks & Duration Summary (Always visible in BOLD) */}
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-gray-800">
+                    <div className="flex flex-wrap gap-6 font-bold">
+                       <div>
+                         {lang === "en" ? "TOTAL DURATION:" : "कुल अवधि:"} <span className="text-blue-700">{(testConfig?.sections_config && testConfig.sections_config.length > 0 && testConfig.allow_section_switching === false) ? testConfig.sections_config.reduce((acc: number, sec: any) => acc + (sec.duration_minutes || 0), 0) : testData.duration_minutes} {lang === "en" ? "Minutes" : "मिनट"}</span>
+                       </div>
+                       <div>
+                         {lang === "en" ? "TOTAL MARKS:" : "कुल अंक:"} <span className="text-blue-700">{testData.questions.reduce((sum: number, q: any) => sum + (q.positive_marks || 0), 0)}</span>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional instructions spacer */}
+                <div className="h-10"></div>
+              </div>
+            </div>
+
+            {/* Bottom Declaration Bar */}
+            <div className="border-t border-gray-300 bg-gray-50 p-4">
+              <div className="max-w-4xl mx-auto flex flex-col gap-3">
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input 
+                    type="checkbox" 
+                    checked={agreed} 
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-1 flex-shrink-0 cursor-pointer"
+                  />
+                  <span className="text-[12px] text-gray-800 font-medium">
+                    {lang === "en" 
+                      ? "I have read and understood the instructions. All computer hardware allotted to me are in proper working condition. I declare that I am not in possession of / not wearing / not carrying any prohibited gadget like mobile phone, bluetooth devices etc. /any prohibited material with me into the Examination Hall.I agree that in case of not adhering to the instructions, I shall be liable to be debarred from this Test and/or to disciplinary action, which may include ban from future Tests / Examinations"
+                      : "मैंने निर्देशों को पढ़ और समझ लिया है। मुझे आवंटित सभी कंप्यूटर हार्डवेयर उचित कार्यशील स्थिति में हैं। मैं घोषणा करता हूं कि मेरे पास मोबाइल फोन, ब्लूटूथ डिवाइस आदि जैसी कोई निषिद्ध गैजेट / मेरे साथ परीक्षा हॉल में कोई निषिद्ध सामग्री नहीं है। मैं सहमत हूं कि निर्देशों का पालन न करने की स्थिति में, मुझे इस परीक्षा और/या अनुशासनात्मक कार्रवाई से वंचित किया जा सकता है, जिसमें भविष्य के परीक्षणों / परीक्षाओं से प्रतिबंध शामिल हो सकता है।"}
+                  </span>
+                </label>
+                
+                <div className="flex justify-center border-t border-gray-300 pt-3 mt-2">
+                  <button 
+                    onClick={() => startTest(false)}
+                    disabled={!agreed}
+                    className="bg-[#5cb85c] hover:bg-[#449d44] disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-8 py-2 text-sm font-bold shadow-sm rounded-sm"
+                  >
+                    {lang === "en" ? "I am ready to begin" : "मैं शुरू करने के लिए तैयार हूँ"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+          
+          {/* Right sidebar with Profile image like NTA (Optional/Visual only) */}
+          <div className="hidden md:flex w-[240px] border-l border-gray-200 bg-gray-50 flex-col items-center pt-8 px-4">
+             <div className="w-24 h-24 bg-gray-200 border-2 border-gray-400 mb-2 overflow-hidden flex items-center justify-center">
+               {studentPhoto ? (
+                 <img src={studentPhoto} alt={studentName} className="w-full h-full object-cover" />
+               ) : (
+                 <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500 text-xs text-center p-1">
+                   Candidate<br/>Image
+                 </div>
+               )}
+             </div>
+             <div className="font-bold text-sm text-center text-[#337ab7]">
+               {studentName || "Candidate Name"}
+             </div>
+          </div>
         </div>
+        
+        {/* Polygon styles injected directly */}
+        <style dangerouslySetInnerHTML={{__html: `
+          .clip-polygon-gray { clip-path: polygon(10% 0, 90% 0, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0 90%, 0 10%); }
+          .clip-polygon-red { clip-path: polygon(10% 0%, 90% 0%, 100% 10%, 100% 100%, 0 100%, 0 10%); border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
+          .clip-polygon-green { clip-path: polygon(0 0, 100% 0, 100% 90%, 90% 100%, 10% 100%, 0 90%); border-top-left-radius: 4px; border-top-right-radius: 4px;}
+          .clip-circle-purple { border-radius: 50%; }
+        `}} />
       </div>
     );
   }
+
 
   // --------- RESULT DASHBOARD SCREEN ---------
   if (stage === "result" && !isReviewMode) {
@@ -704,7 +963,7 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
         <div className="flex items-center gap-4">
           {!isReviewMode && (
             <div className="bg-slate-100 border border-slate-200 px-4 py-1.5 rounded-full font-mono font-bold text-slate-800 flex items-center gap-2">
-              <Clock size={16} className="text-blue-600" /> {formatTime(timeLeft)}
+              <Clock size={16} className="text-blue-600" /> {formatTime(totalTimeLeft)}
             </div>
           )}
           {isReviewMode && (
@@ -723,22 +982,37 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
             
             {/* Section Tabs */}
             {sections.length > 1 && (
-              <div className="flex gap-2 mb-6 border-b border-slate-200 overflow-x-auto no-scrollbar">
+              <div className="flex gap-2 mb-6 border-b border-slate-200 overflow-x-auto no-scrollbar relative items-center pb-2">
                 {sections.map(sec => {
                   const isActive = sec === activeSection;
                   return (
                     <button 
                       key={sec}
                       onClick={() => {
+                        if (testConfig?.allow_section_switching === false && !isActive) {
+                          setSwitchWarning("Section switching not allowed!");
+                          setTimeout(() => setSwitchWarning(""), 3000);
+                          return;
+                        }
                         const firstQIdx = questions.findIndex(q => (q.section || "Default") === sec);
                         if (firstQIdx !== -1) setCurrentQ(firstQIdx);
                       }}
-                      className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${isActive ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                      className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${isActive ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
                     >
                       {sec}
+                      {isActive && testConfig?.allow_section_switching === false && (
+                         <span className="font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs animate-pulse">
+                           {formatTime(timeLeft)}
+                         </span>
+                      )}
                     </button>
                   );
                 })}
+                {switchWarning && (
+                  <span className="ml-4 text-red-600 text-xs font-bold animate-pulse bg-red-50 px-2 py-1 rounded border border-red-200">
+                    ⚠️ {switchWarning}
+                  </span>
+                )}
               </div>
             )}
 
@@ -775,45 +1049,49 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
             )}
 
             <div className="space-y-4 max-w-4xl">
-              {currentQuestionData?.options.map((opt, i) => {
-                const isSelected = answers[currentQ] === i;
-                const isCorrect = currentQuestionData.correct_option_index === i;
-                
-                let btnClass = "bg-white border-slate-300 text-slate-700 hover:bg-slate-50";
-                let showTick = false;
-                let showCross = false;
-                
-                if (isReviewMode) {
-                  if (isCorrect) {
-                    if (isSelected) {
-                      btnClass = "bg-green-50 border-green-500 text-green-800 font-semibold";
-                      showTick = true;
+              {(() => {
+                const order = (currentQuestionData as any)?.display_options_order || currentQuestionData?.options.map((_: any, i: number) => i) || [];
+                return order.map((originalIdx: number, displayIdx: number) => {
+                  const opt = currentQuestionData.options[originalIdx];
+                  const isSelected = answers[currentQ] === originalIdx;
+                  const isCorrect = currentQuestionData.correct_option_index === originalIdx;
+                  
+                  let btnClass = "bg-white border-slate-300 text-slate-700 hover:bg-slate-50";
+                  let showTick = false;
+                  let showCross = false;
+                  
+                  if (isReviewMode) {
+                    if (isCorrect) {
+                      if (isSelected) {
+                        btnClass = "bg-green-50 border-green-500 text-green-800 font-semibold";
+                        showTick = true;
+                      } else {
+                        btnClass = "bg-white border-green-500 text-green-800 font-semibold";
+                      }
+                    } else if (isSelected) {
+                      btnClass = "bg-red-50 border-red-500 text-red-800 font-semibold";
+                      showCross = true;
                     } else {
-                      btnClass = "bg-white border-green-500 text-green-800 font-semibold";
+                      btnClass = "bg-white border-slate-200 text-slate-400 cursor-default opacity-60";
                     }
-                  } else if (isSelected) {
-                    btnClass = "bg-red-50 border-red-500 text-red-800 font-semibold";
-                    showCross = true;
                   } else {
-                    btnClass = "bg-white border-slate-200 text-slate-400 cursor-default opacity-60";
+                    if (isSelected) btnClass = "bg-blue-50 border-blue-600 text-blue-800 font-semibold ring-1 ring-blue-600";
                   }
-                } else {
-                  if (isSelected) btnClass = "bg-blue-50 border-blue-600 text-blue-800 font-semibold ring-1 ring-blue-600";
-                }
 
-                return (
-                  <div 
-                    key={i} 
-                    onClick={() => toggleOption(i)}
-                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center ${btnClass} ${isReviewMode ? "cursor-default" : ""}`}
-                  >
-                    <span className="font-bold text-slate-400 mr-4 text-sm w-6">{(i + 10).toString(36).toUpperCase()}</span>
-                    <span className="flex-1">{opt}</span>
-                    {showTick && <Check className="text-green-600 ml-2" size={20} />}
-                    {showCross && <X className="text-red-600 ml-2" size={20} />}
-                  </div>
-                );
-              })}
+                  return (
+                    <div 
+                      key={originalIdx} 
+                      onClick={() => toggleOption(originalIdx)}
+                      className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center ${btnClass} ${isReviewMode ? "cursor-default" : ""}`}
+                    >
+                      <span className="font-bold text-slate-400 mr-4 text-sm w-6">{(displayIdx + 10).toString(36).toUpperCase()}</span>
+                      <span className="flex-1">{opt}</span>
+                      {showTick && <Check className="text-green-600 ml-2" size={20} />}
+                      {showCross && <X className="text-red-600 ml-2" size={20} />}
+                    </div>
+                  );
+                });
+              })()}
             </div>
             
           </div>
@@ -830,7 +1108,18 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
             ) : <div/>}
 
             <div className="flex gap-3">
-              <button onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-lg font-bold disabled:opacity-50 flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  if (testConfig?.allow_section_switching === false && currentQ === firstIdxOfActiveSection) {
+                    setSwitchWarning("Cannot move to previous section.");
+                    setTimeout(() => setSwitchWarning(""), 3000);
+                    return;
+                  }
+                  setCurrentQ(q => Math.max(0, q - 1));
+                }} 
+                disabled={currentQ === 0 || (testConfig?.allow_section_switching === false && currentQ === firstIdxOfActiveSection)} 
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-lg font-bold disabled:opacity-50 flex items-center gap-2"
+              >
                 <ArrowLeft size={16} /> Prev
               </button>
               {currentQ === questions.length - 1 ? (
@@ -838,7 +1127,20 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
                   Submit <Check size={16} />
                 </button>
               ) : (
-                <button onClick={() => setCurrentQ(q => Math.min(questions.length - 1, q + 1))} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm">
+                <button 
+                  onClick={() => {
+                    const sectionQuestionsCount = questions.filter(q => (q.section || "Default") === activeSection).length;
+                    const lastIdxOfActiveSection = firstIdxOfActiveSection + sectionQuestionsCount - 1;
+                    if (testConfig?.allow_section_switching === false && currentQ === lastIdxOfActiveSection) {
+                      setSwitchWarning("Cannot move to next section manually.");
+                      setTimeout(() => setSwitchWarning(""), 3000);
+                      return;
+                    }
+                    setCurrentQ(q => Math.min(questions.length - 1, q + 1));
+                  }} 
+                  disabled={testConfig?.allow_section_switching === false && currentQ === firstIdxOfActiveSection + questions.filter(q => (q.section || "Default") === activeSection).length - 1}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:bg-slate-300"
+                >
                   Next <ArrowRight size={16} />
                 </button>
               )}
@@ -863,10 +1165,12 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
               <button onClick={() => setFilterType("skipped")} className={`px-3 py-1.5 rounded-full whitespace-nowrap ${filterType === "skipped" ? "bg-slate-500 text-white" : "bg-slate-100 text-slate-600"}`}>Skipped</button>
             </div>
           ) : (
-            <div className="p-4 grid grid-cols-2 gap-3 text-xs bg-white border-b border-slate-200 shrink-0">
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-md bg-green-500 border border-green-600"/> Answered ({answers.filter(a => a !== null).length})</div>
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-md border-2 border-slate-300 bg-white"/> Not Answered ({answers.filter(a => a === null).length})</div>
-              <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-md bg-amber-500 border border-amber-600"/> Mark for Review ({reviewStatus.filter(Boolean).length})</div>
+            <div className="p-4 grid grid-cols-2 gap-3 text-[10px] sm:text-xs bg-white border-b border-slate-200 shrink-0 font-medium text-slate-700">
+              <div className="flex items-center gap-2"><div className="w-5 h-5 flex-shrink-0 bg-[#34a853] clip-polygon-green shadow-sm"/> Answered ({answers.filter(a => a !== null && !reviewStatus[answers.indexOf(a)]).length})</div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 flex-shrink-0 bg-[#ea4335] clip-polygon-red shadow-sm"/> Not Answered ({answers.filter((a, i) => a === null && visitedStatus[i]).length})</div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 flex-shrink-0 bg-white border border-gray-300 clip-polygon-gray shadow-sm"/> Not Visited ({visitedStatus.filter(v => !v).length})</div>
+              <div className="flex items-center gap-2"><div className="w-5 h-5 flex-shrink-0 bg-[#7c4dff] rounded-full shadow-sm"/> Mark for Review ({reviewStatus.filter((r, i) => r && answers[i] === null).length})</div>
+              <div className="flex items-center gap-2 col-span-2"><div className="w-5 h-5 flex-shrink-0 bg-[#7c4dff] rounded-full relative shadow-sm"><span className="absolute bottom-0 right-0 w-2 h-2 bg-[#34a853] rounded-full border border-white"></span></div> Answered & Marked for Review ({reviewStatus.filter((r, i) => r && answers[i] !== null).length})</div>
             </div>
           )}
 
@@ -880,9 +1184,11 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
               const renderedButtons = secQuestions.map(({q, idx}) => {
                 const isAns = answers[idx] !== null;
                 const isRev = reviewStatus[idx];
+                const isVisited = visitedStatus[idx];
                 const isAct = currentQ === idx;
                 
                 let statusClass = "bg-white border-slate-300 text-slate-600 hover:bg-slate-100";
+                let innerElement = null;
                 let display = true;
 
                 if (isReviewMode) {
@@ -898,12 +1204,22 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
                     if (filterType !== "all" && filterType !== "wrong") display = false;
                   }
                 } else {
-                  if (isRev) statusClass = "bg-amber-500 border-amber-500 text-white";
-                  else if (isAns) statusClass = "bg-green-500 border-green-500 text-white";
+                  if (isAns && isRev) {
+                    statusClass = "bg-[#7c4dff] text-white rounded-full relative border-none";
+                    innerElement = <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-[#34a853] rounded-full border border-white"></span>;
+                  } else if (isRev) {
+                    statusClass = "bg-[#7c4dff] text-white rounded-full border-none";
+                  } else if (isAns) {
+                    statusClass = "bg-[#34a853] text-white clip-polygon-green border-none";
+                  } else if (isVisited || isAct) {
+                    statusClass = "bg-[#ea4335] text-white clip-polygon-red border-none";
+                  } else {
+                    statusClass = "bg-white border border-gray-300 text-slate-700 clip-polygon-gray shadow-sm";
+                  }
                 }
 
                 if (isAct) {
-                  statusClass += " ring-2 ring-offset-1 ring-blue-500 font-bold scale-105";
+                  statusClass += " ring-2 ring-offset-1 ring-blue-500 font-bold scale-105 z-10 shadow-md";
                 }
 
                 if (!display) return null;
@@ -913,9 +1229,10 @@ export default function TestPlayer({ testData, studentId, initialMode = false, l
                   <button
                     key={idx}
                     onClick={() => setCurrentQ(idx)}
-                    className={`w-10 h-10 rounded-lg border text-sm transition-all flex items-center justify-center ${statusClass}`}
+                    className={`w-10 h-10 transition-all flex items-center justify-center font-bold text-sm ${statusClass}`}
                   >
                     {idx - firstIdx + 1}
+                    {innerElement}
                   </button>
                 );
               });

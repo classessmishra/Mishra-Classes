@@ -12,6 +12,8 @@ function TakeTestContent() {
   const courseId = searchParams.get('courseId');
   const [testData, setTestData] = useState<any>(null);
   const [studentId, setStudentId] = useState<string>("");
+  const [studentName, setStudentName] = useState<string>("");
+  const [studentPhoto, setStudentPhoto] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -22,6 +24,12 @@ function TakeTestContent() {
         const userId = match ? match[2] : null;
         if (!userId) throw new Error("Unauthorized");
         setStudentId(userId);
+
+        const { data: userData } = await supabase.from('users').select('full_name, profile_photo_url').eq('id', userId).single();
+        if (userData) {
+            setStudentName(userData.full_name || "");
+            setStudentPhoto(userData.profile_photo_url || "");
+        }
         
         // 1. Check if user has already submitted (only for non-course attempts to maintain legacy behavior. Course tests allow multiple attempts as managed by course study room UI)
         if (!courseId) {
@@ -125,7 +133,7 @@ function TakeTestContent() {
 
   return (
     <>
-      <TestPlayer testData={testData} studentId={studentId} courseId={courseId || undefined} />
+      <TestPlayer testData={testData} studentId={studentId} studentName={studentName} studentPhoto={studentPhoto} courseId={courseId || undefined} />
     </>
   );
 }
