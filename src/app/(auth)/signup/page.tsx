@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Lock, Mail, Phone, User, ArrowRight, Sparkles, UserRound, Zap } from "lucide-react";
+import { Lock, Mail, Phone, User, ArrowRight, Sparkles, UserRound, Zap, CheckCircle } from "lucide-react";
 import { registerUser } from "@/actions/auth";
 
 export default function SignupPage() {
@@ -19,6 +19,7 @@ export default function SignupPage() {
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -49,9 +50,9 @@ export default function SignupPage() {
         return;
       }
 
-      // Successfully registered, auto-login or redirect to login
-      alert("Registration successful! You can now log in.");
-      router.push("/login");
+      // Successfully registered, show success screen
+      setIsSuccess(true);
+      setLoading(false);
     } catch (err: any) {
       console.error("Signup error", err);
       setErrorMsg("An unexpected error occurred.");
@@ -126,10 +127,30 @@ export default function SignupPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-md w-full mx-auto"
           >
-            <div className="mb-5">
-              <h2 className="text-2xl font-bold text-slate-900 mb-1">Create an account</h2>
-              <p className="text-slate-500 text-sm">Please fill in your details to register</p>
-            </div>
+            {isSuccess ? (
+              <div className="text-center py-6 sm:py-10">
+                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500 shadow-sm border border-green-100">
+                  <CheckCircle size={40} />
+                </div>
+                <h2 className="text-3xl font-extrabold text-slate-900 mb-3">Register Success!</h2>
+                <p className="text-slate-600 mb-6 text-lg font-medium">
+                  Before login, please verify your email.
+                </p>
+                <div className="bg-amber-50 border border-amber-200/60 rounded-xl p-5 mb-8 shadow-sm">
+                  <p className="text-amber-800 text-sm leading-relaxed">
+                    <span className="font-bold underline text-amber-900">Note:</span> If you don't see the email in your inbox, please <span className="font-black text-amber-900 bg-amber-200/40 px-1 rounded">check your Spam folder</span>.
+                  </p>
+                </div>
+                <Link href="/login" className="inline-flex items-center justify-center gap-2 w-full bg-primary text-white font-semibold py-3.5 rounded-xl transition-all hover:bg-blue-700 hover:shadow-lg hover:shadow-primary/20 active:scale-[0.98]">
+                  Go to Login <ArrowRight size={18} />
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="mb-5">
+                  <h2 className="text-2xl font-bold text-slate-900 mb-1">Create an account</h2>
+                  <p className="text-slate-500 text-sm">Please fill in your details to register</p>
+                </div>
 
             {errorMsg && (
               <div className="mb-4 p-2.5 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium">
@@ -276,6 +297,8 @@ export default function SignupPage() {
                 </Link>
               </p>
             </div>
+            </>
+            )}
           </motion.div>
         </div>
       </div>
