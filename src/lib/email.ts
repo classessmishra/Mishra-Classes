@@ -15,7 +15,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     return { success: true, simulated: true };
   }
 
-  const confirmLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
+  const confirmLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mishra-classes.vercel.app'}/verify-email?token=${token}`;
 
   try {
     const info = await transporter.sendMail({
@@ -45,7 +45,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     return { success: true, simulated: true };
   }
 
-  const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+  const resetLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mishra-classes.vercel.app'}/reset-password?token=${token}`;
 
   try {
     const info = await transporter.sendMail({
@@ -76,7 +76,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
     return { success: true, simulated: true };
   }
 
-  const loginLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/login`;
+  const loginLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mishra-classes.vercel.app'}/login`;
 
   try {
     const info = await transporter.sendMail({
@@ -107,7 +107,7 @@ export async function sendPurchaseEmail(email: string, name: string, courseName:
     return { success: true, simulated: true };
   }
 
-  const invoiceLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/student/invoice/${orderId}`;
+  const invoiceLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://mishra-classes.vercel.app'}/student/invoice/${orderId}`;
 
   try {
     const info = await transporter.sendMail({
