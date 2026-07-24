@@ -140,7 +140,7 @@ export default function Navbar() {
     router.push("/login");
   };
 
-  const isAuthOrPublicPage = ['/about', '/terms', '/forgot-password', '/reset-password', '/login', '/signup', '/verify-email'].includes(pathname || '');
+  const isAuthOrPublicPage = ['/about', '/terms', '/contact-us', '/cancellation-and-refunds', '/forgot-password', '/reset-password', '/login', '/signup', '/verify-email'].includes(pathname || '');
 
   if (pathname?.startsWith("/test/") || pathname?.startsWith("/admin") || pathname?.startsWith("/chats/admin") || pathname?.startsWith("/student/live-class")) return null;
 
