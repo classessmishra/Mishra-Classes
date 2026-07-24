@@ -79,14 +79,47 @@ export default function AttendancePage() {
     }
   };
 
+  const handleExportCSV = () => {
+    if (students.length === 0) return alert("No students found in this batch");
+    const batchName = batches.find(b => b.id === selectedBatch)?.name || "Batch";
+    const headers = ["ID", "Full Name", "Phone", "Date", "Batch", "Status"];
+    const csvRows = students.map(student => {
+      const id = student.id;
+      const name = `"${student.full_name || ''}"`;
+      const phone = `"${student.phone || ''}"`;
+      const dateStr = selectedDate;
+      const status = attendanceState[student.id] || "Not Marked";
+      return [id, name, phone, dateStr, `"${batchName}"`, status].join(",");
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...csvRows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `mishra_classes_attendance_${selectedDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">Smart Attendance</h1>
-        <p className="text-muted-foreground">Select a batch and date to mark attendance.</p>
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground mb-1">Smart Attendance</h1>
+          <p className="text-muted-foreground text-sm">Select a batch and date to mark attendance.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExportCSV} className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            Export CSV
+          </button>
+          <button onClick={() => window.print()} className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            Print PDF
+          </button>
+        </div>
       </div>
 
-      <div className="bg-card p-6 rounded-2xl border border-border flex flex-col md:flex-row gap-6">
+      <div className="bg-card p-6 rounded-2xl border border-border flex flex-col md:flex-row gap-6 print:hidden">
         <div className="flex-1 space-y-2">
           <label className="text-sm font-medium">Select Batch</label>
           <select
@@ -114,7 +147,7 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden print:border-none">
         <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
           <h2 className="font-bold text-lg">Student List</h2>
           <span className="text-sm font-medium text-primary">
@@ -122,7 +155,7 @@ export default function AttendancePage() {
           </span>
         </div>
 
-        <div className="p-4 border-b border-border bg-white">
+        <div className="p-4 border-b border-border bg-white print:hidden">
           <div className="relative" onFocus={() => setShowSuggestions(true)} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <input
@@ -168,7 +201,7 @@ export default function AttendancePage() {
                 </div>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 print:hidden">
                 <button
                   onClick={() => handleMark(student.id, 'present')}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${

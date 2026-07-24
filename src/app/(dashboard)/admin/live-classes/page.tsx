@@ -240,19 +240,7 @@ export default function AdminLiveClassesPage() {
                 <p className="text-xs text-slate-500 mt-1 font-medium">11-character ID from YouTube URL (v=ID)</p>
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <input 
-                  type="checkbox" 
-                  id="isActive" 
-                  checked={isActive} 
-                  onChange={e => setIsActive(e.target.checked)}
-                  className="w-5 h-5 rounded text-red-600 focus:ring-red-500 border-slate-300"
-                />
-                <div>
-                  <label htmlFor="isActive" className="text-sm font-bold text-slate-800 cursor-pointer">Set Live Now</label>
-                  <p className="text-xs text-slate-500">Students will see the "Join Now" button</p>
-                </div>
-              </div>
+              {/* The 'Set Live Now' checkbox has been removed to ensure classes only go live from the studio */}
 
               <button 
                 disabled={loading}

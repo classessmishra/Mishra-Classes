@@ -298,8 +298,8 @@ export default function StudentLiveRoom() {
     try {
       const data = await getLiveClassById(classId as string);
       setLiveClass(data);
-      if (data?.youtube_video_id) {
-        const canonical = await getCanonicalLiveClassId(data.youtube_video_id);
+      if (data?.meeting_link || data?.youtube_video_id) {
+        const canonical = await getCanonicalLiveClassId(data.meeting_link || data.youtube_video_id);
         setCanonicalClassId(canonical);
       } else {
         setCanonicalClassId(classId as string);

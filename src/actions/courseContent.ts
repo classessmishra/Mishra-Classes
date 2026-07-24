@@ -135,7 +135,7 @@ export async function getRecordedClasses(courseId: string) {
     is_live_vod: true
   }));
 
-  return [...formattedOld, ...formattedNew].sort((a, b) => new Date(a.class_date).getTime() - new Date(b.class_date).getTime());
+  return [...formattedOld, ...formattedNew].sort((a, b) => new Date(b.class_date).getTime() - new Date(a.class_date).getTime());
 }
 
 export async function createRecordedClass(data: any) {

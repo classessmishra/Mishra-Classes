@@ -133,8 +133,8 @@ export default function AdminLiveStudio() {
     try {
       const data = await getLiveClassById(classId as string);
       setLiveClass(data);
-      if (data?.youtube_video_id) {
-        const canonical = await getCanonicalLiveClassId(data.youtube_video_id);
+      if (data?.meeting_link || data?.youtube_video_id) {
+        const canonical = await getCanonicalLiveClassId(data.meeting_link || data.youtube_video_id);
         setCanonicalClassId(canonical);
       } else {
         setCanonicalClassId(classId as string);
@@ -422,96 +422,104 @@ export default function AdminLiveStudio() {
           ref={videoContainerRef}
           className="flex-1 rounded-[1.5rem] overflow-hidden bg-black border border-slate-200 shadow-xl relative flex items-center justify-center"
         >
-          {liveClass.is_active ? (
-            <>
-              <div className="w-full h-full relative">
-                <LivePlayer key={syncKey} videoId={liveClass.meeting_link || liveClass.youtube_video_id} isMuted={localMute} />
-              </div>
-              
-              <AnimatePresence>
-                {remoteVideoHidden && (
-                  <motion.div 
-                    initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                    animate={{ opacity: 1, backdropFilter: 'blur(24px)' }}
-                    exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
-                    className="absolute inset-0 z-[10] bg-white/80 flex flex-col items-center justify-center"
-                  >
-                    <motion.div 
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                      className="w-32 h-32 bg-indigo-100 rounded-full flex items-center justify-center mb-8 relative shadow-lg shadow-indigo-200"
-                    >
-                      <div className="absolute inset-0 border-[3px] border-indigo-300 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
-                      <Play size={48} className="text-indigo-600 ml-2" />
-                    </motion.div>
-                    <h2 className="text-4xl font-black tracking-widest uppercase text-indigo-900 text-center px-4">Video Paused</h2>
-                    <p className="text-slate-600 mt-4 font-bold tracking-widest uppercase text-sm">You have paused the video stream</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          {/* Always show the video player so Admin can preview before going live */}
+          <div className="w-full h-full relative">
+            <LivePlayer key={syncKey} videoId={liveClass.meeting_link || liveClass.youtube_video_id} isMuted={localMute} />
+          </div>
+          
+          <AnimatePresence>
+            {!liveClass.is_active && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-[15] bg-black/40 flex flex-col items-center justify-center pointer-events-none"
+              >
+                <div className="bg-slate-900/80 backdrop-blur-md text-white px-6 py-4 rounded-2xl flex flex-col items-center gap-3 border border-white/10 shadow-2xl">
+                  <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                    <Activity size={24} className="text-red-500" />
+                  </div>
+                  <h2 className="text-xl font-black tracking-widest uppercase">OFF AIR</h2>
+                  <p className="text-slate-300 text-sm font-medium">Click GO LIVE to broadcast to students</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              {/* Local Controls Overlay */}
-              <div className="absolute top-4 left-4 z-30 flex items-center gap-3">
-                <button 
-                    onClick={() => setLocalMute(!localMute)}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all shadow-md ${localMute ? 'bg-indigo-600 text-white shadow-indigo-600/30' : 'bg-white/80 backdrop-blur-md text-slate-800 hover:bg-white'}`}
+          <AnimatePresence>
+            {remoteVideoHidden && (
+              <motion.div 
+                initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                animate={{ opacity: 1, backdropFilter: 'blur(24px)' }}
+                exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+                className="absolute inset-0 z-[10] bg-white/80 flex flex-col items-center justify-center"
+              >
+                <motion.div 
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                  className="w-32 h-32 bg-indigo-100 rounded-full flex items-center justify-center mb-8 relative shadow-lg shadow-indigo-200"
                 >
-                  {localMute ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                  {localMute ? "Muted Locally" : "Unmuted Locally"}
-                </button>
-              </div>
+                  <div className="absolute inset-0 border-[3px] border-indigo-300 rounded-full animate-ping" style={{ animationDuration: '3s' }}></div>
+                  <Play size={48} className="text-indigo-600 ml-2" />
+                </motion.div>
+                <h2 className="text-4xl font-black tracking-widest uppercase text-indigo-900 text-center px-4">Video Paused</h2>
+                <p className="text-slate-600 mt-4 font-bold tracking-widest uppercase text-sm">You have paused the video stream</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              {/* Live Poll Results Overlay */}
-              <AnimatePresence>
-                {isPollActive && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="absolute top-20 left-4 z-40 bg-white/95 backdrop-blur-md border border-slate-200 p-5 rounded-2xl shadow-xl w-64"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-black text-slate-900 text-sm tracking-widest uppercase flex items-center gap-2">
-                        <BarChart2 size={16} className="text-indigo-600" /> Live Poll
-                      </h3>
-                      <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold">{totalVotes} Votes</span>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {(['A', 'B', 'C', 'D'] as const).map(opt => {
-                        const count = pollResults[opt];
-                        const percentage = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
-                        return (
-                          <div key={opt} className="relative">
-                            <div className="flex justify-between text-[11px] font-bold mb-1 relative z-10 text-slate-700 px-1">
-                              <span>Option {opt}</span>
-                              <span>{percentage}%</span>
-                            </div>
-                            <div className="h-6 w-full bg-slate-100 rounded-md overflow-hidden relative">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percentage}%` }}
-                                transition={{ duration: 0.5, type: 'spring' }}
-                                className="absolute inset-y-0 left-0 bg-indigo-500"
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-white relative overflow-hidden">
-              <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100 shadow-sm z-10 relative">
-                <Activity size={32} className="text-slate-400" />
-              </div>
-              <h2 className="text-3xl font-black text-slate-900 mb-2 z-10 relative tracking-tight">OFF AIR</h2>
-              <p className="text-slate-500 z-10 relative font-medium">Click GO LIVE in the header to begin broadcasting.</p>
-            </div>
-          )}
+          {/* Local Controls Overlay */}
+          <div className="absolute top-4 left-4 z-30 flex items-center gap-3">
+            <button 
+                onClick={() => setLocalMute(!localMute)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all shadow-md ${localMute ? 'bg-indigo-600 text-white shadow-indigo-600/30' : 'bg-white/80 backdrop-blur-md text-slate-800 hover:bg-white'}`}
+            >
+              {localMute ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              {localMute ? "Muted Locally" : "Unmuted Locally"}
+            </button>
+          </div>
+
+          {/* Live Poll Results Overlay */}
+          <AnimatePresence>
+            {isPollActive && (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="absolute top-20 left-4 z-40 bg-white/95 backdrop-blur-md border border-slate-200 p-5 rounded-2xl shadow-xl w-64"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-black text-slate-900 text-sm tracking-widest uppercase flex items-center gap-2">
+                    <BarChart2 size={16} className="text-indigo-600" /> Live Poll
+                  </h3>
+                  <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold">{totalVotes} Votes</span>
+                </div>
+                
+                <div className="space-y-3">
+                  {(['A', 'B', 'C', 'D'] as const).map(opt => {
+                    const count = pollResults[opt];
+                    const percentage = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
+                    return (
+                      <div key={opt} className="relative">
+                        <div className="flex justify-between text-[11px] font-bold mb-1 relative z-10 text-slate-700 px-1">
+                          <span>Option {opt}</span>
+                          <span>{percentage}%</span>
+                        </div>
+                        <div className="h-6 w-full bg-slate-100 rounded-md overflow-hidden relative">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            transition={{ duration: 0.5, type: 'spring' }}
+                            className="absolute inset-y-0 left-0 bg-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Floating Hearts Container */}
           <div className="absolute inset-0 pointer-events-none z-[55] overflow-hidden">

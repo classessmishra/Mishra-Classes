@@ -145,10 +145,10 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans fixed inset-0 z-[100]">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans fixed inset-0 z-[100] print:h-auto print:overflow-visible print:relative print:inset-auto">
       
       {/* Premium Sidebar */}
-      <aside className="w-[280px] bg-[#0A0F1C] text-slate-300 flex flex-col shrink-0 h-full relative border-r border-white/10 shadow-[20px_0_40px_rgb(0,0,0,0.1)] z-50">
+      <aside className="w-[280px] bg-[#0A0F1C] text-slate-300 flex flex-col shrink-0 h-full relative border-r border-white/10 shadow-[20px_0_40px_rgb(0,0,0,0.1)] z-50 print:hidden">
         {/* Abstract Sidebar Glow */}
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-blue-600/10 to-transparent pointer-events-none" />
         
@@ -197,10 +197,10 @@ export default function AdminLayout({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full">
+      <div className="flex-1 flex flex-col min-w-0 h-full print:h-auto print:block">
         
         {/* Topbar */}
-        <header className="h-20 bg-white/70 backdrop-blur-2xl border-b border-slate-200/60 flex items-center justify-between px-8 shrink-0 z-20 shadow-[0_4px_30px_rgb(0,0,0,0.02)]">
+        <header className="h-20 bg-white/70 backdrop-blur-2xl border-b border-slate-200/60 flex items-center justify-between px-8 shrink-0 z-20 shadow-[0_4px_30px_rgb(0,0,0,0.02)] print:hidden">
           {/* Mobile Menu Button (Placeholder for future) */}
           <div className="flex items-center md:hidden">
             <span className="font-bold text-slate-800">Admin Panel</span>
@@ -221,8 +221,8 @@ export default function AdminLayout({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-slate-50 relative">
-          <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-blue-900/5 to-transparent pointer-events-none" />
+        <main className="flex-1 overflow-y-auto p-6 md:p-10 bg-slate-50 relative print:overflow-visible print:p-0 print:bg-white">
+          <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-blue-900/5 to-transparent pointer-events-none print:hidden" />
           <div className="max-w-[1600px] mx-auto h-full relative">
             {children}
           </div>

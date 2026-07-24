@@ -160,87 +160,88 @@ export default function StudentChatPage() {
       setMessages([]);
       fetchMessages(activeGroupId);
       
-      const channel = supabase
-        .channel(`room:${activeGroupId}`)
-        .on('postgres_changes', { 
-          event: 'INSERT',
-          schema: 'public', 
-          table: 'messages',
-          filter: `group_id=eq.${activeGroupId}` 
-        }, async payload => {
-          // Fetch just the new message to avoid full history reload
-          const { data: newMsg } = await supabase
-            .from('messages')
-            .select('*, users(*), reply_to:messages(id, content, sender_id, users(*))')
-            .eq('id', payload.new.id)
-            .single();
+      // ROBUST POLLING FALLBACK FOR REALTIME CHAT
+      const pollInterval = setInterval(async () => {
+        // Fetch latest messages for active chat
+        const { data: newMsgs } = await supabase
+          .from('messages')
+          .select('*, users(*), reply_to:messages(id, content, sender_id, users(*))')
+          .eq('group_id', activeGroupId)
+          .order('created_at', { ascending: false })
+          .limit(15);
+          
+        if (newMsgs && newMsgs.length > 0) {
+          setMessages(prev => {
+            const newMap = new Map(prev.map(m => [m.id, m]));
+            let hasNew = false;
             
-          if (newMsg) {
-            setMessages(prev => {
-              const exists = prev.some(m => m.id === newMsg.id || (m.content === newMsg.content && m.sender_id === newMsg.sender_id && m.id.toString().startsWith('temp-')));
-              if (exists) {
-                return prev.map(m => (m.id === newMsg.id || (m.content === newMsg.content && m.sender_id === newMsg.sender_id && m.id.toString().startsWith('temp-'))) ? newMsg : m);
+            // Step 1: Process and deduplicate all new messages
+            newMsgs.forEach(m => {
+              const tempMsg = prev.find(pm => pm.id.toString().startsWith('temp-') && pm.content === m.content && pm.sender_id === m.sender_id);
+              
+              if (tempMsg) {
+                newMap.delete(tempMsg.id);
+                newMap.set(m.id, m);
+                hasNew = true;
+              } else if (!newMap.has(m.id)) {
+                newMap.set(m.id, m);
+                hasNew = true;
               }
-              return [...prev, newMsg];
             });
-          }
-        })
-        .on('postgres_changes', {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'messages',
-          filter: `group_id=eq.${activeGroupId}`
-        }, payload => {
-          setMessages(prev => prev.filter(m => m.id !== payload.old.id));
-        })
-        .subscribe();
-        
-      const groupChannel = supabase
-        .channel(`group_updates_${activeGroupId}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'chat_groups',
-          filter: `id=eq.${activeGroupId}`
-        }, payload => {
-          setGroups(prevGroups => prevGroups.map(g => 
-            g.id === activeGroupId ? { ...g, ...payload.new } : g
-          ));
-        })
-        .on('broadcast', { event: 'lock_toggled' }, payload => {
-          setGroups(prevGroups => prevGroups.map(g => 
-            g.id === activeGroupId ? { ...g, is_read_only: payload.payload.is_read_only } : g
-          ));
-        })
-        .subscribe();
-        
-      // Global channel to listen for new messages to update last_message_content
-      const globalChannel = supabase
-        .channel(`global_messages_${userId}_chats_page`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        }, payload => {
-          if (payload.new.group_id !== activeGroupId && payload.new.sender_id !== userId) {
-            setGroups(prevGroups => {
-              const newGroups = [...prevGroups];
-              const gIdx = newGroups.findIndex(g => g.id === payload.new.group_id);
-              if (gIdx >= 0) {
-                newGroups[gIdx] = { 
-                  ...newGroups[gIdx],
-                  last_message_content: payload.new.content,
-                  last_message_time: payload.new.created_at
-                };
-                // Move to top
-                const [g] = newGroups.splice(gIdx, 1);
-                newGroups.unshift(g);
+
+            // Step 2: Ensure any msg.reply_to data is preserved as a fallback if the target ID is still missing
+            if (hasNew) {
+              const finalArr = Array.from(newMap.values());
+              finalArr.forEach(m => {
+                if (m.reply_to_id && !newMap.has(m.reply_to_id) && m.reply_to) {
+                  // If the replied message isn't in state, but we got the nested reply_to object, insert it as a dummy message
+                  // so messages.find() will succeed
+                  const nestedReply = Array.isArray(m.reply_to) ? m.reply_to[0] : m.reply_to;
+                  if (nestedReply && nestedReply.id) {
+                     newMap.set(nestedReply.id, {
+                        ...nestedReply,
+                        id: nestedReply.id,
+                        group_id: m.group_id,
+                        created_at: m.created_at // fallback
+                     });
+                  }
+                }
+              });
+              return Array.from(newMap.values()).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            }
+            return prev;
+          });
+        }
+      }, 2000);
+
+      const groupsPollInterval = setInterval(async () => {
+        // Lightweight check for latest messages in all member groups
+        const { data: latestMsgs } = await supabase
+          .from('messages')
+          .select('group_id, content, created_at')
+          .order('created_at', { ascending: false })
+          .limit(20);
+          
+        if (latestMsgs) {
+          setGroups(prevGroups => {
+            let updated = false;
+            const newGroups = prevGroups.map(g => {
+              const latestForGroup = latestMsgs.find(m => m.group_id === g.id);
+              if (latestForGroup && new Date(latestForGroup.created_at).getTime() > new Date(g.last_message_time || 0).getTime()) {
+                updated = true;
+                return { ...g, last_message_content: latestForGroup.content, last_message_time: latestForGroup.created_at };
               }
+              return g;
+            });
+            
+            if (updated) {
+              newGroups.sort((a, b) => new Date(b.last_message_time || b.created_at).getTime() - new Date(a.last_message_time || a.created_at).getTime());
               return newGroups;
-            });
-          }
-        })
-        .subscribe();
+            }
+            return prevGroups;
+          });
+        }
+      }, 5000);
 
       // Local state reset when selecting chat
       setGroups(prevGroups => {
@@ -248,9 +249,8 @@ export default function StudentChatPage() {
       });
 
       return () => {
-        supabase.removeChannel(channel);
-        supabase.removeChannel(groupChannel);
-        supabase.removeChannel(globalChannel);
+        clearInterval(pollInterval);
+        clearInterval(groupsPollInterval);
       };
     }
   }, [activeGroupId, userId]);

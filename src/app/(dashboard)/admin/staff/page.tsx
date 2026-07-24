@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { UserPlus, Users, Phone, Mail, ShieldCheck, Settings, Trash2, Calendar, Loader2, Shield } from "lucide-react";
-import { createStaffUser, getStaffUsers, updateTeacherPermissions } from "@/actions/users";
+import { createStaffUser, getStaffUsers, updateTeacherPermissions, deleteUser } from "@/actions/users";
 
 export default function StaffRolesPage() {
   const [staff, setStaff] = useState<any[]>([]);
@@ -31,6 +31,21 @@ export default function StaffRolesPage() {
     const data = await getStaffUsers();
     setStaff(data);
     setLoading(false);
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (!confirm("Are you sure you want to delete this staff member? This will remove all their data and login access permanently.")) return;
+    try {
+      const res = await deleteUser(userId);
+      if (res.success) {
+        alert("Staff deleted successfully!");
+        fetchStaff();
+      } else {
+        alert("Failed to delete staff: " + res.error);
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -71,6 +86,29 @@ export default function StaffRolesPage() {
     setSelectedPerms(prev => prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]);
   };
 
+  const handleExportCSV = () => {
+    if (staff.length === 0) return alert("No staff to export");
+    const headers = ["ID", "Full Name", "Phone", "Email", "Role", "Joined On"];
+    const csvRows = staff.map(u => {
+      const id = u.id;
+      const name = `"${u.full_name || ''}"`;
+      const phone = `"${u.phone || ''}"`;
+      const email = `"${u.email || ''}"`;
+      const role = u.role || 'teacher';
+      const joined = new Date(u.created_at).toLocaleDateString();
+      return [id, name, phone, email, role, joined].join(",");
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...csvRows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `mishra_classes_staff_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleSavePermissions = async () => {
     if (!permModalUser) return;
     setUpdatingPerms(true);
@@ -102,21 +140,29 @@ export default function StaffRolesPage() {
     <div className="space-y-6 max-w-6xl mx-auto">
       
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Staff & Roles</h1>
           <p className="text-slate-500 text-sm mt-1">Manage admins, teachers, and system access.</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200 flex items-center gap-2"
-        >
-          <UserPlus size={18} /> Add New Staff
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={handleExportCSV} className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+            Export CSV
+          </button>
+          <button onClick={() => window.print()} className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+            Print PDF
+          </button>
+          <button 
+            onClick={() => setShowModal(true)}
+            className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200 flex items-center gap-2"
+          >
+            <UserPlus size={18} /> Add New Staff
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden print:border-none print:shadow-none">
         {/* Data Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600">
@@ -126,7 +172,7 @@ export default function StaffRolesPage() {
                 <th className="px-6 py-4 border-b border-slate-200">Contact Details</th>
                 <th className="px-6 py-4 border-b border-slate-200">Role</th>
                 <th className="px-6 py-4 border-b border-slate-200">Joined On</th>
-                <th className="px-6 py-4 border-b border-slate-200 text-right">Actions</th>
+                <th className="px-6 py-4 border-b border-slate-200 text-right print:hidden">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -182,7 +228,7 @@ export default function StaffRolesPage() {
                         {new Date(user.created_at).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right print:hidden">
                       <div className="flex items-center justify-end gap-2">
                         {user.role === 'teacher' && (
                           <button onClick={() => openPermModal(user)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" title="Permissions">
@@ -192,7 +238,7 @@ export default function StaffRolesPage() {
                         <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Settings">
                           <Settings size={16} />
                         </button>
-                        <button className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remove Access">
+                        <button onClick={() => handleDelete(user.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remove Access">
                           <Trash2 size={16} />
                         </button>
                       </div>

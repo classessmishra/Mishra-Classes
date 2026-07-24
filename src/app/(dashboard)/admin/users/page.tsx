@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, UserCircle, Phone, MoreVertical, Ban, Trash2, Calendar, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { getAllUsers } from "@/actions/users";
+import { getAllUsers, deleteUser } from "@/actions/users";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -11,48 +11,85 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  const fetchUsers = async () => {
+    setLoading(true);
+    const data = await getAllUsers();
+    setUsers(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      const data = await getAllUsers();
-      // Filter out admin users if needed, or leave them. Usually admin has phone "admin" or specific ID.
-      setUsers(data);
-      setLoading(false);
-    };
     fetchUsers();
   }, []);
+
+  const handleDelete = async (userId: string) => {
+    if (!confirm("Are you sure you want to delete this student? This will remove all their data, purchases, tests, and login access permanently.")) return;
+    try {
+      const res = await deleteUser(userId);
+      if (res.success) {
+        alert("Student deleted successfully!");
+        fetchUsers();
+      } else {
+        alert("Failed to delete student: " + res.error);
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    }
+  };
 
   const filteredUsers = users.filter(user => 
     (user.full_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) || 
     (user.phone || "").includes(searchQuery)
   );
 
+  const handleExportCSV = () => {
+    if (filteredUsers.length === 0) return alert("No users to export");
+    const headers = ["ID", "Full Name", "Phone", "Email", "Role", "Joined On", "Status"];
+    const csvRows = filteredUsers.map(u => {
+      const id = u.id;
+      const name = `"${u.full_name || ''}"`;
+      const phone = `"${u.phone || ''}"`;
+      const email = `"${u.email || ''}"`;
+      const role = u.role || 'student';
+      const joined = new Date(u.created_at).toLocaleDateString();
+      const status = u.phone === "admin" ? "Admin" : "Active";
+      return [id, name, phone, email, role, joined, status].join(",");
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...csvRows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `mishra_classes_students_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto">
       
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Student Directory</h1>
           <p className="text-slate-500 text-sm mt-1">Manage all registered students and their access.</p>
         </div>
-        <div className="flex items-center gap-3 bg-white px-4 py-2.5 rounded-lg border border-slate-200 shadow-sm">
-          <ShieldCheck className="text-green-600" size={18} />
-          <span className="text-sm font-semibold text-slate-700">{users.length} Total Users</span>
+        <div className="flex items-center gap-3">
+          <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 flex items-center gap-2">
+            <ShieldCheck size={18} className="text-green-500" />
+            <span className="font-bold text-slate-700 text-sm">{users.length} Total Users</span>
+          </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden print:border-none print:shadow-none">
         
-        {/* Toolbar */}
-        <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50">
-          <div 
-            className="relative w-full sm:w-80"
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          >
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        {/* Controls */}
+        <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden">
+          <div className="relative w-full sm:max-w-md" onFocus={() => setShowSuggestions(true)}>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
               placeholder="Search by name or mobile..." 
@@ -61,7 +98,7 @@ export default function AdminUsersPage() {
                 setSearchQuery(e.target.value);
                 setShowSuggestions(true);
               }}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
             />
             {showSuggestions && searchQuery.trim().length > 0 && filteredUsers.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar">
@@ -82,8 +119,11 @@ export default function AdminUsersPage() {
             )}
           </div>
           <div className="flex gap-2">
-            <button className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+            <button onClick={handleExportCSV} className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
               Export CSV
+            </button>
+            <button onClick={() => window.print()} className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+              Print PDF
             </button>
           </div>
         </div>
@@ -97,7 +137,7 @@ export default function AdminUsersPage() {
                 <th className="px-6 py-4 border-b border-slate-200">Mobile Number</th>
                 <th className="px-6 py-4 border-b border-slate-200">Joined On</th>
                 <th className="px-6 py-4 border-b border-slate-200">Status</th>
-                <th className="px-6 py-4 border-b border-slate-200 text-right">Actions</th>
+                <th className="px-6 py-4 border-b border-slate-200 text-right print:hidden">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -148,12 +188,12 @@ export default function AdminUsersPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right print:hidden">
                       <div className="flex items-center justify-end gap-2">
                         <button className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors" title="Block User">
                           <Ban size={16} />
                         </button>
-                        <button className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete User">
+                        <button onClick={() => handleDelete(user.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete User">
                           <Trash2 size={16} />
                         </button>
                         <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors">

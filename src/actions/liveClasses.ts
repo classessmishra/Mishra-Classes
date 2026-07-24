@@ -24,7 +24,8 @@ export async function createLiveClass(payload: any) {
     course_id: cId,
     topic: rest.title || 'Untitled',
     start_time: rest.scheduled_time || new Date().toISOString(),
-    meeting_link: rest.youtube_video_id || ''
+    meeting_link: rest.youtube_video_id || '',
+    is_active: rest.is_active ?? false
   }));
 
   const { data, error } = await supabase

@@ -82,7 +82,32 @@ export async function updateTeacherPermissions(userId: string, permissions: stri
   if (error) {
     return { success: false, error: error.message };
   }
-  
   revalidatePath('/admin/staff');
   return { success: true };
+}
+
+export async function deleteUser(userId: string) {
+  try {
+    // 1. Manually delete references that don't have ON DELETE CASCADE
+    await supabase.from('attendance').delete().eq('student_id', userId);
+    await supabase.from('test_submissions').delete().eq('student_id', userId);
+    await supabase.from('purchases').delete().eq('student_id', userId);
+    
+    // 2. Delete from public.users (this cascades to batch_students, test_assignments, chat_members, notifications)
+    const { error: userError } = await supabase.from('users').delete().eq('id', userId);
+    if (userError) throw new Error(userError.message);
+
+    // 3. Attempt to delete from auth.users using admin API (fails silently if custom auth is used)
+    try {
+      await supabase.auth.admin.deleteUser(userId);
+    } catch(e) {
+      // Ignore if user is not in auth.users
+    }
+
+    revalidatePath('/admin/users');
+    revalidatePath('/admin/staff');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to delete user" };
+  }
 }
