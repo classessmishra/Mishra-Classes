@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, FileText, BarChart2, MessageSquare, BookOpen, ChevronRight, LayoutDashboard } from "lucide-react";
 import MobileTopBar from "@/components/student/MobileTopBar";
-import MobileBottomNav from "@/components/student/MobileBottomNav";
 import ResponsiveWrapper from "@/components/student/ResponsiveWrapper";
 
 export default function StudentLayout({
@@ -85,8 +84,6 @@ export default function StudentLayout({
           
         </div>
       </div>
-
-      <MobileBottomNav />
     </div>
   );
 }

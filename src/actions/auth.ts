@@ -59,9 +59,8 @@ export async function authenticateUser(email: string, plainTextPassword: string)
     return { success: false, error: "Incorrect password." };
   }
 
-  // Send welcome email on first login without blocking the login process
+  // Update has_logged_in status on first login
   if (data.has_logged_in === false) {
-    sendWelcomeEmail(email, data.full_name || 'Student').catch(console.error);
     await supabase.from('users').update({ has_logged_in: true }).eq('id', data.id);
   }
 

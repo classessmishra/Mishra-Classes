@@ -50,8 +50,13 @@ export default function LoginPage() {
       document.cookie = `auth_role=${userRole}; path=/`;
       document.cookie = `user_id=${id}; path=/`;
       
-      if (userRole === 'admin' || userRole === 'teacher') router.push("/admin");
-      else router.push("/");
+      if (userRole === 'admin' || userRole === 'teacher') {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+      router.refresh();
+
     } catch (err) {
       console.error("Login error", err);
       setLoading(false);
