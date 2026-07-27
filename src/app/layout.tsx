@@ -23,6 +23,7 @@ import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 import MainWrapper from "@/components/MainWrapper";
 import { CartProvider } from "@/contexts/CartContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export default function RootLayout({
   children,
@@ -37,7 +38,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <CartProvider>
           <Navbar />
-          <MainWrapper>{children}</MainWrapper>
+          <MainWrapper>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </MainWrapper>
           <BottomNav />
         </CartProvider>
       </body>

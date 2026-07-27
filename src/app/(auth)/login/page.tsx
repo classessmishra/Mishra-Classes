@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,28 +13,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const currentRole = document.cookie.split('; ').find(row => row.startsWith('auth_role='))?.split('=')[1];
+    if (currentRole === 'admin' || currentRole === 'teacher') {
+      window.location.href = "/admin";
+    } else if (currentRole === 'student') {
+      window.location.href = "/student/profile";
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage("");
     try {
       // Main Admin hardcoded login
       if (email === "classessmishra@gmail.com" && password === "Nitich14@in") {
         if (role !== "admin") {
-          alert("Please select 'Admin' in the 'Login As' dropdown.");
+          setErrorMessage("Please select 'Admin' in the 'Login As' dropdown.");
           setLoading(false);
           return;
         }
         document.cookie = "auth_role=admin; path=/";
         document.cookie = "user_id=00000000-0000-0000-0000-000000000000; path=/";
-        router.push("/admin");
+        window.location.href = "/admin";
         return;
       }
 
       const result = await authenticateUser(email, password);
       
       if (!result.success || !result.data) {
-        alert(result.error);
+        setErrorMessage(result.error || "Login failed.");
         setLoading(false);
         return;
       }
@@ -42,7 +53,7 @@ export default function LoginPage() {
       const { id, role: userRole } = result.data;
 
       if (userRole !== role) {
-        alert(`Your account is registered as a ${userRole}, not an ${role}.`);
+        setErrorMessage(`Your account is registered as a ${userRole}, not an ${role}.`);
         setLoading(false);
         return;
       }
@@ -51,14 +62,14 @@ export default function LoginPage() {
       document.cookie = `user_id=${id}; path=/`;
       
       if (userRole === 'admin' || userRole === 'teacher') {
-        router.push("/admin");
+        window.location.href = "/admin";
       } else {
-        router.push("/");
+        window.location.href = "/";
       }
-      router.refresh();
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login error", err);
+      setErrorMessage("System Error: " + (err.message || String(err)));
       setLoading(false);
     }
   };
@@ -73,12 +84,7 @@ export default function LoginPage() {
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3" />
           
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="relative z-10"
-          >
+          <div className="relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6 border border-primary/20">
               <Sparkles size={16} />
               <span>Welcome to the Best</span>
@@ -99,43 +105,41 @@ export default function LoginPage() {
             <div className="relative w-full max-w-xs aspect-[4/3] rounded-2xl bg-gradient-to-tr from-white/60 to-white/20 border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-md p-4 overflow-hidden">
               <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
               <div className="w-full h-full rounded-xl bg-slate-50/60 border border-white/80 relative flex items-center justify-center overflow-hidden">
-                <motion.div 
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                  className="w-32 h-32 rounded-full border-dashed border-2 border-primary/30 flex items-center justify-center"
-                >
+                <div className="w-32 h-32 rounded-full border-dashed border-2 border-primary/30 flex items-center justify-center">
                   <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary/20 to-blue-400/20 blur-md" />
-                </motion.div>
+                </div>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Zap className="text-primary w-12 h-12" />
                 </div>
                 
                 {/* Floating elements */}
-                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity }} className="absolute top-4 left-4 w-8 h-8 rounded-lg bg-blue-100/80 border border-blue-200/50 flex items-center justify-center shadow-sm backdrop-blur-sm">
+                <div className="absolute top-4 left-4 w-8 h-8 rounded-lg bg-blue-100/80 border border-blue-200/50 flex items-center justify-center shadow-sm backdrop-blur-sm">
                    <div className="w-4 h-1 rounded-full bg-blue-400" />
-                </motion.div>
-                <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 4, repeat: Infinity }} className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-indigo-100/80 border border-indigo-200/50 flex items-center justify-center shadow-sm backdrop-blur-sm">
+                </div>
+                <div className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-indigo-100/80 border border-indigo-200/50 flex items-center justify-center shadow-sm backdrop-blur-sm">
                    <div className="w-4 h-4 rounded-full bg-indigo-400" />
-                </motion.div>
+                </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Right Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-14 flex flex-col justify-center bg-white relative z-10">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-md w-full mx-auto"
-          >
+          <div className="max-w-md w-full mx-auto">
             <div className="mb-8">
               <h2 className="text-3xl font-bold text-slate-900 mb-2">Login to your account</h2>
               <p className="text-slate-500">Please enter your email and password to continue</p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-5">
+            <form className="space-y-5">
+              {errorMessage && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-xl flex items-start gap-2">
+                  <span className="mt-0.5">⚠️</span>
+                  <p>{errorMessage}</p>
+                </div>
+              )}
+
               <div className="space-y-1">
                 <label className="block text-[13px] font-medium text-slate-700">Login As</label>
                 <div className="relative group">
@@ -191,7 +195,8 @@ export default function LoginPage() {
               </div>
 
               <button
-                type="submit"
+                type="button"
+                onClick={handleLogin}
                 disabled={loading}
                 className="w-full relative group overflow-hidden bg-primary text-white font-semibold py-3.5 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(0,68,204,0.3)] active:scale-[0.98] disabled:opacity-70 mt-4 flex items-center justify-center gap-2"
               >
@@ -232,7 +237,7 @@ export default function LoginPage() {
                 </Link>
               </p>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>

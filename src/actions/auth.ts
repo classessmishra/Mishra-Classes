@@ -64,6 +64,12 @@ export async function authenticateUser(email: string, plainTextPassword: string)
     await supabase.from('users').update({ has_logged_in: true }).eq('id', data.id);
   }
 
+  // Next.js 15+ cookies() is async
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  cookieStore.set("auth_role", data.role, { path: "/", maxAge: 60 * 60 * 24 * 30 }); // 30 days
+  cookieStore.set("user_id", data.id, { path: "/", maxAge: 60 * 60 * 24 * 30 });
+
   return { success: true, data: { id: data.id, role: data.role } };
 }
 

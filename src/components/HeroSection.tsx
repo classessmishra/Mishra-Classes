@@ -55,7 +55,7 @@ export default function HeroSection({ previewData, isPreview = false }: { previe
       <AnimatePresence mode="wait">
         <motion.div
           key={currentBanner.id}
-          initial={{ opacity: 0, x: 100 }}
+          initial={{ opacity: 1, x: 100 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -100 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
@@ -94,7 +94,7 @@ export default function HeroSection({ previewData, isPreview = false }: { previe
         <AnimatePresence mode="wait">
           <motion.div
             key={`content-${currentBanner.id}`}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 1, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}

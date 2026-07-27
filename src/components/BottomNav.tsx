@@ -1,17 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Users, Store, MessageSquare, User, LayoutDashboard } from "lucide-react";
+import { Home, Users, Store, MessageSquare, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-
-const navItems = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Batches", href: "/batches", icon: Users },
-  { name: "Chats", href: "/chats", icon: MessageSquare },
-  { name: "Store", href: "/store", icon: Store },
-];
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -24,27 +17,31 @@ export default function BottomNav() {
 
   const isAuthOrPublicPage = ['/about', '/terms', '/contact-us', '/cancellation-and-refunds', '/forgot-password', '/reset-password', '/login', '/signup', '/verify-email'].includes(pathname || '');
 
-  if (pathname?.startsWith("/test/") || pathname?.startsWith("/admin") || pathname?.startsWith("/chats/admin") || pathname?.startsWith("/student/live-class") || isAuthOrPublicPage) return null;
+  // Never hide on admin or student dashboard, so it's always consistent
+  if (pathname?.startsWith("/test/") || pathname?.startsWith("/student/live-class") || isAuthOrPublicPage) return null;
 
-  const filteredItems = role === 'admin'
-    ? [
-        { name: "Home", href: "/", icon: Home },
-        { name: "Dashboard", href: "/admin", icon: Users },
-        { name: "Store", href: "/store", icon: Store },
-      ]
-    : role === 'student'
-    ? [
-        ...navItems,
-        { name: "Dashboard", href: "/student", icon: LayoutDashboard }
-      ]
-    : navItems;
+  // Determine Dashboard/Profile link based on role
+  let dashboardHref = "/login";
+  if (role === 'admin' || role === 'teacher') {
+    dashboardHref = "/admin";
+  } else if (role === 'student') {
+    dashboardHref = "/student";
+  }
+
+  const navItems = [
+    { name: "Home", href: "/", icon: Home },
+    { name: "Batches", href: "/batches", icon: Users },
+    { name: "Chats", href: "/chats", icon: MessageSquare },
+    { name: "Store", href: "/store", icon: Store },
+    { name: "Profile", href: dashboardHref, icon: User }
+  ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-border/40 pb-safe">
+    <div id="web-bottom-nav" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t border-border/40 pb-safe">
       <div className="flex items-center justify-around h-16">
-        {filteredItems.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || (item.name === "Profile" && pathname?.startsWith(item.href) && item.href !== "/login") || (item.name === "Chats" && pathname?.startsWith("/chats"));
           return (
             <Link
               key={item.name}
