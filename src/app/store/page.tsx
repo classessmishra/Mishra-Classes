@@ -122,43 +122,102 @@ export default function StorePage() {
             </div>
           )}
 
-          {/* All Courses Section */}
-          {allCourses.length > 0 && (
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6 border-b pb-4">All Courses</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {allCourses.map((course, idx) => {
-                  const isEnrolled = enrolledCourses.some(c => c.id === course.id);
-                  return (
-                    <CourseCard
-                      key={course.id || idx}
-                      id={course.id}
-                      title={course.title}
-                      instructor={course.instructor_name || "Prof. A. Mishra"}
-                      duration={course.validity_text || "Access for 1 Year"}
-                      price={course.price}
-                      badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'offline' || course.course_type === 'notes' ? "CLASSROOM" : "RECORDED"}
-                      imageUrl={course.thumbnail_url || "/images/course_thumb.png"}
-                      buttonText={isEnrolled ? "Go to Course" : "Add to Cart"}
-                      customHref={isEnrolled ? `/student/courses/${course.id}` : undefined}
-                      isAddedToCart={cartItems.some(i => i.id === course.id)}
-                      onAddToCart={isEnrolled ? undefined : () => {
-                        addToCart({
-                          id: course.id,
-                          title: course.title,
-                          price: course.price,
-                          imageUrl: course.thumbnail_url || "/images/course_thumb.png",
-                          type: 'course',
-                          is_live: course.is_live
-                        });
-                        setIsCartOpen(true);
-                      }}
-                    />
-                  );
-                })}
+          {/* Free Courses Section */}
+          {(() => {
+            const freeCourses = allCourses.filter(c => c.is_free || c.price === 0 || !c.price);
+            if (freeCourses.length === 0) return null;
+            
+            return (
+              <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent p-8 md:p-10 rounded-[2.5rem] border border-emerald-500/20 shadow-lg shadow-emerald-500/5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl -z-10 mix-blend-multiply pointer-events-none" />
+                
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-inner">
+                    <Star size={28} className="fill-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-black text-emerald-950 tracking-tight leading-tight">Free Courses</h2>
+                    <p className="text-emerald-700/80 font-semibold mt-1">Start your learning journey for absolutely free!</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
+                  {freeCourses.map((course, idx) => {
+                    const isEnrolled = enrolledCourses.some(c => c.id === course.id);
+                    return (
+                      <CourseCard
+                        key={course.id || idx}
+                        id={course.id}
+                        title={course.title}
+                        instructor={course.instructor_name || "Prof. A. Mishra"}
+                        duration={course.validity_text || "Access for 1 Year"}
+                        price={0}
+                        badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'offline' || course.course_type === 'notes' ? "CLASSROOM" : "RECORDED"}
+                        imageUrl={course.thumbnail_url || "/images/course_thumb.png"}
+                        buttonText={isEnrolled ? "Go to Course" : "Claim for Free"}
+                        customHref={isEnrolled ? `/student/courses/${course.id}` : undefined}
+                        isAddedToCart={cartItems.some(i => i.id === course.id)}
+                        onAddToCart={isEnrolled ? undefined : () => {
+                          addToCart({
+                            id: course.id,
+                            title: course.title,
+                            price: 0,
+                            imageUrl: course.thumbnail_url || "/images/course_thumb.png",
+                            type: 'course',
+                            is_live: course.is_live
+                          });
+                          setIsCartOpen(true);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
+          {/* Paid Courses Section */}
+          {(() => {
+            const paidCourses = allCourses.filter(c => !c.is_free && c.price > 0);
+            if (paidCourses.length === 0) return null;
+
+            return (
+              <div>
+                <h2 className="text-2xl font-bold text-foreground mb-6 border-b pb-4">Premium Courses</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {paidCourses.map((course, idx) => {
+                    const isEnrolled = enrolledCourses.some(c => c.id === course.id);
+                    return (
+                      <CourseCard
+                        key={course.id || idx}
+                        id={course.id}
+                        title={course.title}
+                        instructor={course.instructor_name || "Prof. A. Mishra"}
+                        duration={course.validity_text || "Access for 1 Year"}
+                        price={course.price}
+                        badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'offline' || course.course_type === 'notes' ? "CLASSROOM" : "RECORDED"}
+                        imageUrl={course.thumbnail_url || "/images/course_thumb.png"}
+                        buttonText={isEnrolled ? "Go to Course" : "Add to Cart"}
+                        customHref={isEnrolled ? `/student/courses/${course.id}` : undefined}
+                        isAddedToCart={cartItems.some(i => i.id === course.id)}
+                        onAddToCart={isEnrolled ? undefined : () => {
+                          addToCart({
+                            id: course.id,
+                            title: course.title,
+                            price: course.price,
+                            imageUrl: course.thumbnail_url || "/images/course_thumb.png",
+                            type: 'course',
+                            is_live: course.is_live
+                          });
+                          setIsCartOpen(true);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Store Items Section */}
           {storeItems.length > 0 && (

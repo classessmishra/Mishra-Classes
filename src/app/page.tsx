@@ -1,7 +1,7 @@
 import HeroSection from "@/components/HeroSection";
 import CourseCard from "@/components/CourseCard";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 import { getCourses } from "@/actions/courses";
 import AdCarousel from "@/components/AdCarousel";
 import PhotoAds from "@/components/PhotoAds";
@@ -37,6 +37,50 @@ export default async function Home() {
 
       {/* Static Photo Advertisements */}
       <PhotoAds previewData={photoAds} />
+
+      {/* Free Courses Section */}
+      {(() => {
+        const freeCourses = allCourses.filter(c => c.is_free || c.price === 0 || !c.price).slice(0, 3);
+        if (freeCourses.length === 0) return null;
+        
+        return (
+          <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent p-6 md:p-10 rounded-[2.5rem] border border-emerald-500/20 shadow-lg shadow-emerald-500/5 relative overflow-hidden mb-12">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl -z-10 mix-blend-multiply pointer-events-none" />
+            
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-inner hidden sm:block">
+                  <Star size={24} className="fill-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-emerald-950 tracking-tight leading-tight">Free Courses</h2>
+                  <p className="text-emerald-700/80 font-semibold mt-1">Start your learning journey for absolutely free!</p>
+                </div>
+              </div>
+              <Link href="/store" className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold px-4 py-2 rounded-xl transition-colors hidden sm:block">
+                View All Free
+              </Link>
+            </div>
+            
+            <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory no-scrollbar w-full md:grid md:grid-cols-2 lg:grid-cols-3 md:overflow-visible">
+              {freeCourses.map((course, idx) => (
+                <CourseCard
+                  key={course.id || idx}
+                  id={course.id}
+                  title={course.title}
+                  instructor={course.instructor_name || "Prof. A. Mishra"}
+                  duration={course.validity_text || "Access for 1 Year"}
+                  price={0}
+                  badge={course.course_type === 'live' || (course.is_live && !course.course_type) ? "LIVE" : course.course_type === 'test_series' ? "TEST SERIES" : course.course_type === 'offline' || course.course_type === 'notes' ? "CLASSROOM" : "RECORDED"}
+                  imageUrl={course.thumbnail_url || "/images/course_thumb.png"}
+                  buttonText="Claim for Free"
+                  customHref={`/store/${course.id}`} // Navigate to store details page so they can enroll/claim it
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Main Content Area: Featured Courses */}
       <div>

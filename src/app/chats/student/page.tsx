@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Send, Search, MoreVertical, Paperclip, Hash, User, Check, Ban, X, FileText, Loader2, Image as ImageIcon, Download, Pin, PinOff, Mic, ArrowLeft, Menu, Bell } from "lucide-react";
+import { Send, Search, MoreVertical, Paperclip, Hash, User, Check, Ban, X, FileText, Loader2, Image as ImageIcon, Download, Pin, PinOff, Mic, ArrowLeft } from "lucide-react";
 import { checkChatBan, uploadChatAttachment } from "@/actions/chat";
 import { uploadFiles } from "@/utils/uploadthing";
 
@@ -519,17 +519,6 @@ export default function StudentChatPage() {
     <div className="flex h-[calc(100dvh-6rem)] md:h-[calc(100vh-6rem)] bg-white border-0 md:border md:border-border/50 rounded-none md:rounded-xl overflow-hidden shadow-none md:shadow-sm">
       {/* Sidebar */}
       <div className={`${activeGroupId ? 'hidden md:flex' : 'flex'} w-full md:w-[350px] border-r border-border bg-white flex-col shrink-0`}>
-        {/* Mobile Top Bar for Chat List */}
-        <div className="w-full h-[60px] bg-[#5B58FF] flex items-center justify-between px-4 shrink-0 shadow-md md:hidden">
-          <div className="flex items-center gap-3">
-            <Menu className="text-white w-6 h-6 cursor-pointer" />
-            <h1 className="text-white font-medium text-[19px] whitespace-nowrap">
-              Mishra Classes
-            </h1>
-          </div>
-          <Bell className="text-white w-6 h-6 cursor-pointer" fill="white" />
-        </div>
-        
         {/* Desktop Header */}
         <div className="hidden md:block p-5 pb-3">
           <h2 className="text-xl font-bold text-gray-800">Chats</h2>
@@ -640,8 +629,8 @@ export default function StudentChatPage() {
           </div>
         ) : (
           <>
-            {/* Native Mobile Header for Active Chat */}
-            <div className="absolute top-0 w-full h-[60px] bg-[#5B58FF] flex justify-between items-center px-2 shadow-md z-20 shrink-0">
+            {/* Native Mobile Header for Active Chat - HIDDEN AS REQUESTED */}
+            <div className="hidden absolute top-0 w-full h-[60px] bg-[#5B58FF] justify-between items-center px-2 shadow-md z-20 shrink-0">
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setActiveGroupId(null)} 
@@ -676,8 +665,8 @@ export default function StudentChatPage() {
           </div>
         </div>
 
-        {/* Adjust top padding to account for absolute header */}
-        <div className="flex-1 overflow-y-auto p-6 pt-24 space-y-4" onClick={() => setShowMenu(false)}>
+        {/* Adjust top padding since header is hidden */}
+        <div className="flex-1 overflow-y-auto p-6 pt-6 space-y-4" onClick={() => setShowMenu(false)}>
           <div className="flex justify-center my-4">
             <span className="text-[10px] text-gray-400 font-medium">2026/07/08</span>
           </div>

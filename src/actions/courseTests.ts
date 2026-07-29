@@ -11,8 +11,9 @@ export async function getCourseTests(courseId: string, studentId?: string) {
     .select(`
       id,
       max_attempts,
+      folder_id,
       tests (
-        id, title, duration_minutes, total_marks
+        id, title, duration_minutes, total_marks, questions
       )
     `)
     .eq('course_id', courseId);
@@ -37,7 +38,16 @@ export async function getCourseTests(courseId: string, studentId?: string) {
       if (!subError && submissions) {
         // Map submissions to assignments
         return assignments.map(a => {
-          const testId = (a.tests as any).id;
+          const t = a.tests as any;
+          const testId = t.id;
+          
+          let computedMarks = t.total_marks || 0;
+          if (t.questions && Array.isArray(t.questions)) {
+            computedMarks = t.questions.reduce((acc: number, q: any) => acc + (q.positive_marks || 0), 0);
+          }
+          t.total_marks = computedMarks;
+          delete t.questions;
+
           const mySubmissions = submissions.filter(s => s.test_id === testId);
           return {
             ...a,
@@ -49,7 +59,16 @@ export async function getCourseTests(courseId: string, studentId?: string) {
     }
   }
 
-  return assignments.map(a => ({ ...a, attempts_count: 0, submissions: [] }));
+  return assignments.map(a => {
+    const t = a.tests as any;
+    let computedMarks = t.total_marks || 0;
+    if (t.questions && Array.isArray(t.questions)) {
+      computedMarks = t.questions.reduce((acc: number, q: any) => acc + (q.positive_marks || 0), 0);
+    }
+    t.total_marks = computedMarks;
+    delete t.questions; // Don't send all questions to client unnecessarily
+    return { ...a, attempts_count: 0, submissions: [] };
+  });
 }
 
 export async function getAllTests() {
@@ -67,11 +86,12 @@ export async function getAllTests() {
   return data;
 }
 
-export async function assignTestToCourse(courseId: string, testId: string, maxAttempts: number) {
+export async function assignTestToCourse(courseId: string, testId: string, maxAttempts: number, folderId?: string) {
   const { error } = await supabase.from('course_tests').insert([{
     course_id: courseId,
     test_id: testId,
-    max_attempts: maxAttempts
+    max_attempts: maxAttempts,
+    ...(folderId ? { folder_id: folderId } : {})
   }]);
   
   if (error) throw new Error(error.message);

@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, BackHandler, Text, SafeAreaView } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, BackHandler, Text, SafeAreaView, Platform, StatusBar as RNStatusBar } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 
 // Replace this with the user's production URL or local network IP for testing
-export const BASE_URL = 'https://mishra-classes.vercel.app';
+export const BASE_URL = 'http://10.173.47.6:3000';
 
 interface HybridWebViewProps {
   path: string;
@@ -15,7 +15,6 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
   const webViewRef = useRef<WebView>(null);
   const navigation = useNavigation();
   const [canGoBack, setCanGoBack] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Handle hardware back button for Android
   useFocusEffect(
@@ -23,7 +22,7 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
       const onBackPress = () => {
         if (canGoBack && webViewRef.current) {
           webViewRef.current.goBack();
-          return true;
+          return true; // Prevent default behavior (exiting app)
         }
         return false; // Let the default back navigation happen (exits app if at root)
       };
@@ -44,19 +43,7 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
         style={styles.webview}
         onNavigationStateChange={(navState) => {
           setCanGoBack(navState.canGoBack);
-          
-          // Hide native bottom tabs if on auth pages
-          const isAuthPage = navState.url.includes('/login') || navState.url.includes('/signup') || navState.url.includes('/forgot-password');
-          navigation.setOptions({
-            tabBarStyle: isAuthPage 
-              ? { display: 'none' } 
-              : { height: 60, paddingBottom: 10, paddingTop: 5, display: 'flex' }
-          });
         }}
-        onLoadStart={() => setIsLoading(true)}
-        onLoadEnd={() => setIsLoading(false)}
-        onError={() => setIsLoading(false)}
-        onHttpError={() => setIsLoading(false)}
         renderError={(errorDomain, errorCode, errorDesc) => (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ color: 'red', textAlign: 'center', padding: 20 }}>
@@ -75,7 +62,7 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
         overScrollMode="never"
         scalesPageToFit={false}
         userAgent="MishraClassesApp/1.0"
-        // Injected JS to hide web headers/footers, prevent zoom, and disable text selection except on inputs
+        // Injected JS to hide scrollbars, prevent zoom, and disable text selection except on inputs
         injectedJavaScript={`
           const meta = document.createElement('meta');
           meta.setAttribute('name', 'viewport');
@@ -88,9 +75,6 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
           // Inject native-like CSS
           const style = document.createElement('style');
           style.innerHTML = \`
-            /* Hide the web bottom nav now that we added the ID */
-            #web-bottom-nav { display: none !important; }
-            
             /* Hide all scrollbars */
             ::-webkit-scrollbar {
               display: none !important;
@@ -100,11 +84,6 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
           true;
         `}
       />
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -113,15 +92,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#5B58FF', // Matches Navbar color
+    paddingTop: Platform.OS === 'android' ? RNStatusBar.currentHeight : 0,
   },
   webview: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  loadingContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff80',
-  },
+  }
 });

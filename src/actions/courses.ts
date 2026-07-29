@@ -158,3 +158,42 @@ export async function checkoutCart(items: any[], userId: string, paymentData: an
   }
 }
 
+export async function claimFreeCourse(courseId: string, studentId: string) {
+  try {
+    const { data: course } = await supabase.from('courses').select('is_free, price, validity_days, batch_id').eq('id', courseId).single();
+    if (!course || (!course.is_free && course.price > 0)) {
+      throw new Error("Course is not free");
+    }
+
+    const validity_days = course.validity_days || 365;
+    const expires_at = new Date(Date.now() + validity_days * 24 * 60 * 60 * 1000).toISOString();
+
+    const purchase = {
+      student_id: studentId,
+      course_id: courseId,
+      status: 'completed',
+      razorpay_order_id: 'FREE_CLAIM',
+      razorpay_payment_id: 'FREE_CLAIM',
+      expires_at,
+      amount_paid: 0,
+      receipt_id: `CLAIM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+    };
+
+    const { error: purchaseError } = await supabase.from('purchases').insert([purchase]);
+    if (purchaseError) throw new Error(purchaseError.message);
+
+    // Enroll in batch if applicable
+    if (course.batch_id) {
+      await supabase.from('batch_students').insert([
+        { batch_id: course.batch_id, student_id: studentId }
+      ]);
+    }
+
+    revalidatePath('/store');
+    revalidatePath('/student');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Claim Free Course Error:", error);
+    return { success: false, error: error.message };
+  }
+}

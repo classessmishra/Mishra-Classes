@@ -30,7 +30,7 @@ export default function CourseCard({
   price,
   badge,
   imageUrl,
-  buttonText = "Enroll Now",
+  buttonText,
   customHref,
   isEnrolledView = false,
   enrollDate,
@@ -100,7 +100,7 @@ export default function CourseCard({
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Price</span>
                 <span className="text-xl font-black text-slate-900 tracking-tight leading-none">
-                  ₹{price.toLocaleString("en-IN")}
+                  {price ? `₹${price.toLocaleString("en-IN")}` : "FREE"}
                 </span>
               </div>
             </div>
@@ -128,7 +128,7 @@ export default function CourseCard({
             )}>
               {isEnrolledView && <CheckCircle2 size={16} />}
               {!isEnrolledView && isAddedToCart && <CheckCircle2 size={16} />}
-              {isAddedToCart && !isEnrolledView ? "Added" : buttonText}
+              {isAddedToCart && !isEnrolledView ? "Added" : (buttonText || (!price || price === 0 ? "Claim for Free" : "Enroll Now"))}
             </button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { ArrowLeft, PlayCircle, FileText, CheckCircle2, Clock, Globe, Award, Tre
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { claimFreeCourse } from "@/actions/courses";
 import CheckoutModal from "@/components/CheckoutModal";
 
 export default function CourseDetailsPage() {
@@ -16,6 +17,7 @@ export default function CourseDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [showCheckout, setShowCheckout] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   useEffect(() => {
     async function loadCourse() {
@@ -43,6 +45,26 @@ export default function CourseDetailsPage() {
 
   if (loading) return <div className="p-10 text-center text-muted-foreground">Loading course details...</div>;
   if (!course) return <div className="p-10 text-center text-red-500 font-bold">Course not found.</div>;
+
+  const handleClaim = async () => {
+    const match = document.cookie.match(/(^| )user_id=([^;]+)/);
+    const userId = match ? match[2] : null;
+    
+    if (!userId) {
+      alert("Please log in to claim this course.");
+      return;
+    }
+
+    setIsClaiming(true);
+    const res = await claimFreeCourse(courseId, userId);
+    if (res.success) {
+      setHasPurchased(true);
+      alert("Course claimed successfully!");
+    } else {
+      alert("Error: " + res.error);
+    }
+    setIsClaiming(false);
+  };
 
   const syllabus = course.syllabus_features || [];
 
@@ -86,10 +108,14 @@ export default function CourseDetailsPage() {
               </p>
               
               <div className="flex items-center gap-3 mb-6">
-                <span className="text-3xl font-black text-slate-800">₹{course.price}</span>
-                <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-200">
-                  Special Offer
+                <span className="text-3xl font-black text-slate-800">
+                  {course.is_free || course.price === 0 ? "FREE" : `₹${course.price}`}
                 </span>
+                {(!course.is_free && course.price > 0) && (
+                  <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-lg border border-green-200">
+                    Special Offer
+                  </span>
+                )}
               </div>
             </div>
 
@@ -100,6 +126,14 @@ export default function CourseDetailsPage() {
                   className="w-full md:w-auto bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm"
                 >
                   Go to My Course
+                </button>
+              ) : (course.is_free || course.price === 0) ? (
+                <button 
+                  onClick={handleClaim}
+                  disabled={isClaiming}
+                  className="w-full md:w-auto bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {isClaiming ? "Claiming..." : "Claim Free Course"}
                 </button>
               ) : (
                 <button 

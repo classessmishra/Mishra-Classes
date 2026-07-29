@@ -218,18 +218,7 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
     if (stage === "running" && !warningActive) {
       timerRef.current = setInterval(() => {
         setTotalTimeLeft(prev => Math.max(0, prev - 1));
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            if (testConfig?.allow_section_switching === false && testConfig?.sections_config?.length > 0) {
-               handleSectionSubmit();
-            } else {
-               handleAutoSubmit();
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
+        setTimeLeft(prev => Math.max(0, prev - 1));
         
         // Track time spent on current question
         if (!isReviewMode) {
@@ -245,6 +234,18 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [stage, warningActive, currentQ, isReviewMode]);
+
+  // Auto-Submit Logic when time runs out
+  useEffect(() => {
+    if (stage === "running" && timeLeft === 0 && !isReviewMode) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (testConfig?.allow_section_switching === false && testConfig?.sections_config?.length > 0) {
+         handleSectionSubmit();
+      } else {
+         handleAutoSubmit();
+      }
+    }
+  }, [timeLeft, stage, isReviewMode]);
 
   // Save State Periodically
   useEffect(() => {
@@ -749,16 +750,17 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
     const currentRank = leaderboard.find(l => l.student_id === studentId)?.rank || "-";
 
     return (
-      <div className="fixed inset-0 z-[200] bg-slate-50 overflow-y-auto w-full h-full">
+      <div className="fixed inset-0 z-[200] bg-slate-50 flex flex-col w-full h-full">
         {/* Mobile Native Header */}
-        <div className="md:hidden fixed top-0 left-0 right-0 h-[60px] bg-[#5B58FF] z-[210] flex items-center px-4 shadow-md text-white">
+        <div className="md:hidden shrink-0 h-[60px] bg-[#5B58FF] z-[210] flex items-center px-4 shadow-md text-white">
           <button onClick={() => window.location.href = "/student/tests"} className="p-2 -ml-2 shrink-0">
             <ArrowLeft size={24} />
           </button>
           <h1 className="text-lg font-semibold truncate ml-2">Test Analysis</h1>
         </div>
 
-        <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-24 pt-20 p-3 md:p-8 md:pt-8">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-6xl mx-auto space-y-4 md:space-y-6 pb-24 pt-4 md:pt-8 px-4 md:px-8">
           
           {/* Desktop Header */}
           <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -948,6 +950,7 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
             </div>
           </div>
         </div>
+        </div>
       </div>
     );
   }
@@ -989,7 +992,7 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
                     <button 
                       key={sec}
                       onClick={() => {
-                        if (testConfig?.allow_section_switching === false && !isActive) {
+                        if (testConfig?.allow_section_switching === false && !isActive && !isReviewMode) {
                           setSwitchWarning("Section switching not allowed!");
                           setTimeout(() => setSwitchWarning(""), 3000);
                           return;
@@ -1000,7 +1003,7 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
                       className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${isActive ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}
                     >
                       {sec}
-                      {isActive && testConfig?.allow_section_switching === false && (
+                      {isActive && testConfig?.allow_section_switching === false && !isReviewMode && (
                          <span className="font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs animate-pulse">
                            {formatTime(timeLeft)}
                          </span>
@@ -1023,7 +1026,7 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
                 </span>
                 {isReviewMode && (
                   <span className="text-sm font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2">
-                    <Clock size={14} /> {timeSpent[currentQ] < 60 ? `${timeSpent[currentQ]}s` : `${Math.floor(timeSpent[currentQ]/60)}m ${timeSpent[currentQ]%60}s`}
+                    <Clock size={14} /> {(timeSpent[currentQ] || 0) < 60 ? `${timeSpent[currentQ] || 0}s` : `${Math.floor((timeSpent[currentQ] || 0)/60)}m ${(timeSpent[currentQ] || 0)%60}s`}
                   </span>
                 )}
                 <span className="text-sm font-semibold text-green-600">+{currentQuestionData?.positive_marks || 0}</span>

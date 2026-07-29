@@ -30,6 +30,7 @@ export default function AdminCourseModal({ isOpen, onClose, onSave, initialData 
     skill_level: "Beginner to Advanced",
     has_certificate: false,
     demo_video_url: "",
+    is_free: false,
   });
 
   const [mounted, setMounted] = useState(false);
@@ -49,6 +50,7 @@ export default function AdminCourseModal({ isOpen, onClose, onSave, initialData 
         skill_level: initialData.skill_level || "Beginner to Advanced",
         has_certificate: initialData.has_certificate || false,
         demo_video_url: initialData.demo_video_url || "",
+        is_free: initialData.is_free || false,
       });
       setFeatures(initialData.syllabus_features?.length ? initialData.syllabus_features : [""]);
       setThumbnailPreview(initialData.thumbnail_url || null);
@@ -57,7 +59,7 @@ export default function AdminCourseModal({ isOpen, onClose, onSave, initialData 
         title: "", price: "", course_type: "live", detailed_description: "",
         instructor_name: "Prof. A. Mishra", validity_days: "365",
         total_hours: "100+ Hours", language: "Hinglish", skill_level: "Beginner to Advanced",
-        has_certificate: false, demo_video_url: "",
+        has_certificate: false, demo_video_url: "", is_free: false,
       });
       setFeatures([""]);
       setThumbnailPreview(null);
@@ -91,6 +93,7 @@ export default function AdminCourseModal({ isOpen, onClose, onSave, initialData 
         language: formData.language,
         skill_level: formData.skill_level,
         has_certificate: formData.has_certificate,
+        is_free: formData.is_free,
         demo_video_url: formData.demo_video_url,
         syllabus_features: features.filter(f => f.trim() !== ""),
         thumbnail_url
@@ -124,7 +127,7 @@ export default function AdminCourseModal({ isOpen, onClose, onSave, initialData 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Price (₹)</label>
-              <input required type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="499" />
+              <input required type="number" disabled={formData.is_free} value={formData.is_free ? 0 : formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all disabled:opacity-50" placeholder="499" />
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Course Type</label>
@@ -165,7 +168,11 @@ export default function AdminCourseModal({ isOpen, onClose, onSave, initialData 
               <label className="block text-sm font-bold text-slate-700 mb-2">Skill Level</label>
               <input type="text" value={formData.skill_level} onChange={(e) => setFormData({...formData, skill_level: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="E.g. Beginner to Advanced" />
             </div>
-            <div className="flex items-end pb-3">
+            <div className="flex flex-col justify-end pb-3 gap-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={formData.is_free} onChange={(e) => setFormData({...formData, is_free: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                <span className="text-sm font-bold text-slate-700 text-green-600">Make this Course FREE</span>
+              </label>
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={formData.has_certificate} onChange={(e) => setFormData({...formData, has_certificate: e.target.checked})} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                 <span className="text-sm font-bold text-slate-700">Includes Completion Certificate</span>

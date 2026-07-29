@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { use } from "react";
-import { ArrowLeft, LayoutDashboard, FileText, Megaphone, CalendarCheck } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, FileText, Megaphone, CalendarCheck, FolderOpen } from "lucide-react";
 
 export default function BatchDetailsLayout({
   children,
@@ -18,6 +18,7 @@ export default function BatchDetailsLayout({
 
   const navItems = [
     { name: "Overview", href: `/student/batches/${batchId}`, icon: <LayoutDashboard size={18} /> },
+    { name: "Study Room", href: `/student/batches/${batchId}/content`, icon: <FolderOpen size={18} /> },
     { name: "Tests", href: `/student/batches/${batchId}/tests`, icon: <FileText size={18} /> },
     { name: "Announcements", href: `/student/batches/${batchId}/announcements`, icon: <Megaphone size={18} /> },
     { name: "Attendance", href: `/student/batches/${batchId}/attendance`, icon: <CalendarCheck size={18} /> },

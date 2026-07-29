@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getTests, assignTest } from "@/actions/tests";
 import { getBatches } from "@/actions/batches";
 import { getAllUsers } from "@/actions/users";
+import { getCourses } from "@/actions/courses";
 import Link from "next/link";
 import { Archive, Clock, MoreVertical, X, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -11,14 +12,17 @@ export default function TestBankPage() {
   const [tests, setTests] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState<any>(null);
-  const [assignType, setAssignType] = useState<"batch" | "student">("batch");
+  const [assignType, setAssignType] = useState<"batch" | "student" | "course">("batch");
   const [selectedTargetId, setSelectedTargetId] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -28,14 +32,16 @@ export default function TestBankPage() {
 
   useEffect(() => {
     async function loadData() {
-      const [testsData, batchesData, usersData] = await Promise.all([
+      const [testsData, batchesData, usersData, coursesData] = await Promise.all([
         getTests(),
         getBatches(),
-        getAllUsers()
+        getAllUsers(),
+        getCourses()
       ]);
       setTests(testsData || []);
       setBatches(batchesData || []);
       setStudents((usersData || []).filter((u: any) => u.role === 'student'));
+      setCourses(coursesData || []);
       setLoading(false);
     }
     loadData();
@@ -45,8 +51,21 @@ export default function TestBankPage() {
     setSelectedTest(test);
     setIsModalOpen(true);
     setSelectedTargetId("");
-    setStartTime("");
-    setEndTime("");
+    
+    const now = new Date();
+    const dStr = now.toISOString().split("T")[0];
+    const hStr = now.getHours().toString().padStart(2, '0');
+    const mStr = now.getMinutes().toString().padStart(2, '0');
+    
+    const endNow = new Date(now.getTime() + (test.duration_minutes || 60) * 60000);
+    const edStr = endNow.toISOString().split("T")[0];
+    const ehStr = endNow.getHours().toString().padStart(2, '0');
+    const emStr = endNow.getMinutes().toString().padStart(2, '0');
+    
+    setStartDate(dStr);
+    setStartTime(`${hStr}:${mStr}`);
+    setEndDate(edStr);
+    setEndTime(`${ehStr}:${emStr}`);
   };
 
   const handleAssign = async () => {
@@ -55,10 +74,11 @@ export default function TestBankPage() {
     try {
       const payload: any = {};
       if (assignType === "batch") payload.batch_id = selectedTargetId;
-      else payload.student_id = selectedTargetId;
+      else if (assignType === "student") payload.student_id = selectedTargetId;
+      else payload.course_id = selectedTargetId;
       
-      if (startTime) payload.start_time = new Date(startTime).toISOString();
-      if (endTime) payload.end_time = new Date(endTime).toISOString();
+      if (startDate && startTime) payload.start_time = new Date(startDate + "T" + startTime).toISOString();
+      if (endDate && endTime) payload.end_time = new Date(endDate + "T" + endTime).toISOString();
 
       await assignTest(selectedTest.id, payload);
       alert("Test assigned successfully!");
@@ -186,12 +206,20 @@ export default function TestBankPage() {
                         <Clock size={14} className="text-slate-400" /> {test.duration_minutes || 60} Mins
                       </div>
 
-                      <Link 
-                        href={`/admin/tests/${test.id}/duplicate`}
-                        className="mt-auto block w-full py-2 text-center rounded-lg bg-blue-50 text-blue-700 font-bold text-sm hover:bg-blue-600 hover:text-white transition-colors"
-                      >
-                        Duplicate & Reassign
-                      </Link>
+                      <div className="mt-auto grid grid-cols-2 gap-2 w-full">
+                        <Link 
+                          href={`/admin/tests/${test.id}/duplicate`}
+                          className="w-full py-2 text-center rounded-lg bg-blue-50 text-blue-700 font-bold text-sm hover:bg-blue-600 hover:text-white transition-colors"
+                        >
+                          Edit & Duplicate
+                        </Link>
+                        <button 
+                          onClick={() => openAssignModal(test)} 
+                          className="w-full py-2 text-center rounded-lg bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-colors"
+                        >
+                          Assign
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -231,52 +259,78 @@ export default function TestBankPage() {
                 >
                   To Student
                 </button>
+                <button
+                  className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all ${assignType === 'course' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  onClick={() => { setAssignType('course'); setSelectedTargetId(""); }}
+                >
+                  To Course
+                </button>
               </div>
 
               <div>
                 <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                  Select {assignType === 'batch' ? 'Batch' : 'Student'}
+                  Select {assignType === 'batch' ? 'Batch' : assignType === 'student' ? 'Student' : 'Course'}
                 </label>
                 <select
                   value={selectedTargetId}
                   onChange={(e) => setSelectedTargetId(e.target.value)}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
                 >
-                  <option value="">-- Choose {assignType === 'batch' ? 'a Batch' : 'a Student'} --</option>
+                  <option value="">-- Choose {assignType === 'batch' ? 'a Batch' : assignType === 'student' ? 'a Student' : 'a Course'} --</option>
                   {assignType === 'batch' ? (
                     batches.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))
-                  ) : (
+                  ) : assignType === 'student' ? (
                     students.map(s => (
-                      <option key={s.id} value={s.id}>{s.full_name || s.phone || "Unknown User"}</option>
+                      <option key={s.id} value={s.id}>{s.name || s.email}</option>
+                    ))
+                  ) : (
+                    courses.map(c => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
                     ))
                   )}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                    Start Time
+                    Start Date & Time
                   </label>
-                  <input
-                    type="datetime-local"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                    End Time
+                    End Date & Time
                   </label>
-                  <input
-                    type="datetime-local"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                  </div>
                 </div>
               </div>
 

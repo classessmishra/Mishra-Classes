@@ -3,13 +3,15 @@
 import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
-export async function assignTest(testId: string, assignmentData: { batch_id?: string, student_id?: string, start_time?: string, end_time?: string }) {
+export async function assignTest(testId: string, assignmentData: { batch_id?: string, student_id?: string, course_id?: string, start_time?: string, end_time?: string }) {
   // Check if assignment already exists for this batch or student
   let query = supabase.from('test_assignments').select('*').eq('test_id', testId);
   if (assignmentData.batch_id) {
     query = query.eq('batch_id', assignmentData.batch_id);
   } else if (assignmentData.student_id) {
     query = query.eq('student_id', assignmentData.student_id);
+  } else if (assignmentData.course_id) {
+    query = query.eq('course_id', assignmentData.course_id);
   }
 
   const { data: existing } = await query;
@@ -96,7 +98,7 @@ export async function createTest(payload: any) {
 
 export async function submitTest(testId: string, studentId: string, submissionData: { score: number, time_taken_seconds: number, answers: any, time_spent: any, course_id?: string }) {
   console.log("submitTest called with:", testId, studentId, JSON.stringify(submissionData).substring(0, 100));
-  const { time_spent, course_id, ...dataToInsert } = submissionData;
+  const { course_id, ...dataToInsert } = submissionData;
   
   if (!course_id) {
     // Legacy behavior: Delete existing submission to allow retakes for batch-assigned tests and prevent duplicate rows

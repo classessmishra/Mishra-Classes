@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FileJson, AlertCircle, CheckCircle2, Plus, Trash2, Image as ImageIcon, Settings, Layers } from "lucide-react";
 import { updateTestQuestions } from "@/actions/tests";
 import { useRouter, useParams } from "next/navigation";
@@ -25,12 +25,46 @@ type Question = {
   test_config?: any; // For injecting config into the first question
 };
 
-export default function TestEditorPage() {
-  const [activeTab, setActiveTab] = useState<"builder" | "json">("builder");
+const JsonEditor = ({ value, onChange, error, placeholder }: { value: string, onChange: (val: string) => void, error: boolean, placeholder?: string }) => {
+  const lineCount = Math.max(value.split('\n').length, 1);
+  const lines = Array.from({ length: lineCount }, (_, i) => i + 1);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = () => {
+    if (textareaRef.current && lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
+  };
+
+  return (
+    <div className={`relative flex h-[350px] rounded-xl overflow-hidden border ${error ? 'border-red-500 bg-red-50/10' : 'border-slate-200 bg-white'}`}>
+      <div 
+        ref={lineNumbersRef}
+        className="w-12 bg-slate-50 border-r border-slate-200 text-slate-400 text-xs font-mono text-right py-4 px-2 overflow-hidden select-none"
+      >
+        {lines.map(n => <div key={n} className="leading-6">{n}</div>)}
+      </div>
+      <textarea
+        ref={textareaRef}
+        onScroll={handleScroll}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="flex-1 p-4 font-mono text-sm bg-transparent focus:outline-none resize-none leading-6 whitespace-pre"
+        wrap="off"
+        spellCheck={false}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+};
+
+export default function EditTestPage() {
+  const params = useParams();
+  const [activeTab, setActiveTab] = useState<"builder" | "json" | "full_json">("builder");
   const [status, setStatus] = useState<"idle" | "error" | "success" | "saving" | "loading">("loading");
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
-  const params = useParams();
   const testId = params.testId as string;
 
   // Test Settings State
@@ -58,7 +92,83 @@ export default function TestEditorPage() {
   const [activeBuilderSection, setActiveBuilderSection] = useState<string>("");
 
   // JSON State
-  const [jsonInput, setJsonInput] = useState("");
+  const [jsonInputs, setJsonInputs] = useState<Record<string, string>>({});
+  const [jsonErrors, setJsonErrors] = useState<Record<string, string>>({});
+
+  // Full JSON State
+  const [fullJsonInput, setFullJsonInput] = useState("");
+  const [fullJsonError, setFullJsonError] = useState("");
+
+  useEffect(() => {
+    if (activeTab === "json") {
+      const delayDebounceFn = setTimeout(() => {
+        let newQuestions: Question[] = [];
+        const newErrors: Record<string, string> = {};
+        let hasError = false;
+
+        for (const sec of sectionsConfig) {
+           const val = jsonInputs[sec.name];
+           if (!val || !val.trim()) continue;
+           
+           try {
+              const parsedQs = JSON.parse(val);
+              if (!Array.isArray(parsedQs)) throw new Error(`Must be an array of questions.`);
+              for (const [idx, q] of parsedQs.entries()) {
+                 if (!q.text || !Array.isArray(q.options) || typeof q.correct_option_index !== 'number') {
+                    throw new Error(`Question ${idx + 1} has invalid format.`);
+                 }
+                 newQuestions.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    text: q.text,
+                    options: q.options,
+                    correct_option_index: q.correct_option_index,
+                    image_url: q.image_url || "",
+                    section: sec.name,
+                    positive_marks: sec.positive_marks,
+                    negative_marks: negativeMarkingEnabled ? sec.negative_marks : 0
+                 });
+              }
+              newErrors[sec.name] = "";
+           } catch (e: any) {
+              newErrors[sec.name] = e.message;
+              hasError = true;
+           }
+        }
+        setJsonErrors(newErrors);
+        if (!hasError) {
+           setQuestions(newQuestions);
+        }
+      }, 500);
+
+      return () => clearTimeout(delayDebounceFn);
+    } else if (activeTab === "full_json") {
+      const delayDebounceFn = setTimeout(() => {
+        if (!fullJsonInput.trim()) {
+          setFullJsonError("");
+          return;
+        }
+        try {
+          const parsed = JSON.parse(fullJsonInput);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.title || parsed.test_title) setTestTitle(parsed.title || parsed.test_title);
+            if (parsed.duration_minutes !== undefined) setDuration(Number(parsed.duration_minutes));
+            if (parsed.negative_marking_enabled !== undefined) setNegativeMarkingEnabled(Boolean(parsed.negative_marking_enabled));
+            if (parsed.allow_section_switching !== undefined) setAllowSectionSwitching(Boolean(parsed.allow_section_switching));
+            if (Array.isArray(parsed.sections_config) && parsed.sections_config.length > 0) {
+               setSectionsConfig(parsed.sections_config);
+            }
+            if (Array.isArray(parsed.questions)) {
+               setQuestions(parsed.questions);
+            }
+            setFullJsonError("");
+          }
+        } catch (e) {
+          setFullJsonError("Invalid JSON format.");
+        }
+      }, 500);
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [jsonInputs, activeTab, fullJsonInput, sectionsConfig, negativeMarkingEnabled]);
 
   useEffect(() => {
     async function loadTest() {
@@ -210,13 +320,84 @@ export default function TestEditorPage() {
     }
   };
 
+  const handleTabSwitch = (newTab: "builder" | "json" | "full_json") => {
+    if (newTab === activeTab) return;
+
+    if (newTab === "json") {
+      // Sync from Builder to JSON
+      const newJsonInputs: Record<string, string> = {};
+      sectionsConfig.forEach(sec => {
+         const secQs = questions.filter(q => (q.section || sectionsConfig[0].name) === sec.name);
+         if (secQs.length > 0) {
+             const cleanQs = secQs.map(q => ({
+                 text: q.text,
+                 options: q.options,
+                 correct_option_index: q.correct_option_index,
+                 ...(q.image_url ? { image_url: q.image_url } : {})
+             }));
+             newJsonInputs[sec.name] = JSON.stringify(cleanQs, null, 2);
+         } else {
+             newJsonInputs[sec.name] = "";
+         }
+      });
+      setJsonInputs(newJsonInputs);
+      setActiveTab("json");
+    } else if (newTab === "full_json") {
+      const fullDoc = {
+          title: testTitle,
+          duration_minutes: duration,
+          negative_marking_enabled: negativeMarkingEnabled,
+          allow_section_switching: allowSectionSwitching,
+          sections_config: sectionsConfig,
+          questions: questions
+      };
+      setFullJsonInput(JSON.stringify(fullDoc, null, 2));
+      setActiveTab("full_json");
+    } else {
+      // Sync from JSON to Builder
+      try {
+        let newQuestions: Question[] = [];
+        for (const sec of sectionsConfig) {
+           const val = jsonInputs[sec.name];
+           if (!val || !val.trim()) continue;
+           
+           const parsedQs = JSON.parse(val);
+           if (!Array.isArray(parsedQs)) throw new Error(`JSON for section ${sec.name} must be an array.`);
+           for (const q of parsedQs) {
+               if (!q.text || !Array.isArray(q.options) || typeof q.correct_option_index !== 'number') {
+                  throw new Error(`Invalid question format in section ${sec.name}.`);
+               }
+               newQuestions.push({
+                  id: Math.random().toString(36).substr(2, 9),
+                  text: q.text,
+                  options: q.options,
+                  correct_option_index: q.correct_option_index,
+                  image_url: q.image_url || "",
+                  section: sec.name,
+                  positive_marks: sec.positive_marks,
+                  negative_marks: negativeMarkingEnabled ? sec.negative_marks : 0
+               });
+           }
+        }
+        setQuestions(newQuestions);
+        setActiveTab("builder");
+        setErrorMessage("");
+        if (status === "error") setStatus("idle");
+      } catch (err: any) {
+        setErrorMessage("Cannot switch to Builder. " + err.message);
+        setStatus("error");
+        return; // Prevent tab switch if JSON is invalid
+      }
+    }
+  };
+
   const handleSave = async () => {
     try {
       setStatus("saving");
       
       let payloadQuestions = [...questions];
       
-      if (activeTab === "builder") {
+      if (activeTab === "builder" || activeTab === "full_json") {
         if (!testTitle) throw new Error("Test title is required.");
         if (payloadQuestions.length === 0) throw new Error("Add at least one question.");
         
@@ -230,12 +411,43 @@ export default function TestEditorPage() {
             }
         };
       } else {
-        const payload = JSON.parse(jsonInput);
-        if (!payload.test_title || !payload.questions || !Array.isArray(payload.questions)) {
-          throw new Error("Invalid JSON structure. Missing test_title or questions array.");
+        if (!testTitle) throw new Error("Test title is required.");
+        payloadQuestions = [];
+        for (const sec of sectionsConfig) {
+           const val = jsonInputs[sec.name];
+           if (!val || !val.trim()) continue;
+           try {
+              const parsedQs = JSON.parse(val);
+              if (!Array.isArray(parsedQs)) throw new Error(`JSON for section ${sec.name} must be an array.`);
+              for (const q of parsedQs) {
+                 if (!q.text || !Array.isArray(q.options) || typeof q.correct_option_index !== 'number') {
+                    throw new Error(`Invalid question format in section ${sec.name}. Make sure text, options array, and correct_option_index are provided.`);
+                 }
+                 payloadQuestions.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    text: q.text,
+                    options: q.options,
+                    correct_option_index: q.correct_option_index,
+                    image_url: q.image_url || "",
+                    section: sec.name,
+                    positive_marks: sec.positive_marks,
+                    negative_marks: negativeMarkingEnabled ? sec.negative_marks : 0
+                 });
+              }
+           } catch (e: any) {
+              throw new Error(`Error parsing section ${sec.name}: ` + e.message);
+           }
         }
-        if (payload.test_title) setTestTitle(payload.test_title);
-        payloadQuestions = payload.questions;
+        if (payloadQuestions.length === 0) throw new Error("Add at least one question in JSON across all sections.");
+        
+        payloadQuestions[0] = {
+            ...payloadQuestions[0],
+            test_config: {
+                negative_marking_enabled: negativeMarkingEnabled,
+                allow_section_switching: allowSectionSwitching,
+                sections_config: sectionsConfig
+            }
+        };
       }
 
       // First update the test details
@@ -283,16 +495,22 @@ export default function TestEditorPage() {
 
       <div className="flex border-b border-border mb-6">
         <button
-          onClick={() => setActiveTab("builder")}
+          onClick={() => handleTabSwitch("builder")}
           className={`px-6 py-3 font-semibold text-sm transition-colors ${activeTab === "builder" ? "border-b-2 border-blue-600 text-blue-600" : "text-muted-foreground hover:text-foreground"}`}
         >
-          Test Builder (Primary)
+          Test Builder
         </button>
         <button
-          onClick={() => setActiveTab("json")}
+          onClick={() => handleTabSwitch("json")}
           className={`px-6 py-3 font-semibold text-sm transition-colors ${activeTab === "json" ? "border-b-2 border-blue-600 text-blue-600" : "text-muted-foreground hover:text-foreground"}`}
         >
-          JSON Import (Backup)
+          JSON Test Builder
+        </button>
+        <button
+          onClick={() => handleTabSwitch("full_json")}
+          className={`px-6 py-3 font-semibold text-sm transition-colors ${activeTab === "full_json" ? "border-b-2 border-blue-600 text-blue-600" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Upload JSON File
         </button>
       </div>
 
@@ -316,11 +534,11 @@ export default function TestEditorPage() {
         </div>
       )}
 
-      {activeTab === "builder" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           
           {/* Left Sidebar: Test Settings & Question List */}
-          <div className="lg:col-span-1 space-y-4">
+          {activeTab !== "full_json" && (
+            <div className="lg:col-span-1 space-y-4">
             
             {/* General Settings */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
@@ -410,22 +628,24 @@ export default function TestEditorPage() {
                 <h3 className="font-bold text-sm text-slate-800">
                    Questions {activeBuilderSection && `(${questions.filter(q => (q.section || sectionsConfig[0].name) === activeBuilderSection).length})`}
                 </h3>
-                <button onClick={() => {
-                   const defaultSection = sectionsConfig.find(s => s.name === activeBuilderSection) || sectionsConfig[0];
-                   const newQ = {
-                     id: Math.random().toString(36).substr(2, 9),
-                     text: "",
-                     options: ["", "", "", ""],
-                     correct_option_index: 0,
-                     positive_marks: defaultSection.positive_marks,
-                     negative_marks: negativeMarkingEnabled ? defaultSection.negative_marks : 0,
-                     section: defaultSection.name
-                   };
-                   setQuestions([...questions, newQ]);
-                   setActiveQIndex(questions.length);
-                }} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1 text-xs font-bold">
-                  <Plus size={14} /> Add
-                </button>
+                {activeTab === "builder" && (
+                  <button onClick={() => {
+                     const defaultSection = sectionsConfig.find(s => s.name === activeBuilderSection) || sectionsConfig[0];
+                     const newQ = {
+                       id: Math.random().toString(36).substr(2, 9),
+                       text: "",
+                       options: ["", "", "", ""],
+                       correct_option_index: 0,
+                       positive_marks: defaultSection.positive_marks,
+                       negative_marks: negativeMarkingEnabled ? defaultSection.negative_marks : 0,
+                       section: defaultSection.name
+                     };
+                     setQuestions([...questions, newQ]);
+                     setActiveQIndex(questions.length);
+                  }} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-1 text-xs font-bold">
+                    <Plus size={14} /> Add
+                  </button>
+                )}
               </div>
               
               <div className="flex-1 overflow-y-auto space-y-2 p-4 bg-slate-50/50 pr-2">
@@ -450,13 +670,15 @@ export default function TestEditorPage() {
                         <div className="flex-1 overflow-hidden">
                           <p className="text-sm font-semibold text-slate-800 truncate">{q.text || "Empty Question"}</p>
                         </div>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); removeQuestion(idx); }} 
-                          className="text-slate-400 hover:text-red-500 p-1 shrink-0 z-10"
-                          aria-label="Delete question"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {activeTab === "builder" && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); removeQuestion(idx); }} 
+                            className="text-slate-400 hover:text-red-500 p-1 shrink-0 z-10"
+                            aria-label="Delete question"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     );
                   })
@@ -464,10 +686,12 @@ export default function TestEditorPage() {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Right Main Area: Question Editor */}
-          <div className="lg:col-span-3">
-            {activeQIndex >= 0 && questions[activeQIndex] ? (
+          {/* Right Main Area: Question Editor or JSON Import */}
+          <div className={activeTab === "full_json" ? "lg:col-span-4" : "lg:col-span-3"}>
+            {activeTab === "builder" ? (
+              activeQIndex >= 0 && questions[activeQIndex] ? (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
                 
                 <div className="border-b border-slate-100 pb-4">
@@ -561,27 +785,112 @@ export default function TestEditorPage() {
                   <Plus size={16} /> Add First Question
                 </button>
               </div>
+            )
+            ) : (
+              <div className="space-y-6">
+                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <div className="flex items-center gap-2 mb-2">
+                       <FileJson size={20} className="text-blue-600" />
+                       <h2 className="text-lg font-bold text-slate-800">JSON Import by Section</h2>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-6">Paste an array of questions in JSON format for each section. The questions will automatically inherit the section's positive/negative marks.</p>
+                    
+                    <div className="bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
+                      <p className="text-xs font-bold text-slate-600 mb-2">Example JSON Format:</p>
+                      <pre className="text-xs text-slate-700 font-mono overflow-x-auto">
+{`[
+  {
+    "text": "What is the capital of France?",
+    "options": ["London", "Berlin", "Paris", "Madrid"],
+    "correct_option_index": 2
+  },
+  {
+    "text": "Another question here?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_option_index": 0
+  }
+]`}
+                      </pre>
+                    </div>
+
+                    <div className="space-y-6">
+                      {sectionsConfig.map((sec, idx) => (
+                        <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
+                          <div className="bg-slate-100 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                            <span className="font-bold text-slate-700">{sec.name}</span>
+                            <span className="text-xs font-semibold text-slate-500">+{sec.positive_marks} / -{negativeMarkingEnabled ? sec.negative_marks : 0} marks</span>
+                          </div>
+                          <JsonEditor
+                            value={jsonInputs[sec.name] || ""}
+                            onChange={(val) => {
+                              setJsonInputs({...jsonInputs, [sec.name]: val});
+                              if (status !== 'idle') setStatus('idle');
+                            }}
+                            error={!!jsonErrors[sec.name]}
+                            placeholder={`[\n  {\n    "text": "...",\n    "options": [...],\n    "correct_option_index": 0\n  }\n]`}
+                          />
+                          {jsonErrors[sec.name] && (
+                             <div className="bg-red-50 text-red-600 p-3 text-xs font-bold border-t border-red-100 flex items-start gap-2">
+                                <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                                <span>{jsonErrors[sec.name]}</span>
+                             </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                 </div>
+              </div>
+            )}
+            
+            {activeTab === "full_json" && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
+                 <div>
+                    <h2 className="text-xl font-bold text-slate-800 mb-2">Upload Test JSON File</h2>
+                    <p className="text-sm text-slate-500 mb-6">Upload a full test configuration JSON file or paste the JSON content below. The file should include test metadata, sections, and questions.</p>
+                    
+                    <div className="mb-6 flex gap-4 items-center">
+                       <label className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-semibold cursor-pointer border border-slate-300 transition-colors">
+                          Choose File
+                          <input 
+                            type="file" 
+                            accept=".json" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                 const content = event.target?.result as string;
+                                 if (content) {
+                                    setFullJsonInput(content);
+                                 }
+                              };
+                              reader.readAsText(file);
+                            }}
+                          />
+                       </label>
+                       <span className="text-sm text-slate-500">Select a .json file from your computer</span>
+                    </div>
+
+                    <div className="border border-slate-200 rounded-xl overflow-hidden mb-6">
+                      <JsonEditor
+                        value={fullJsonInput}
+                        onChange={setFullJsonInput}
+                        error={!!fullJsonError}
+                        placeholder={`{\n  "title": "My Test",\n  "duration_minutes": 60,\n  "negative_marking_enabled": true,\n  "allow_section_switching": true,\n  "sections_config": [...],\n  "questions": [...]\n}`}
+                      />
+                      {fullJsonError && (
+                         <div className="bg-red-50 text-red-600 p-3 text-xs font-bold border-t border-red-100 flex items-start gap-2">
+                            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                            <span>{fullJsonError}</span>
+                         </div>
+                      )}
+                    </div>
+                 </div>
+              </div>
             )}
           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <FileJson size={20} className="text-blue-600" />
-            <h2 className="text-lg font-bold text-slate-800">Paste JSON Configuration</h2>
-          </div>
-          <p className="text-sm text-slate-500 mb-4">You can paste an entire test configuration here as a backup method.</p>
-          <textarea
-            value={jsonInput}
-            onChange={(e) => {
-              setJsonInput(e.target.value);
-              if (status !== 'idle') setStatus('idle');
-            }}
-            className="w-full h-[500px] p-4 font-mono text-sm bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 resize-none"
-            placeholder="Paste your JSON here..."
-          />
-        </div>
-      )}
     </div>
   );
 }

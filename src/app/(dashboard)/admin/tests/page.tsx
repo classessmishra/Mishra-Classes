@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getTests, assignTest, deleteTest } from "@/actions/tests";
 import { getBatches } from "@/actions/batches";
 import { getAllUsers } from "@/actions/users";
+import { getCourses } from "@/actions/courses";
 import Link from "next/link";
 import { Plus, Clock, Users, BookOpen, MoreVertical, X } from "lucide-react";
 import { DateTimePicker } from "@/components/DateTimePicker";
@@ -12,28 +13,33 @@ export default function TestsPage() {
   const [tests, setTests] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTest, setSelectedTest] = useState<any>(null);
-  const [assignType, setAssignType] = useState<"batch" | "student">("batch");
+  const [assignType, setAssignType] = useState<"batch" | "student" | "course">("batch");
   const [selectedTargetId, setSelectedTargetId] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
-      const [testsData, batchesData, usersData] = await Promise.all([
+      const [testsData, batchesData, usersData, coursesData] = await Promise.all([
         getTests(),
         getBatches(),
-        getAllUsers()
+        getAllUsers(),
+        getCourses()
       ]);
       setTests(testsData || []);
       setBatches(batchesData || []);
       setStudents((usersData || []).filter((u: any) => u.role === 'student'));
+      setCourses(coursesData || []);
       setLoading(false);
     }
     loadData();
@@ -43,20 +49,34 @@ export default function TestsPage() {
     setSelectedTest(test);
     setIsModalOpen(true);
     setSelectedTargetId("");
-    setStartTime("");
-    setEndTime("");
+    
+    const now = new Date();
+    const dStr = now.toISOString().split("T")[0];
+    const hStr = now.getHours().toString().padStart(2, '0');
+    const mStr = now.getMinutes().toString().padStart(2, '0');
+    
+    const endNow = new Date(now.getTime() + (test.duration_minutes || 60) * 60000);
+    const edStr = endNow.toISOString().split("T")[0];
+    const ehStr = endNow.getHours().toString().padStart(2, '0');
+    const emStr = endNow.getMinutes().toString().padStart(2, '0');
+    
+    setStartDate(dStr);
+    setStartTime(`${hStr}:${mStr}`);
+    setEndDate(edStr);
+    setEndTime(`${ehStr}:${emStr}`);
   };
 
   const handleAssign = async () => {
-    if (!selectedTargetId) return alert("Please select a batch or student.");
+    if (!selectedTargetId) return alert("Please select a target to assign to.");
     setAssigning(true);
     try {
       const payload: any = {};
       if (assignType === "batch") payload.batch_id = selectedTargetId;
-      else payload.student_id = selectedTargetId;
+      else if (assignType === "student") payload.student_id = selectedTargetId;
+      else payload.course_id = selectedTargetId;
       
-      if (startTime) payload.start_time = new Date(startTime).toISOString();
-      if (endTime) payload.end_time = new Date(endTime).toISOString();
+      if (startDate && startTime) payload.start_time = new Date(startDate + "T" + startTime).toISOString();
+      if (endDate && endTime) payload.end_time = new Date(endDate + "T" + endTime).toISOString();
 
       await assignTest(selectedTest.id, payload);
       alert("Test assigned successfully!");
@@ -75,6 +95,24 @@ export default function TestsPage() {
       setOpenDropdownId(null);
     } catch (e: any) {
       alert("Error deleting test: " + e.message);
+    }
+  };
+
+  const handleDownloadJson = (test: any) => {
+    try {
+      // Remove db specific metadata that's not needed for import
+      const { id, created_at, batch_id, ...testDataToExport } = test;
+      
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(testDataToExport, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `${test.title || test.test_title || 'test'}_export.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+      setOpenDropdownId(null);
+    } catch (e) {
+      alert("Error downloading JSON.");
     }
   };
 
@@ -132,6 +170,12 @@ export default function TestsPage() {
                       >
                         Duplicate & Assign
                       </Link>
+                      <button 
+                        onClick={() => handleDownloadJson(test)}
+                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                      >
+                        Download JSON
+                      </button>
                       <button 
                         onClick={() => handleDeleteTest(test.id)}
                         className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -211,41 +255,79 @@ export default function TestsPage() {
                 >
                   To Student
                 </button>
+                <button
+                  className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all ${assignType === 'course' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  onClick={() => { setAssignType('course'); setSelectedTargetId(""); }}
+                >
+                  To Course
+                </button>
               </div>
 
               <div>
                 <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                  Select {assignType === 'batch' ? 'Batch' : 'Student'}
+                  Select {assignType === 'batch' ? 'Batch' : assignType === 'student' ? 'Student' : 'Course'}
                 </label>
                 <select
                   value={selectedTargetId}
                   onChange={(e) => setSelectedTargetId(e.target.value)}
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500"
                 >
-                  <option value="">-- Choose {assignType === 'batch' ? 'a Batch' : 'a Student'} --</option>
+                  <option value="">-- Choose {assignType === 'batch' ? 'a Batch' : assignType === 'student' ? 'a Student' : 'a Course'} --</option>
                   {assignType === 'batch' ? (
                     batches.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))
-                  ) : (
+                  ) : assignType === 'student' ? (
                     students.map(s => (
                       <option key={s.id} value={s.id}>{s.full_name || s.phone || "Unknown User"}</option>
+                    ))
+                  ) : (
+                    courses.map(c => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
                     ))
                   )}
                 </select>
               </div>
 
-              <div className="space-y-4">
-                <DateTimePicker 
-                  label="Start Time (Optional)" 
-                  value={startTime} 
-                  onChange={setStartTime} 
-                />
-                <DateTimePicker 
-                  label="End Time (Optional)" 
-                  value={endTime} 
-                  onChange={setEndTime} 
-                />
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                    Start Date & Time
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-slate-700 mb-2 block">
+                    End Date & Time
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm text-slate-700"
+                    />
+                  </div>
+                </div>
               </div>
 
               <button 

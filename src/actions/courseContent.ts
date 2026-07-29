@@ -123,7 +123,8 @@ export async function getRecordedClasses(courseId: string) {
     video_url: item.video_url,
     duration_mins: item.duration_mins,
     class_date: item.class_date,
-    is_live_vod: false
+    is_live_vod: false,
+    folder_id: item.folder_id
   }));
 
   const formattedNew = (newData || []).map(item => ({
@@ -132,7 +133,8 @@ export async function getRecordedClasses(courseId: string) {
     video_url: `https://www.youtube.com/embed/${extractYouTubeId(item.meeting_link)}`,
     duration_mins: item.duration || "0",
     class_date: item.start_time,
-    is_live_vod: true
+    is_live_vod: true,
+    folder_id: item.folder_id
   }));
 
   return [...formattedOld, ...formattedNew].sort((a, b) => new Date(b.class_date).getTime() - new Date(a.class_date).getTime());
@@ -246,4 +248,36 @@ export async function uploadMaterialFile(formData: FormData) {
   const url = await uploadMediaToCloudinary(buffer, 'course-materials');
   
   return { url };
+}
+
+// Folders
+export async function getCourseFolders(courseId: string) {
+  noStore();
+  const { data, error } = await supabase
+    .from('course_folders')
+    .select('*')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true });
+  
+  if (error) {
+    console.error("Error fetching course folders:", error);
+    return [];
+  }
+  return data;
+}
+
+export async function createCourseFolder(courseId: string, name: string) {
+  const { error } = await supabase.from('course_folders').insert([{ course_id: courseId, name }]);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath(`/student/courses/${courseId}`);
+  return { success: true };
+}
+
+export async function deleteCourseFolder(folderId: string, courseId: string) {
+  const { error } = await supabase.from('course_folders').delete().eq('id', folderId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath(`/student/courses/${courseId}`);
+  return { success: true };
 }
