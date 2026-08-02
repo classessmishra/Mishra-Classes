@@ -18,7 +18,6 @@ interface CourseCardProps {
   isEnrolledView?: boolean;
   enrollDate?: string;
   validityDate?: string;
-  validityDate?: string;
 }
 
 export default function CourseCard({

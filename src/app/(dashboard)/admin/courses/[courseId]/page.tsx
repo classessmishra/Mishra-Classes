@@ -301,7 +301,7 @@ export default function CourseContentManager() {
                           </div>
                         </div>
                       </div>
-                      <button onClick={async () => { await deleteLiveClass(cls.id); setLiveClasses(await getLiveClasses(courseId as string)); }} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-xl transition-colors shrink-0">
+                      <button onClick={async () => { await deleteLiveClass(cls.id, courseId as string); setLiveClasses(await getLiveClasses(courseId as string)); }} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 rounded-xl transition-colors shrink-0">
                         <Trash2 size={18} />
                       </button>
                     </div>

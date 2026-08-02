@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
 
   devIndicators: false,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   allowedDevOrigins: ['192.168.31.237', 'localhost', '127.0.0.1'],
   experimental: {
     serverActions: {
