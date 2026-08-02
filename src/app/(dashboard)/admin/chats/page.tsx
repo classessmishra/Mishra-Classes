@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Send, Search, MoreVertical, Paperclip, Hash, User, Ban, Users, X, Check, FileText, Loader2, Image as ImageIcon, Download, Pin, PinOff } from "lucide-react";
-import { toggleChatBan, getGroupMembers, uploadChatAttachment, addMemberToGroup, removeMemberFromGroup, getAllStudents, deleteMessageAdmin, clearGroupChatAdmin } from "@/actions/chat";
+import { toggleChatBan, getGroupMembers, uploadChatAttachment, addMemberToGroup, removeMemberFromGroup, getAllStudents, deleteMessageAdmin, clearGroupChatAdmin, deleteChatGroupAdmin, sendChatPushNotification } from "@/actions/chat";
 import { uploadFiles } from "@/utils/uploadthing";
 
 const getHashStr = (str: string) => {
@@ -430,6 +430,8 @@ export default function AdminChatsPage() {
 
     if (error) {
       console.error("Error sending message:", error);
+    } else {
+      sendChatPushNotification(activeGroupId, currentMessage, ADMIN_USER_ID, "Ujjwal Sharma (Admin)");
     }
   };
 
@@ -439,6 +441,25 @@ export default function AdminChatsPage() {
       await clearGroupChatAdmin(activeGroupId);
       setMessages([]);
       setShowMenu(false);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!activeGroupId) return;
+    const group = groups.find(g => g.id === activeGroupId);
+    if (group?.is_direct_message || group?.batch_id) {
+      alert("Cannot delete a direct message or batch group. You can only clear it.");
+      return;
+    }
+    if (confirm("Are you sure you want to permanently delete this group? This cannot be undone.")) {
+      try {
+        await deleteChatGroupAdmin(activeGroupId);
+        setGroups(prev => prev.filter(g => g.id !== activeGroupId));
+        setActiveGroupId(null);
+        setShowMenu(false);
+      } catch (err: any) {
+        alert("Failed to delete group: " + err.message);
+      }
     }
   };
 
@@ -683,6 +704,11 @@ export default function AdminChatsPage() {
                   <button onClick={handleClearChat} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">
                     Clear Chat (Delete All)
                   </button>
+                  {!(groups.find(g => g.id === activeGroupId)?.is_direct_message || groups.find(g => g.id === activeGroupId)?.batch_id) && (
+                    <button onClick={handleDeleteGroup} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium border-t border-gray-100">
+                      Delete Group
+                    </button>
+                  )}
                 </div>
               </>
             )}
@@ -782,7 +808,7 @@ export default function AdminChatsPage() {
                     </div>
 
                     {/* Message Context Menu (Dots) */}
-                    <div className={`absolute top-1/2 -translate-y-1/2 ${isAdmin ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${isAdmin ? '-left-8' : '-right-8'} opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity`}>
                       <button onClick={() => setActiveMessageId(msg.id === activeMessageId ? null : msg.id)} className="p-1 rounded-full hover:bg-gray-200 text-gray-500">
                         <MoreVertical size={16} />
                       </button>

@@ -30,7 +30,7 @@ function PaymentSuccessContent() {
           courses (title, price)
         `)
         .eq('receipt_id', receiptId)
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error("Supabase Error:", error);
@@ -103,49 +103,49 @@ function PaymentSuccessContent() {
         <p className="text-slate-500 mt-2">Thank you for enrolling. Your transaction is complete.</p>
       </div>
 
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6 print:border-none print:shadow-none print:mb-0 print:max-w-none">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6 print:border-none print:shadow-none print:mb-0 print:w-full print:max-w-none">
         {/* Printable Area */}
-        <div ref={invoiceRef} className="relative p-8 bg-white text-slate-800">
+        <div ref={invoiceRef} className="relative p-6 sm:p-8 bg-white text-slate-800">
           {/* Watermark Logo */}
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-10 pointer-events-none overflow-hidden">
             <img src="/logo.png" alt="Mishra Classes Watermark" className="w-full max-w-lg object-contain blur-[1px]" />
           </div>
 
-          <div className="relative z-10 flex justify-between items-start mb-10 border-b border-slate-100 pb-8">
-            <div className="flex items-center gap-4">
-              <img src="/logo.png" alt="Mishra Classes Logo" className="w-16 h-16 object-contain" />
+          <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-6 mb-10 border-b border-slate-100 pb-8 print:flex-row print:gap-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <img src="/logo.png" alt="Mishra Classes Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
               <div>
-                <h2 className="text-2xl font-black text-blue-600 tracking-tight">MISHRA CLASSES</h2>
-                <p className="text-sm text-slate-500 mt-1">Transforming Education</p>
+                <h2 className="text-xl sm:text-2xl font-black text-blue-600 tracking-tight leading-tight">MISHRA CLASSES</h2>
+                <p className="text-[10px] sm:text-sm text-slate-500 mt-0.5">Transforming Education</p>
                 {adminInfo?.address ? (
                   adminInfo?.map_location ? (
-                    <a href={adminInfo.map_location} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline mt-4 block whitespace-pre-wrap">{adminInfo.address}</a>
+                    <a href={adminInfo.map_location} target="_blank" rel="noopener noreferrer" className="text-[10px] sm:text-xs text-blue-500 hover:underline mt-2 sm:mt-4 block whitespace-pre-wrap">{adminInfo.address}</a>
                   ) : (
-                    <p className="text-xs text-slate-400 mt-4 whitespace-pre-wrap">{adminInfo.address}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-2 sm:mt-4 whitespace-pre-wrap">{adminInfo.address}</p>
                   )
                 ) : (
-                  <p className="text-xs text-slate-400 mt-4">classessmishra@gmail.com</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 mt-2 sm:mt-4">classessmishra@gmail.com</p>
                 )}
               </div>
             </div>
-            <div className="text-right">
-              <div className="inline-block px-3 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-md uppercase tracking-wider mb-2">
+            <div className="text-left sm:text-right print:text-right">
+              <div className="inline-block px-2 sm:px-3 py-1 bg-green-50 text-green-700 text-[10px] sm:text-xs font-bold rounded-md uppercase tracking-wider mb-2">
                 PAID RECEIPT
               </div>
-              <p className="text-sm font-semibold text-slate-700">Receipt No: <span className="font-mono text-slate-500">{receiptId}</span></p>
-              <p className="text-sm font-semibold text-slate-700 mt-1">Date: <span className="font-mono text-slate-500">{purchase.created_at ? new Date(purchase.created_at as string).toLocaleDateString() : ""}</span></p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-700">Receipt No: <span className="font-mono text-slate-500">{receiptId}</span></p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5 sm:mt-1">Date: <span className="font-mono text-slate-500">{purchase.created_at ? new Date(purchase.created_at as string).toLocaleDateString() : ""}</span></p>
             </div>
           </div>
 
-          <div className="mb-10 flex justify-between relative z-10">
+          <div className="mb-8 flex flex-col sm:flex-row justify-between gap-4 sm:gap-6 relative z-10 print:flex-row print:mb-10">
             <div>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Billed To</h3>
-              <p className="font-bold text-slate-800">{(purchase.users as any)?.full_name || "Student"}</p>
-              <p className="text-sm text-slate-500">{(purchase.users as any)?.email || ""}</p>
-              <p className="text-sm text-slate-500">{(purchase.users as any)?.phone || ""}</p>
+              <h3 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">Billed To</h3>
+              <p className="text-sm sm:text-base font-bold text-slate-800">{(purchase.users as any)?.full_name || "Student"}</p>
+              <p className="text-xs sm:text-sm text-slate-500 break-all sm:break-normal">{(purchase.users as any)?.email || ""}</p>
+              <p className="text-xs sm:text-sm text-slate-500">{(purchase.users as any)?.phone || ""}</p>
               
               {((purchase.users as any)?.address || (purchase.users as any)?.city) && (
-                <div className="mt-2 text-sm text-slate-500">
+                <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-slate-500">
                   <p>{(purchase.users as any)?.address || ""}</p>
                   <p>
                     {[(purchase.users as any)?.city, (purchase.users as any)?.pincode].filter(Boolean).join(" - ")}
@@ -153,61 +153,63 @@ function PaymentSuccessContent() {
                 </div>
               )}
             </div>
-            <div className="text-right">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Transaction Ref</h3>
-              <p className="font-mono text-sm text-slate-800">{purchase.razorpay_payment_id as string || "N/A"}</p>
-              {Boolean(purchase.coupon_code) && <p className="text-sm text-blue-600 mt-1 font-semibold">Coupon: {purchase.coupon_code as string}</p>}
+            <div className="text-left sm:text-right print:text-right mt-2 sm:mt-0 border-t border-slate-100 sm:border-0 pt-4 sm:pt-0">
+              <h3 className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 sm:mb-2">Transaction Ref</h3>
+              <p className="font-mono text-xs sm:text-sm text-slate-800 break-all sm:break-normal">{purchase.razorpay_payment_id as string || "N/A"}</p>
+              {Boolean(purchase.coupon_code) && <p className="text-xs sm:text-sm text-blue-600 mt-1 font-semibold">Coupon: {purchase.coupon_code as string}</p>}
             </div>
           </div>
 
-          <table className="w-full text-left mb-8 relative z-10">
-            <thead className="bg-slate-50/50 text-slate-500 text-xs uppercase font-bold border-y border-slate-200 print:bg-transparent">
-              <tr>
-                <th className="py-3 px-4">Description</th>
-                <th className="py-3 px-4 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              <tr>
-                <td className="py-4 px-4">
-                  <p className="font-bold text-slate-800">{(purchase.courses as any)?.title || "Course Enrollment"}</p>
-                  <p className="text-xs text-slate-500">Digital Course Access</p>
-                </td>
-                <td className="py-4 px-4 text-right font-medium">₹{originalPrice.toFixed(2)}</td>
-              </tr>
-              {discount > 0 && (
+          <div className="overflow-x-auto mb-8 relative z-10 print:overflow-visible">
+            <table className="w-full text-left min-w-[300px]">
+              <thead className="bg-slate-50/50 text-slate-500 text-[10px] sm:text-xs uppercase font-bold border-y border-slate-200 print:bg-transparent">
                 <tr>
-                  <td className="py-3 px-4 text-right font-medium text-slate-500">Discount Applied</td>
-                  <td className="py-3 px-4 text-right font-medium text-green-600">- ₹{discount.toFixed(2)}</td>
+                  <th className="py-2 sm:py-3 px-3 sm:px-4">Description</th>
+                  <th className="py-2 sm:py-3 px-3 sm:px-4 text-right">Amount</th>
                 </tr>
-              )}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td className="py-4 px-4 text-right font-bold text-slate-800 border-t border-slate-200">Total Paid</td>
-                <td className="py-4 px-4 text-right font-black text-xl text-slate-900 border-t border-slate-200">₹{amountPaid.toFixed(2)}</td>
-              </tr>
-            </tfoot>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr>
+                  <td className="py-3 sm:py-4 px-3 sm:px-4">
+                    <p className="text-sm sm:text-base font-bold text-slate-800">{(purchase.courses as any)?.title || "Course Enrollment"}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500">Digital Course Access</p>
+                  </td>
+                  <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-sm sm:text-base font-medium">₹{originalPrice.toFixed(2)}</td>
+                </tr>
+                {discount > 0 && (
+                  <tr>
+                    <td className="py-2 sm:py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-medium text-slate-500">Discount Applied</td>
+                    <td className="py-2 sm:py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-medium text-green-600">- ₹{discount.toFixed(2)}</td>
+                  </tr>
+                )}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-sm sm:text-base font-bold text-slate-800 border-t border-slate-200">Total Paid</td>
+                  <td className="py-3 sm:py-4 px-3 sm:px-4 text-right font-black text-lg sm:text-xl text-slate-900 border-t border-slate-200">₹{amountPaid.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
 
-          <div className="text-center pt-8 border-t border-slate-100 text-xs text-slate-400 relative z-10">
+          <div className="text-center pt-6 border-t border-slate-100 text-[10px] sm:text-xs text-slate-400 relative z-10">
             <p>This is a computer-generated receipt and does not require a physical signature.</p>
           </div>
         </div>
       </div>
 
-      <div className="flex gap-4 print:hidden">
+      <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3 sm:gap-4 print:hidden mb-20 sm:mb-0">
         <button 
           onClick={handleDownloadPDF}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-sm shadow-blue-200 hover:bg-blue-700 transition-colors"
+          className="flex justify-center items-center gap-2 bg-blue-600 text-white px-4 sm:px-6 py-3 rounded-xl font-bold shadow-sm shadow-blue-200 hover:bg-blue-700 transition-colors w-full sm:w-auto text-sm sm:text-base"
         >
-          <Download size={18} /> Download PDF
+          <Download size={18} className="shrink-0" /> Download PDF
         </button>
         <Link 
           href="/student"
-          className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold shadow-sm hover:bg-slate-50 transition-colors"
+          className="flex justify-center items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 sm:px-6 py-3 rounded-xl font-bold shadow-sm hover:bg-slate-50 transition-colors w-full sm:w-auto text-sm sm:text-base"
         >
-          <Home size={18} /> Go to Dashboard
+          <Home size={18} className="shrink-0" /> Go to Dashboard
         </Link>
       </div>
     </div>

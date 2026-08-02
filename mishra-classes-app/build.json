@@ -1,0 +1,48 @@
+{
+  "id": "6321ad2d-9cf7-47b6-b08f-95a91a41bed4",
+  "status": "ERRORED",
+  "platform": "ANDROID",
+  "error": {
+    "errorCode": "EAS_BUILD_UNKNOWN_GRADLE_ERROR",
+    "message": "Gradle build failed with unknown error. See logs for the \"Run gradlew\" phase for more information."
+  },
+  "artifacts": {},
+  "fingerprint": {
+    "id": "019fbe5a-a8d5-7600-ab7e-99039081c9ad",
+    "hash": "d8f98ae6449aca4287f79fd7879f1c2873d7a590"
+  },
+  "initiatingActor": {
+    "id": "37ec93fb-988f-45fd-886c-e5693d4ceda5",
+    "displayName": "mishraclasses"
+  },
+  "logFiles": [
+    "https://storage.googleapis.com/eas-workflows-production/logs/4efb8857-0fd3-4608-94d8-e493a593e1ff/6321ad2d-9cf7-47b6-b08f-95a91a41bed4/2026-08-01T17%3A24%3A03Z-1456d30b-5654-468f-906c-e40ef5ccad38.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260801%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260801T172947Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=978c6f81420c9b818687c7212b3915aab98c32692431268f0a898a87ccc380fa1b2c7d9de217215629a571e7c4bfe90bd4c659654bf0c3ceffb61eaf3e8bbbfc986439c96ca9c01291cd827b6e8d918cc7057f8363cec7a34e21d019fcf70563dee49be374b53a1c1e7f2b7e3689b6bef1913dbd2824376e8892d53c8a31af77d2c93290b421b50403efb685e86b16799b4c94bbd8abe07868434dda461d9e1ac35ebf0b8d6d3de69a700686f6180fe86719a8a2a1b09e957534974a8af9ccfae953431821f6a301f9f28fe349d4547e48b9ecf489cf5fac922f3bdb6fc91401f5521cdd780205aec41c7a0d464d6f94574f56647403a05a76688592c6924e40"
+  ],
+  "project": {
+    "id": "4efb8857-0fd3-4608-94d8-e493a593e1ff",
+    "name": "mishra-classes-app",
+    "slug": "mishra-classes-app",
+    "ownerAccount": {
+      "id": "f0ff1b30-55b1-4274-9a4a-dc520c30c159",
+      "name": "mishraclasses"
+    }
+  },
+  "distribution": "STORE",
+  "buildProfile": "preview",
+  "sdkVersion": "54.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "gitCommitHash": "0ca3bd8dc019a2f21bf9a52b3245caef8db6c1a1",
+  "gitCommitMessage": "feat: implement course management features including live classes, recorded content syncing, material assignments, and test player integration",
+  "priority": "NORMAL",
+  "createdAt": "2026-08-01T17:24:00.304Z",
+  "updatedAt": "2026-08-01T17:27:48.546Z",
+  "completedAt": "2026-08-01T17:27:48.360Z",
+  "expirationDate": "2026-08-31T17:24:00.334Z",
+  "isForIosSimulator": false,
+  "metrics": {
+    "buildWaitTime": 1816,
+    "buildQueueTime": 5731,
+    "buildDuration": 220509
+  }
+}

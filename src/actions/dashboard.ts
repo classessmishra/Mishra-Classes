@@ -8,11 +8,13 @@ export async function getDashboardStats() {
       { count: activeStudents },
       { count: totalBatches },
       { count: upcomingTests },
+      { count: totalCourses },
       { data: recentEnrollments }
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'student'),
       supabase.from('batches').select('*', { count: 'exact', head: true }),
       supabase.from('tests').select('*', { count: 'exact', head: true }),
+      supabase.from('courses').select('*', { count: 'exact', head: true }),
       supabase.from('users')
         .select('*')
         .eq('role', 'student')
@@ -24,7 +26,7 @@ export async function getDashboardStats() {
       activeStudents: activeStudents || 0,
       totalBatches: totalBatches || 0,
       upcomingTests: upcomingTests || 0,
-      pendingQueries: 0, // Not implemented in DB yet
+      totalCourses: totalCourses || 0,
       recentEnrollments: recentEnrollments || []
     };
   } catch (error) {
@@ -33,7 +35,7 @@ export async function getDashboardStats() {
       activeStudents: 0,
       totalBatches: 0,
       upcomingTests: 0,
-      pendingQueries: 0,
+      totalCourses: 0,
       recentEnrollments: []
     };
   }

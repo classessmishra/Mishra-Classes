@@ -39,9 +39,13 @@ export default function Navbar() {
     }
     
     if (idMatch) {
-      getUserProfile(idMatch[2]).then(data => {
-        if (data) setUserProfile(data);
-      });
+      getUserProfile(idMatch[2])
+        .then(data => {
+          if (data) setUserProfile(data);
+        })
+        .catch(err => {
+          console.error("Ignored getUserProfile error:", err);
+        });
     }
 
     // Close dropdowns on click outside

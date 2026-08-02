@@ -111,3 +111,22 @@ export async function deleteUser(userId: string) {
     return { success: false, error: err.message || "Failed to delete user" };
   }
 }
+
+export async function savePushToken(userId: string, token: string) {
+  if (!userId || !token) return { success: false, error: "Missing user ID or token" };
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ expo_push_token: token })
+      .eq('id', userId);
+
+    if (error) {
+      console.error("Error saving push token:", error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

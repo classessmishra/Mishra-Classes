@@ -18,8 +18,7 @@ interface CourseCardProps {
   isEnrolledView?: boolean;
   enrollDate?: string;
   validityDate?: string;
-  onAddToCart?: () => void;
-  isAddedToCart?: boolean;
+  validityDate?: string;
 }
 
 export default function CourseCard({
@@ -35,8 +34,6 @@ export default function CourseCard({
   isEnrolledView = false,
   enrollDate,
   validityDate,
-  onAddToCart,
-  isAddedToCart = false,
 }: CourseCardProps) {
   const href = customHref || `/store/${id}`;
   return (
@@ -112,23 +109,13 @@ export default function CourseCard({
               </div>
             )}
             <button 
-              onClick={(e) => {
-                if (onAddToCart) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!isAddedToCart) onAddToCart();
-                }
-              }}
               className={cn("font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2", 
               isEnrolledView 
                 ? "w-full px-4 py-2.5 text-sm bg-blue-600 text-white shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:bg-blue-700 hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5" 
-                : isAddedToCart
-                  ? "flex-1 px-3 py-2.5 text-sm bg-green-600 text-white shadow-[0_4px_14px_0_rgba(22,163,74,0.39)] hover:shadow-[0_6px_20px_rgba(22,163,74,0.23)] hover:-translate-y-0.5 cursor-default"
-                  : "flex-1 px-3 py-2.5 text-sm bg-slate-900 text-white shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:bg-slate-800 hover:-translate-y-0.5"
+                : "flex-1 px-3 py-2.5 text-sm bg-slate-900 text-white shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] hover:bg-slate-800 hover:-translate-y-0.5"
             )}>
               {isEnrolledView && <CheckCircle2 size={16} />}
-              {!isEnrolledView && isAddedToCart && <CheckCircle2 size={16} />}
-              {isAddedToCart && !isEnrolledView ? "Added" : (buttonText || (!price || price === 0 ? "Claim for Free" : "Enroll Now"))}
+              {buttonText || (!price || price === 0 ? "Claim for Free" : "Enroll Now")}
             </button>
           </div>
         </div>

@@ -9,11 +9,13 @@ import { getUserProfile, updateStudentProfile } from "@/actions/profile";
 export default function CheckoutModal({ 
   isOpen, 
   onClose, 
-  course 
+  course,
+  initialCouponCode 
 }: { 
   isOpen: boolean; 
   onClose: () => void;
   course: any;
+  initialCouponCode?: string;
 }) {
   const router = useRouter();
   const [couponCode, setCouponCode] = useState("");
@@ -23,6 +25,7 @@ export default function CheckoutModal({
   const [finalPrice, setFinalPrice] = useState(course?.price || 0);
   const [processing, setProcessing] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
   
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
@@ -45,11 +48,46 @@ export default function CheckoutModal({
   }, [isOpen]);
 
   useEffect(() => {
+    const handlePopState = () => {
+      if (isOpen) onClose();
+    };
+    if (isOpen) {
+      window.history.pushState({ modal: 'checkout' }, '');
+      window.addEventListener('popstate', handlePopState);
+    }
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
     if (course) setFinalPrice(course.price);
-    setAppliedCoupon(null);
-    setCouponCode("");
-    setCouponError("");
-  }, [course, isOpen]);
+    setPaymentError(""); // Clear error when course changes
+    
+    // Auto-apply initial coupon if provided
+    if (initialCouponCode && course) {
+      setCouponCode(initialCouponCode);
+      const applyInitial = async () => {
+        setValidating(true);
+        try {
+          const res = await validateCoupon(initialCouponCode, course.price);
+          if (res.valid) {
+            setAppliedCoupon(res);
+            setFinalPrice(res.final_amount);
+          }
+        } catch (err) {
+          // ignore error on initial auto-apply
+        } finally {
+          setValidating(false);
+        }
+      };
+      applyInitial();
+    } else {
+      setAppliedCoupon(null);
+      setCouponCode("");
+      setCouponError("");
+    }
+  }, [course, isOpen, initialCouponCode]);
 
   if (!isOpen || !course) return null;
 
@@ -57,6 +95,7 @@ export default function CheckoutModal({
     if (!couponCode) return;
     setValidating(true);
     setCouponError("");
+    setPaymentError("");
     try {
       const res = await validateCoupon(couponCode, course.price);
       if (res.valid) {
@@ -67,8 +106,8 @@ export default function CheckoutModal({
         setAppliedCoupon(null);
         setFinalPrice(course.price);
       }
-    } catch (err) {
-      setCouponError("Failed to validate coupon.");
+    } catch (err: any) {
+      setCouponError(err.message || "Failed to validate coupon.");
     } finally {
       setValidating(false);
     }
@@ -83,6 +122,7 @@ export default function CheckoutModal({
 
   const handlePayment = async () => {
     setProcessing(true);
+    setPaymentError("");
     
     // 1. Load Razorpay script
     const loadScript = () => new Promise((resolve) => {
@@ -95,7 +135,7 @@ export default function CheckoutModal({
 
     const res = await loadScript();
     if (!res) {
-      alert("Razorpay SDK failed to load. Are you online?");
+      setPaymentError("Razorpay SDK failed to load. Are you online?");
       setProcessing(false);
       return;
     }
@@ -107,13 +147,13 @@ export default function CheckoutModal({
       const userId = match ? match[2] : null;
       
       if (!userId) {
-        alert("Please login first.");
+        setPaymentError("Please login first.");
         setProcessing(false);
         return router.push('/login');
       }
 
       if (!address.trim() || !city.trim() || !pincode.trim()) {
-        alert("Please fill in your complete billing address (Address, City, PIN Code).");
+        setPaymentError("Please fill in your complete billing address (Address, City, PIN Code).");
         setProcessing(false);
         return;
       }
@@ -145,39 +185,8 @@ export default function CheckoutModal({
         name: "Mishra Classes",
         description: `Purchase: ${course.title}`,
         order_id: orderData.id,
-        handler: async function (response: any) {
-          // 4. Verify Payment
-          setVerifying(true);
-          setProcessing(true);
-          try {
-            const verifyRes = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                courseId: course.id,
-                userId,
-                amountPaid: finalPrice,
-                couponCode: appliedCoupon ? couponCode : null
-              })
-            });
-            const verifyData = await verifyRes.json();
-            
-            if (verifyData.success) {
-              router.push(`/student/payment-success?receipt_id=${verifyData.receipt_id}`);
-            } else {
-              alert("Payment verification failed.");
-              setProcessing(false);
-              setVerifying(false);
-            }
-          } catch (e) {
-            alert("Verification Error.");
-            setProcessing(false);
-            setVerifying(false);
-          }
-        },
+        callback_url: `${window.location.origin}/api/razorpay/callback`,
+        redirect: true,
         modal: {
           ondismiss: function() {
             setProcessing(false);
@@ -190,13 +199,13 @@ export default function CheckoutModal({
 
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', function (response: any){
-        alert("Payment Failed. " + response.error.description);
+        setPaymentError("Payment Failed: " + (response.error.description || response.error.reason));
         setProcessing(false);
       });
       rzp.open();
 
     } catch (err: any) {
-      alert("Checkout Error: " + err.message);
+      setPaymentError("Checkout Error: " + err.message);
       setProcessing(false);
     }
   };
@@ -238,37 +247,11 @@ export default function CheckoutModal({
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-xl p-3 border border-border">
-            {!appliedCoupon ? (
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    type="text" 
-                    value={couponCode}
-                    onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="Enter coupon code" 
-                    className="w-full pl-8 pr-3 py-2 text-sm bg-white border border-border rounded-lg outline-none focus:border-blue-500 uppercase"
-                  />
-                </div>
-                <button 
-                  onClick={handleApplyCoupon}
-                  disabled={validating || !couponCode}
-                  className="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-900 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {validating ? <Loader2 size={16} className="animate-spin" /> : "Apply"}
-                </button>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center bg-green-50 border border-green-200 p-2 rounded-lg">
-                <div className="flex items-center gap-2 text-green-700 text-sm font-bold">
-                  <CheckCircle2 size={16} /> '{appliedCoupon.coupon.code}' Applied
-                </div>
-                <button onClick={removeCoupon} className="text-xs text-red-500 hover:underline font-semibold">Remove</button>
-              </div>
-            )}
-            {couponError && <p className="text-xs text-red-500 mt-2 font-medium">{couponError}</p>}
-          </div>
+          {paymentError && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm font-medium text-center">
+              {paymentError}
+            </div>
+          )}
 
           <div className="space-y-3">
             <h3 className="font-bold text-sm text-slate-800 border-b border-slate-100 pb-2">Billing Details</h3>

@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
+import { useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 
 interface CartDrawerProps {
@@ -12,6 +13,19 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ isOpen, onClose, onCheckout }: CartDrawerProps) {
   const { cartItems, removeFromCart, cartTotal } = useCart();
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isOpen) onClose();
+    };
+    if (isOpen) {
+      window.history.pushState({ modal: 'cart' }, '');
+      window.addEventListener('popstate', handlePopState);
+    }
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>

@@ -50,16 +50,33 @@ export default function StudentStudyRoom() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      playerContainerRef.current?.requestFullscreen().catch(err => {
-        console.error("Error attempting to enable fullscreen:", err);
-      });
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+    try {
+      if (!isFullscreen) {
+        if (playerContainerRef.current?.requestFullscreen) {
+          playerContainerRef.current.requestFullscreen().catch(err => {
+            // Silently ignore native fullscreen errors since we have a CSS fallback
+          });
+        }
+        setIsFullscreen(true);
+        if ((window as any).ReactNativeWebView) {
+          (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'FULLSCREEN', value: true }));
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        setIsFullscreen(false);
+        if ((window as any).ReactNativeWebView) {
+          (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'FULLSCREEN', value: false }));
+        }
       }
-      setIsFullscreen(false);
+    } catch (error) {
+      // Silently catch error to prevent Next.js dev overlay
+      const nextState = !isFullscreen;
+      setIsFullscreen(nextState);
+      if ((window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'FULLSCREEN', value: nextState }));
+      }
     }
   };
 
@@ -594,34 +611,42 @@ export default function StudentStudyRoom() {
 
       {/* SECURE VOD MODAL */}
       {activeVideoUrl && (
-        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 lg:p-12 animate-in fade-in duration-300">
+        <div className={`fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-300 ${isFullscreen ? 'p-0' : 'p-4 lg:p-12'}`}>
           <div 
             ref={playerContainerRef}
-            className={`bg-black overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-300 ${isFullscreen ? 'w-full h-full rounded-none' : 'w-full max-w-5xl aspect-video rounded-3xl border border-white/20 shadow-2xl'}`}
+            className={`bg-black overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-300 ${isFullscreen ? 'w-full h-full rounded-none border-none' : 'w-full max-w-5xl aspect-video rounded-3xl border border-white/20 shadow-2xl'}`}
           >
-            {/* Header / Controls */}
-            <div className="absolute top-0 inset-x-0 h-16 bg-gradient-to-b from-black/80 to-transparent z-50 flex justify-between items-start p-4 pointer-events-none">
+            {/* Tag / Indicator (Top Left) */}
+            <div className="absolute top-0 left-0 p-4 z-50 pointer-events-none">
               <div className="pointer-events-auto bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
                 <Film size={14} className="text-rose-500" />
                 <span className="text-white text-xs font-bold tracking-wider uppercase">Recorded Session</span>
               </div>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={toggleFullscreen}
-                  className="pointer-events-auto w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-rose-600 text-white flex items-center justify-center transition-all shadow-lg"
-                >
-                  {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-                </button>
-                <button 
-                  onClick={() => {
-                    if (document.fullscreenElement) document.exitFullscreen();
-                    setActiveVideoUrl(null);
-                  }}
-                  className="pointer-events-auto w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-rose-600 text-white flex items-center justify-center transition-all shadow-lg"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+            </div>
+
+            {/* Controls (Right Center) */}
+            <div className="absolute top-1/2 right-4 -translate-y-1/2 z-50 flex flex-col gap-3 pointer-events-none">
+              <button 
+                onClick={toggleFullscreen}
+                className="pointer-events-auto w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-rose-600 text-white flex items-center justify-center transition-all shadow-lg"
+              >
+                {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+              </button>
+              <button 
+                onClick={() => {
+                  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+                  if (isFullscreen) {
+                    setIsFullscreen(false);
+                    if ((window as any).ReactNativeWebView) {
+                      (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'FULLSCREEN', value: false }));
+                    }
+                  }
+                  setActiveVideoUrl(null);
+                }}
+                className="pointer-events-auto w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-rose-600 text-white flex items-center justify-center transition-all shadow-lg"
+              >
+                <X size={18} />
+              </button>
             </div>
             
             {/* Player Container */}

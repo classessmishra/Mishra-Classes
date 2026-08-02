@@ -108,13 +108,49 @@ export async function deleteLiveClassGroup(youtubeVideoId: string) {
   return true;
 }
 
+import { sendMultiplePushNotifications } from "@/lib/notifications";
+
 export async function toggleLiveClassStatus(youtubeVideoId: string, isActive: boolean) {
-  const { error } = await supabase
+  const { error, data: classes } = await supabase
     .from('live_classes')
     .update({ is_active: isActive })
-    .eq('meeting_link', youtubeVideoId);
+    .eq('meeting_link', youtubeVideoId)
+    .select('course_id, topic');
 
   if (error) throw new Error(error.message);
+
+  if (isActive && classes && classes.length > 0) {
+    const courseIds = classes.map((c: any) => c.course_id);
+    const topic = classes[0].topic;
+
+    // Fetch batches that contain these courses
+    const { data: batches } = await supabase
+      .from('batches')
+      .select('id, course_id')
+      .in('course_id', courseIds);
+      
+    if (batches && batches.length > 0) {
+      const batchIds = batches.map(b => b.id);
+      // Fetch students in these batches
+      const { data: students } = await supabase
+        .from('batch_students')
+        .select('users(expo_push_token)')
+        .in('batch_id', batchIds);
+
+      if (students) {
+        const tokens = Array.from(new Set(students.map((s: any) => s.users?.expo_push_token).filter(Boolean)));
+        if (tokens.length > 0) {
+          await sendMultiplePushNotifications(
+            tokens,
+            `🔴 Live Class Started!`,
+            `${topic} is now live. Tap to join!`,
+            { type: 'LIVE_CLASS', youtubeVideoId }
+          );
+        }
+      }
+    }
+  }
+
   return true;
 }
 

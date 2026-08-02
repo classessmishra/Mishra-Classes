@@ -114,7 +114,13 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
   const [completedSections, setCompletedSections] = useState<string[]>([]);
   
   // UI State
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setPanelOpen(true);
+    }
+  }, []);
   const [filterType, setFilterType] = useState<"all" | "correct" | "wrong" | "skipped">("all");
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState("");
@@ -130,7 +136,7 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
   const [lang, setLang] = useState<"en" | "hi">("en");
   const [switchWarning, setSwitchWarning] = useState("");
   
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | number | null>(null);
   const isSubmittingRef = useRef(false);
 
   // Initialize and Scramble
@@ -490,20 +496,20 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
   // --------- START SCREEN (DECLARATION) ---------
   if (stage === "start") {
     return (
-      <div className="min-h-screen bg-white absolute inset-0 z-[200] flex flex-col h-full w-full font-sans">
+      <div className="min-h-screen bg-white absolute inset-0 z-[200] flex flex-col h-full w-full font-sans overflow-x-hidden">
         {/* NTA / TCS iON style Header */}
         <header className="bg-[#337ab7] text-white p-3 flex items-center justify-between shrink-0 shadow">
-          <div className="text-lg font-bold">
+          <div className="text-lg font-bold truncate">
             {testData.test_title}
           </div>
         </header>
 
         {/* Content area */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden w-full">
           {/* Main Instructions Panel */}
-          <div className="flex-1 flex flex-col h-full bg-white relative">
+          <div className="flex-1 flex flex-col h-full bg-white relative min-w-0">
             {/* View In Dropdown */}
-            <div className="flex justify-end items-center p-2 border-b border-gray-200 text-sm">
+            <div className="flex justify-end items-center p-2 border-b border-gray-200 text-sm shrink-0">
               <span className="mr-2 text-gray-700 font-semibold">View In:</span>
               <select 
                 value={lang} 
@@ -516,7 +522,7 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
             </div>
 
             {/* Scrollable Instructions */}
-            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar text-gray-800 text-[13px] leading-relaxed">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 custom-scrollbar text-gray-800 text-[13px] leading-relaxed">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-center text-lg font-bold mb-4 uppercase underline underline-offset-4 decoration-gray-300">
                   {lang === "en" ? "Please read the instructions carefully" : "कृपया निर्देशों को ध्यान से पढ़ें"}
@@ -608,8 +614,8 @@ export default function TestPlayer({ testData, studentId, studentName, studentPh
                   {lang === "en" ? "Exam Specific Instructions:" : "परीक्षा विशिष्ट निर्देश:"}
                 </h3>
                 
-                <div className="mb-6">
-                  <table className="w-full border-collapse border border-gray-400 text-sm">
+                <div className="mb-6 overflow-x-auto">
+                  <table className="w-full min-w-[500px] border-collapse border border-gray-400 text-sm">
                     <thead>
                       <tr className="bg-gray-100">
                         <th className="border border-gray-400 p-2 text-left">{lang === "en" ? "Section Name" : "अनुभाग का नाम"}</th>

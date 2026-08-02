@@ -174,12 +174,7 @@ export default function AdminBatchesPage() {
             )}
           </div>
           <div className="flex gap-2">
-            <button className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
-              Filter
-            </button>
-            <button className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
-              Export
-            </button>
+            
           </div>
         </div>
 
@@ -251,9 +246,6 @@ export default function AdminBatchesPage() {
                       >
                         <Settings size={16} />
                       </Link>
-                      <button className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   </td>
                 </tr>

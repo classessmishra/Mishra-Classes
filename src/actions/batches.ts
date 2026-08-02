@@ -143,6 +143,27 @@ export async function getStudentAttendance(batchId: string, studentId: string) {
   return data;
 }
 
+export async function getBatchAttendanceHistory(batchId: string) {
+  const { data, error } = await supabase
+    .from('attendance')
+    .select(`
+      *,
+      users (
+        id,
+        full_name,
+        phone
+      )
+    `)
+    .eq('batch_id', batchId)
+    .order('date', { ascending: false });
+    
+  if (error) {
+    console.error("Error fetching batch attendance history:", error);
+    return [];
+  }
+  return data;
+}
+
 export async function getAttendanceByDate(batchId: string, date: string) {
   const { data, error } = await supabase
     .from('attendance')

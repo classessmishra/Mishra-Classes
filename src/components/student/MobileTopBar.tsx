@@ -10,13 +10,17 @@ export default function MobileTopBar() {
 
   useEffect(() => {
     async function fetchPhoto() {
-      const match = document.cookie.match(/(^| )user_id=([^;]+)/);
-      if (match) {
-        const userId = match[2];
-        const data = await getUserProfile(userId);
-        if (data && data.profile_photo_url) {
-          setProfilePhoto(data.profile_photo_url);
+      try {
+        const match = document.cookie.match(/(^| )user_id=([^;]+)/);
+        if (match) {
+          const userId = match[2];
+          const data = await getUserProfile(userId);
+          if (data && data.profile_photo_url) {
+            setProfilePhoto(data.profile_photo_url);
+          }
         }
+      } catch (err) {
+        console.error("Ignored getUserProfile error in MobileTopBar:", err);
       }
     }
     fetchPhoto();

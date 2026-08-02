@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Generated native directories
+android/
+android
+ios/
+ios
+
+# Expo / build caches
+.expo/
+dist/
+web-build/
+
+# JDK / temp archives
+jdk*
+jdk17/
+jdk17
+*.zip
+*.tar.gz
+*.txt
+*.bin
+*.log
+
+# Local properties
+local.properties
+.env*.local
+
+# Git
+.git/
+

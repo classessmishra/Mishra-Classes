@@ -190,14 +190,8 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 text-right print:hidden">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-md transition-colors" title="Block User">
-                          <Ban size={16} />
-                        </button>
                         <button onClick={() => handleDelete(user.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete User">
                           <Trash2 size={16} />
-                        </button>
-                        <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors">
-                          <MoreVertical size={16} />
                         </button>
                       </div>
                     </td>

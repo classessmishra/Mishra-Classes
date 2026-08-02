@@ -2,6 +2,8 @@
 
 import { supabase } from "@/lib/supabase";
 
+import { sendMultiplePushNotifications } from "@/lib/notifications";
+
 export async function createBatchAnnouncement(batchId: string, title: string, message: string, link_url?: string) {
   const { data, error } = await supabase
     .from('batch_announcements')
@@ -12,6 +14,25 @@ export async function createBatchAnnouncement(batchId: string, title: string, me
     console.error("Error creating batch announcement:", error);
     throw new Error(error.message);
   }
+
+  // Fetch push tokens for all students in this batch
+  const { data: students } = await supabase
+    .from('batch_students')
+    .select('users(expo_push_token)')
+    .eq('batch_id', batchId);
+
+  if (students) {
+    const tokens = students.map((s: any) => s.users?.expo_push_token).filter(Boolean);
+    if (tokens.length > 0) {
+      await sendMultiplePushNotifications(
+        tokens,
+        `📢 ${title}`,
+        message,
+        { type: 'ANNOUNCEMENT', batchId, linkUrl: link_url }
+      );
+    }
+  }
+
   return data[0];
 }
 
@@ -27,4 +48,17 @@ export async function getBatchAnnouncements(batchId: string) {
     return [];
   }
   return data;
+}
+
+export async function deleteBatchAnnouncement(id: string) {
+  const { error } = await supabase
+    .from('batch_announcements')
+    .delete()
+    .eq('id', id);
+    
+  if (error) {
+    console.error("Error deleting batch announcement:", error);
+    throw new Error(error.message);
+  }
+  return { success: true };
 }

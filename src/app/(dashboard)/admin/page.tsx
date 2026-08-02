@@ -3,15 +3,16 @@ import {
 } from "lucide-react";
 import { getDashboardStats } from "@/actions/dashboard";
 import RefreshDashboardButton from "@/components/RefreshDashboardButton";
+import Link from "next/link";
 
 export default async function AdminDashboardPage() {
-  const { activeStudents, totalBatches, upcomingTests, pendingQueries, recentEnrollments } = await getDashboardStats();
+  const { activeStudents, totalBatches, upcomingTests, totalCourses, recentEnrollments } = await getDashboardStats();
 
   const stats = [
-    { title: "Total Active Students", value: activeStudents.toString(), icon: Users, color: "text-blue-600", bg: "bg-blue-100", trend: "Real-time sync" },
-    { title: "Ongoing Batches", value: totalBatches.toString(), icon: Clock, color: "text-purple-600", bg: "bg-purple-100", trend: "Real-time sync" },
-    { title: "Upcoming Tests", value: upcomingTests.toString(), icon: CheckCircle, color: "text-green-600", bg: "bg-green-100", trend: "Real-time sync" },
-    { title: "Pending Queries", value: pendingQueries.toString(), icon: AlertCircle, color: "text-red-600", bg: "bg-red-100", trend: "Needs attention" },
+    { title: "Total Active Students", value: (activeStudents || 0).toString(), icon: Users, color: "text-blue-600", bg: "bg-blue-100", trend: "Real-time sync" },
+    { title: "Ongoing Batches", value: (totalBatches || 0).toString(), icon: Clock, color: "text-purple-600", bg: "bg-purple-100", trend: "Real-time sync" },
+    { title: "Upcoming Tests", value: (upcomingTests || 0).toString(), icon: CheckCircle, color: "text-green-600", bg: "bg-green-100", trend: "Real-time sync" },
+    { title: "Total Courses", value: (totalCourses || 0).toString(), icon: BookOpen, color: "text-orange-600", bg: "bg-orange-100", trend: "Active catalog" },
   ];
 
   return (
@@ -52,7 +53,7 @@ export default async function AdminDashboardPage() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 border-b border-slate-100 flex justify-between items-center">
             <h3 className="font-bold text-slate-800">Recent Enrollments</h3>
-            <button className="text-sm text-blue-600 font-medium hover:underline">View All</button>
+            <Link href="/admin/users" className="text-sm text-blue-600 font-medium hover:underline">View All</Link>
           </div>
           <div className="divide-y divide-slate-100">
             {recentEnrollments.length > 0 ? recentEnrollments.map((student, i) => (
@@ -86,12 +87,12 @@ export default async function AdminDashboardPage() {
           <h3 className="font-bold text-slate-800 mb-4">Quick Actions</h3>
           <div className="space-y-3">
             {[
-              { name: "Add Student to Batch", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-              { name: "Upload Mock Test", icon: FileText, color: "text-purple-600", bg: "bg-purple-50" },
-              { name: "Send Global Announcement", icon: Megaphone, color: "text-orange-600", bg: "bg-orange-50" },
-              { name: "Review Attendance", icon: CheckCircle, color: "text-green-600", bg: "bg-green-50" },
+              { name: "Add Student to Batch", href: "/admin/batches", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+              { name: "Upload Mock Test", href: "/admin/tests", icon: FileText, color: "text-purple-600", bg: "bg-purple-50" },
+              { name: "Send Global Announcement", href: "/admin/communications", icon: Megaphone, color: "text-orange-600", bg: "bg-orange-50" },
+              { name: "Review Attendance", href: "/admin/attendance", icon: CheckCircle, color: "text-green-600", bg: "bg-green-50" },
             ].map((action, idx) => (
-              <button key={idx} className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:border-slate-300 hover:shadow-sm transition-all group text-left">
+              <Link key={idx} href={action.href} className="w-full flex items-center gap-4 p-3 rounded-xl border border-slate-100 hover:border-slate-300 hover:shadow-sm transition-all group text-left">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${action.bg}`}>
                   <action.icon size={18} className={action.color} />
                 </div>
@@ -99,7 +100,7 @@ export default async function AdminDashboardPage() {
                   <p className="text-sm font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">{action.name}</p>
                   <p className="text-xs text-slate-500 mt-0.5">Click to proceed</p>
                 </div>
-              </button>
+              </Link>
             ))}
           </div>
         </div>

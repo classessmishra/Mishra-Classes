@@ -38,3 +38,11 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+android/
+ios/
+jdk*
+*.zip
+*.tar.gz
+*.txt
+*.bin
+

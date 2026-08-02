@@ -53,18 +53,18 @@ export default function BatchAttendancePage({ params }: { params: Promise<{ id: 
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-6">My Attendance</h2>
       
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-muted/30 p-4 rounded-xl border border-border text-center">
-          <div className="text-sm text-muted-foreground mb-1">Total Classes</div>
-          <div className="text-2xl font-bold">{totalClasses}</div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+        <div className="bg-muted/30 p-2 sm:p-4 rounded-xl border border-border flex flex-col items-center justify-center text-center">
+          <div className="text-[10px] sm:text-sm text-muted-foreground mb-1 leading-tight">Total Classes</div>
+          <div className="text-xl sm:text-2xl font-bold">{totalClasses}</div>
         </div>
-        <div className="bg-green-50 p-4 rounded-xl border border-green-100 text-center">
-          <div className="text-sm text-green-700 mb-1">Present</div>
-          <div className="text-2xl font-bold text-green-700">{presentCount}</div>
+        <div className="bg-green-50 p-2 sm:p-4 rounded-xl border border-green-100 flex flex-col items-center justify-center text-center">
+          <div className="text-[10px] sm:text-sm text-green-700 mb-1 leading-tight">Present</div>
+          <div className="text-xl sm:text-2xl font-bold text-green-700">{presentCount}</div>
         </div>
-        <div className="bg-primary/5 p-4 rounded-xl border border-primary/20 text-center">
-          <div className="text-sm text-primary mb-1">Percentage</div>
-          <div className="text-2xl font-bold text-primary">{percentage}%</div>
+        <div className="bg-primary/5 p-2 sm:p-4 rounded-xl border border-primary/20 flex flex-col items-center justify-center text-center">
+          <div className="text-[10px] sm:text-sm text-primary mb-1 leading-tight">Percentage</div>
+          <div className="text-xl sm:text-2xl font-bold text-primary">{percentage}%</div>
         </div>
       </div>
 

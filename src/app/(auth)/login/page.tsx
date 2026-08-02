@@ -24,10 +24,14 @@ export default function LoginPage() {
     }
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: any) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    
     setLoading(true);
     setErrorMessage("");
+    
     try {
       // Main Admin hardcoded login
       if (email === "classessmishra@gmail.com" && password === "Nitich14@in") {
@@ -44,6 +48,12 @@ export default function LoginPage() {
 
       const result = await authenticateUser(email, password);
       
+      if (!result) {
+        setErrorMessage("System Error: No response from server.");
+        setLoading(false);
+        return;
+      }
+
       if (!result.success || !result.data) {
         setErrorMessage(result.error || "Login failed.");
         setLoading(false);
@@ -62,14 +72,14 @@ export default function LoginPage() {
       document.cookie = `user_id=${id}; path=/`;
       
       if (userRole === 'admin' || userRole === 'teacher') {
-        window.location.href = "/admin";
+        router.push("/admin");
       } else {
-        window.location.href = "/";
+        router.push("/");
       }
 
     } catch (err: any) {
       console.error("Login error", err);
-      setErrorMessage("System Error: " + (err.message || String(err)));
+      setErrorMessage("System Error: " + (err?.message || String(err) || "Unknown error"));
       setLoading(false);
     }
   };
@@ -132,7 +142,7 @@ export default function LoginPage() {
               <p className="text-slate-500">Please enter your email and password to continue</p>
             </div>
 
-            <form className="space-y-5">
+            <form onSubmit={handleLogin} className="space-y-5">
               {errorMessage && (
                 <div className="bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-xl flex items-start gap-2">
                   <span className="mt-0.5">⚠️</span>
@@ -195,8 +205,7 @@ export default function LoginPage() {
               </div>
 
               <button
-                type="button"
-                onClick={handleLogin}
+                type="submit"
                 disabled={loading}
                 className="w-full relative group overflow-hidden bg-primary text-white font-semibold py-3.5 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(0,68,204,0.3)] active:scale-[0.98] disabled:opacity-70 mt-4 flex items-center justify-center gap-2"
               >

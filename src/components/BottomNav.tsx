@@ -1,19 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Users, Store, MessageSquare, User } from "lucide-react";
+import { Home, Users, Store, MessageSquare, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     const match = document.cookie.match(/(^| )auth_role=([^;]+)/);
     if (match) setRole(match[2]);
-  }, []);
+  }, [pathname]);
+
+  // Listen for native hardware back button wanting to go home
+  useEffect(() => {
+    const handleGoHome = () => {
+      router.push('/');
+    };
+    window.addEventListener('go-home', handleGoHome as EventListener);
+    return () => window.removeEventListener('go-home', handleGoHome as EventListener);
+  }, [router]);
 
   const isAuthOrPublicPage = ['/about', '/terms', '/contact-us', '/cancellation-and-refunds', '/forgot-password', '/reset-password', '/login', '/signup', '/verify-email'].includes(pathname || '');
 
@@ -33,7 +43,7 @@ export default function BottomNav() {
     { name: "Batches", href: "/batches", icon: Users },
     { name: "Chats", href: "/chats", icon: MessageSquare },
     { name: "Store", href: "/store", icon: Store },
-    { name: "Profile", href: dashboardHref, icon: User }
+    { name: "Dashboard", href: dashboardHref, icon: LayoutDashboard }
   ];
 
   return (
@@ -41,7 +51,7 @@ export default function BottomNav() {
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || (item.name === "Profile" && pathname?.startsWith(item.href) && item.href !== "/login") || (item.name === "Chats" && pathname?.startsWith("/chats"));
+          const isActive = pathname === item.href || (item.name === "Dashboard" && pathname?.startsWith(item.href) && item.href !== "/login") || (item.name === "Chats" && pathname?.startsWith("/chats"));
           return (
             <Link
               key={item.name}

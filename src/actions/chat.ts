@@ -283,3 +283,57 @@ export async function clearGroupChatAdmin(groupId: string) {
   
   return { success: true };
 }
+
+/**
+ * Safely deletes a whole chat group and all its contents
+ */
+export async function deleteChatGroupAdmin(groupId: string) {
+  // First clear messages to clean up files
+  await clearGroupChatAdmin(groupId);
+  
+  // Then delete the group itself
+  const { error } = await supabase.from('chat_groups').delete().eq('id', groupId);
+  if (error) throw new Error(error.message);
+  
+  return { success: true };
+}
+
+import { sendMultiplePushNotifications } from "@/lib/notifications";
+
+/**
+ * Sends a push notification to all members of a chat group (except the sender).
+ */
+export async function sendChatPushNotification(groupId: string, messageContent: string, senderId: string, senderName: string) {
+  try {
+    const members = await getGroupMembers(groupId);
+    const recipientIds = members.filter((m: any) => m.id !== senderId).map((m: any) => m.id);
+    
+    if (recipientIds.length === 0) return { success: true };
+
+    const { data: users } = await supabase
+      .from('users')
+      .select('expo_push_token')
+      .in('id', recipientIds)
+      .not('expo_push_token', 'is', null);
+
+    if (users && users.length > 0) {
+      const tokens = users.map(u => u.expo_push_token).filter(Boolean);
+      
+      let cleanMessage = messageContent;
+      if (cleanMessage.startsWith('[ATTACHMENT:IMAGE]')) cleanMessage = '📷 Image';
+      else if (cleanMessage.startsWith('[ATTACHMENT:PDF]')) cleanMessage = '📄 Document';
+
+      await sendMultiplePushNotifications(
+        tokens,
+        `New message from ${senderName}`,
+        cleanMessage,
+        { type: 'CHAT', groupId }
+      );
+    }
+    
+    return { success: true };
+  } catch (err: any) {
+    console.error("Failed to send chat push notification:", err);
+    return { success: false, error: err.message };
+  }
+}

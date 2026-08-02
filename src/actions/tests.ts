@@ -3,6 +3,8 @@
 import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
+import { sendMultiplePushNotifications } from "@/lib/notifications";
+
 export async function assignTest(testId: string, assignmentData: { batch_id?: string, student_id?: string, course_id?: string, start_time?: string, end_time?: string }) {
   // Check if assignment already exists for this batch or student
   let query = supabase.from('test_assignments').select('*').eq('test_id', testId);
@@ -30,6 +32,41 @@ export async function assignTest(testId: string, assignmentData: { batch_id?: st
       ...assignmentData
     }]);
     if (error) throw new Error(error.message);
+  }
+
+  // Send Push Notification
+  try {
+    const { data: testData } = await supabase.from('tests').select('title').eq('id', testId).single();
+    if (testData?.title) {
+      if (assignmentData.batch_id) {
+        const { data: students } = await supabase
+          .from('batch_students')
+          .select('users(expo_push_token)')
+          .eq('batch_id', assignmentData.batch_id);
+        
+        if (students) {
+          const tokens = students.map((s: any) => s.users?.expo_push_token).filter(Boolean);
+          if (tokens.length > 0) {
+            await sendMultiplePushNotifications(tokens, '📝 New Test Assigned', `A new test "${testData.title}" has been assigned to your batch.`, { type: 'TEST', testId });
+          }
+        }
+      } else if (assignmentData.course_id) {
+        // Find batches for this course, then students
+        const { data: batches } = await supabase.from('batches').select('id').eq('course_id', assignmentData.course_id);
+        if (batches && batches.length > 0) {
+          const batchIds = batches.map(b => b.id);
+          const { data: students } = await supabase.from('batch_students').select('users(expo_push_token)').in('batch_id', batchIds);
+          if (students) {
+            const tokens = Array.from(new Set(students.map((s: any) => s.users?.expo_push_token).filter(Boolean)));
+            if (tokens.length > 0) {
+              await sendMultiplePushNotifications(tokens, '📝 New Test Assigned', `A new test "${testData.title}" has been assigned to your course.`, { type: 'TEST', testId });
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to send test push notification:", err);
   }
 
   revalidatePath('/admin/tests');

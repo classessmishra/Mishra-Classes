@@ -35,6 +35,24 @@ export default function NotificationBell({
     };
   }, []);
 
+  // Handle hardware back button for the mobile full-screen notification panel
+  useEffect(() => {
+    const handlePopState = () => {
+      if (notifOpen) {
+        setNotifOpen(false);
+      }
+    };
+
+    if (notifOpen && window.innerWidth < 768) {
+      window.history.pushState({ modal: 'notification' }, '');
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [notifOpen]);
+
   const handleReadNotif = async (id: string) => {
     await markNotificationAsRead(id);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
@@ -157,7 +175,13 @@ export default function NotificationBell({
           <div className="md:hidden fixed inset-0 z-[999999] bg-white flex flex-col">
             {/* Top Bar */}
             <div className="w-full h-[60px] bg-[#5B58FF] flex items-center px-4 shrink-0 shadow-md">
-              <button onClick={() => setNotifOpen(false)} className="text-white p-2 -ml-2">
+              <button onClick={() => {
+                if (window.innerWidth < 768) {
+                  window.history.back();
+                } else {
+                  setNotifOpen(false);
+                }
+              }} className="text-white p-2 -ml-2">
                 <ArrowLeft className="w-6 h-6" />
               </button>
               <h1 className="text-white text-lg font-medium ml-4">Notifications</h1>

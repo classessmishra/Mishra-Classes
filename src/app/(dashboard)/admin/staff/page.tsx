@@ -129,11 +129,18 @@ export default function StaffRolesPage() {
   };
 
   const PERMISSIONS_LIST = [
-    { id: "manage_batches", label: "Manage Batches", desc: "Can view and edit batch details." },
-    { id: "manage_students", label: "Manage Students", desc: "Can view and edit student directory." },
-    { id: "manage_tests", label: "Manage Tests", desc: "Can create and evaluate tests." },
-    { id: "manage_store", label: "Manage Courses (Store)", desc: "Can add/edit courses and revenue." },
-    { id: "manage_chats", label: "Manage Chats", desc: "Can respond to student chats." },
+    { id: "view_students", label: "Student Directory", desc: "Access the student directory." },
+    { id: "view_live_classes", label: "Live Classes", desc: "Manage and start live classes." },
+    { id: "view_chats", label: "Chat Center", desc: "Respond to student queries in chat." },
+    { id: "view_attendance", label: "Attendance Register", desc: "Mark and view student attendance." },
+    { id: "view_store", label: "Store / Courses", desc: "Manage paid courses and sales." },
+    { id: "view_study_materials", label: "Study Material", desc: "Upload and manage notes/PDFs." },
+    { id: "view_batches", label: "Batch Management", desc: "Manage student batches and subjects." },
+    { id: "view_tests", label: "Tests & Exams", desc: "Create and assign tests." },
+    { id: "view_test_bank", label: "Test Bank", desc: "Manage the central question bank." },
+    { id: "view_announcements", label: "Announcements", desc: "Send announcements to students." },
+    { id: "view_coupons", label: "Coupons", desc: "Create discount coupons." },
+    { id: "view_advertisements", label: "Advertisements", desc: "Manage app banners and ads." },
   ];
 
   return (

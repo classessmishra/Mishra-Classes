@@ -35,22 +35,26 @@ export default function CheckoutPage() {
     
     // Fetch detailed info
     async function fetchDetails() {
-      const ids = cartItems.map(i => i.id);
-      if (ids.length > 0) {
-        const { courses, availableCoupons } = await getCheckoutDetails(ids);
-        setCourseDetails(courses);
-        setAvailableCoupons(availableCoupons);
-      }
-      
-      const match = document.cookie.match(/(^| )user_id=([^;]+)/);
-      const userId = match ? match[2] : null;
-      if (userId) {
-        const profile = await getUserProfile(userId);
-        if (profile) {
-          if (profile.address) setAddress(profile.address);
-          if (profile.city) setCity(profile.city);
-          if (profile.pincode) setPincode(profile.pincode);
+      try {
+        const ids = cartItems.map(i => i.id);
+        if (ids.length > 0) {
+          const { courses, availableCoupons } = await getCheckoutDetails(ids);
+          setCourseDetails(courses);
+          setAvailableCoupons(availableCoupons);
         }
+        
+        const match = document.cookie.match(/(^| )user_id=([^;]+)/);
+        const userId = match ? match[2] : null;
+        if (userId) {
+          const profile = await getUserProfile(userId);
+          if (profile) {
+            if (profile.address) setAddress(profile.address);
+            if (profile.city) setCity(profile.city);
+            if (profile.pincode) setPincode(profile.pincode);
+          }
+        }
+      } catch (err) {
+        console.error("Ignored fetchDetails error in checkout:", err);
       }
     }
     fetchDetails();
