@@ -1,5 +1,6 @@
 {
   "expo": {
+    "newArchEnabled": false,
     "name": "Mishra Classes",
     "slug": "mishra-classes-app",
     "version": "1.0.0",
@@ -47,11 +48,7 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true,
-            "newArchEnabled": true
-          },
-          "ios": {
-            "newArchEnabled": true
+            "usesCleartextTraffic": true
           }
         }
       ]
