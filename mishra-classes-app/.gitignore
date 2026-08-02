@@ -45,6 +45,3 @@ jdk*
 *.tar.gz
 *.txt
 *.bin
-
-
-google-services.json
