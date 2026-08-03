@@ -41,8 +41,9 @@ export function useNotifications() {
           // @ts-ignore
           navigationRef.navigate('Home', { path: `/student/live-class/${data.youtubeVideoId}` });
         } else if (data.type === 'ANNOUNCEMENT') {
+          const path = data.linkUrl || `/student/batches/${data.batchId}`;
           // @ts-ignore
-          navigationRef.navigate('Batches', { path: `/student/batches/${data.batchId}` });
+          navigationRef.navigate('Batches', { path });
         } else if (data.type === 'ATTENDANCE') {
           // @ts-ignore
           navigationRef.navigate('Home', { path: `/student` });

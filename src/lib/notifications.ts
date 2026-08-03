@@ -41,7 +41,8 @@ export async function sendMultiplePushNotifications(
   body: string,
   data: Record<string, any> = {}
 ) {
-  const validTokens = tokens.filter(t => t && t.startsWith('ExponentPushToken['));
+  // Deduplicate tokens and filter invalid ones
+  const validTokens = Array.from(new Set(tokens.filter(t => t && t.startsWith('ExponentPushToken['))));
   if (validTokens.length === 0) return;
 
   const messages = validTokens.map(token => ({
@@ -54,16 +55,26 @@ export async function sendMultiplePushNotifications(
   }));
 
   try {
-    const response = await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(messages),
-    });
-    return await response.json();
+    // Expo Push API only accepts up to 100 messages at a time. We must chunk them.
+    const CHUNK_SIZE = 100;
+    const results = [];
+
+    for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
+      const chunk = messages.slice(i, i + CHUNK_SIZE);
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(chunk),
+      });
+      const result = await response.json();
+      results.push(result);
+    }
+    
+    return results;
   } catch (error) {
     console.error('Error sending multiple push notifications:', error);
   }
