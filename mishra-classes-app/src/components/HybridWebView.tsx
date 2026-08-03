@@ -21,6 +21,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
   const [canGoBack, setCanGoBack] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isAtTop, setIsAtTop] = useState(true);
 
   const backPressCount = useRef(0);
 
@@ -126,7 +127,12 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
       <ScrollView
         contentContainerStyle={{ flex: 1 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#5B58FF"]} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={["#5B58FF"]} 
+            enabled={isAtTop} 
+          />
         }
       >
         <WebView
@@ -136,6 +142,10 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
           style={styles.webview}
           onNavigationStateChange={onNavigationStateChange}
           onMessage={onMessage}
+          onScroll={(e) => {
+            const yOffset = e.nativeEvent.contentOffset.y;
+            setIsAtTop(yOffset <= 0);
+          }}
           renderLoading={() => (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', position: 'absolute', width: '100%', height: '100%' }}>
             <ActivityIndicator size="large" color="#5B58FF" />
@@ -173,11 +183,23 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         }}
         setSupportMultipleWindows={false}
         onShouldStartLoadWithRequest={(request) => {
+          const url = request.url;
           // Handle UPI intents or other external schemes
-          if (!request.url.startsWith('http') && !request.url.startsWith('about:blank')) {
-            Linking.openURL(request.url).catch(() => {});
+          if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('about:blank')) {
+            // Attempt to open the custom intent (UPI, Paytm, GPay, etc.)
+            Linking.canOpenURL(url).then(supported => {
+              if (supported) {
+                Linking.openURL(url);
+              }
+            }).catch(() => {});
             return false; // Prevent WebView from loading it
           }
+
+          // If the payment is successful and tries to redirect to the callback or success page,
+          // let the WebView load it (or intercept it if you want to close the WebView).
+          // Since we are changing CheckoutModal to handle success via JS handler, 
+          // this redirect might not happen, but it's good to be safe.
+          
           return true; // Let WebView load http/https
         }}
         bounces={false}
@@ -201,6 +223,10 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
             }
             /* Hide all scrollbars */
             ::-webkit-scrollbar {
+              display: none !important;
+            }
+            /* Hide Next.js bottom nav because React Native has its own tabs now */
+            #web-bottom-nav {
               display: none !important;
             }
           \`;

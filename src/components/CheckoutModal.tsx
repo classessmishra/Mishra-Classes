@@ -186,8 +186,36 @@ export default function CheckoutModal({
         name: "Mishra Classes",
         description: `Purchase: ${course.title}`,
         order_id: orderData.id,
-        callback_url: `${window.location.origin}/api/razorpay/callback`,
-        redirect: true,
+        // Remove callback_url and redirect: true to prevent page navigation
+        handler: async function (response: any) {
+          try {
+            setVerifying(true);
+            const verifyRes = await fetch("/api/razorpay/verify-order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+                courseId: course.id,
+                userId: userId,
+                couponCode: appliedCoupon ? couponCode : null,
+                finalAmount: finalPrice
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              // Allocation successful, navigate to student dashboard
+              router.push(`/student/payment-success?receipt_id=${verifyData.receipt_id}`);
+            } else {
+              setPaymentError(verifyData.error || "Payment verification failed.");
+              setVerifying(false);
+            }
+          } catch (e: any) {
+            setPaymentError("An error occurred during verification. If money was deducted, your course will be allocated shortly.");
+            setVerifying(false);
+          }
+        },
         modal: {
           ondismiss: function() {
             setProcessing(false);

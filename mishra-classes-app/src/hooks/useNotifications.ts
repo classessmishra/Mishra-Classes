@@ -36,23 +36,29 @@ export function useNotifications() {
       if (data && navigationRef.isReady()) {
         if (data.type === 'CHAT' && data.groupId) {
           // @ts-ignore
-          navigationRef.navigate('Home', { path: `/chats/student?group=${data.groupId}` });
+          navigationRef.navigate('Chats', { path: `/chats/student?group=${data.groupId}` });
         } else if (data.type === 'LIVE_CLASS') {
           // @ts-ignore
           navigationRef.navigate('Home', { path: `/student/live-class/${data.youtubeVideoId}` });
         } else if (data.type === 'ANNOUNCEMENT') {
           // @ts-ignore
-          navigationRef.navigate('Home', { path: `/student/batches/${data.batchId}` });
+          navigationRef.navigate('Batches', { path: `/student/batches/${data.batchId}` });
         } else if (data.type === 'ATTENDANCE') {
           // @ts-ignore
           navigationRef.navigate('Home', { path: `/student` });
         } else if (data.type === 'TEST' && data.testId) {
           // @ts-ignore
           navigationRef.navigate('Home', { path: `/test/${data.testId}` });
-        } else if (data.path) {
-          // Fallback generic path
+        } else if (typeof data.path === 'string') {
+          // Fallback generic path: Try to guess the correct tab
+          let tab = 'Home';
+          if (data.path.startsWith('/chats')) tab = 'Chats';
+          else if (data.path.startsWith('/store')) tab = 'Store';
+          else if (data.path.startsWith('/student/batches')) tab = 'Batches';
+          else if (data.path.startsWith('/student/profile') || data.path === '/login') tab = 'Profile';
+          
           // @ts-ignore
-          navigationRef.navigate('Home', { path: data.path });
+          navigationRef.navigate(tab, { path: data.path });
         }
       }
     });

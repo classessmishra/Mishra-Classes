@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@supabase/supabase-js";
+import { sendMultiplePushNotifications } from "@/lib/notifications";
 
 // Initialize Supabase Client internally for Server Actions
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-url.supabase.co";
@@ -34,6 +35,43 @@ export async function createLiveClass(payload: any) {
     .select();
 
   if (error) throw new Error(error.message);
+
+  // --- AUTOMATION: Send Push Notification for Scheduled Class ---
+  try {
+    // 1. Find batches that contain these courses
+    const { data: batches } = await supabase
+      .from('batches')
+      .select('id')
+      .in('course_id', ids);
+      
+    if (batches && batches.length > 0) {
+      const batchIds = batches.map(b => b.id);
+      
+      // 2. Fetch students in these batches
+      const { data: students } = await supabase
+        .from('batch_students')
+        .select('users(expo_push_token)')
+        .in('batch_id', batchIds);
+
+      if (students) {
+        const tokens = Array.from(new Set(students.map((s: any) => s.users?.expo_push_token).filter(Boolean)));
+        if (tokens.length > 0) {
+          const topic = rest.title || 'Untitled';
+          const time = rest.scheduled_time ? new Date(rest.scheduled_time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) : 'Soon';
+          
+          await sendMultiplePushNotifications(
+            tokens,
+            `📅 Live Class Scheduled`,
+            `${topic} has been scheduled for ${time}.`,
+            { type: 'LIVE_CLASS', youtubeVideoId: rest.youtube_video_id || '' }
+          );
+        }
+      }
+    }
+  } catch (pushErr) {
+    console.error("Failed to send scheduled class push notification:", pushErr);
+  }
+
   return data;
 }
 
@@ -108,7 +146,6 @@ export async function deleteLiveClassGroup(youtubeVideoId: string) {
   return true;
 }
 
-import { sendMultiplePushNotifications } from "@/lib/notifications";
 
 export async function toggleLiveClassStatus(youtubeVideoId: string, isActive: boolean) {
   const { error, data: classes } = await supabase

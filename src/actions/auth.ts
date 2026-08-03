@@ -77,10 +77,10 @@ export async function authenticateUser(email: string, plainTextPassword: string,
   // Next.js 15+ cookies() is async
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  cookieStore.set("auth_role", data.role, { path: "/", maxAge: 60 * 60 * 24 * 30 }); // 30 days
-  cookieStore.set("user_id", data.id, { path: "/", maxAge: 60 * 60 * 24 * 30 });
+  cookieStore.set("auth_role", data.role, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false }); // 30 days
+  cookieStore.set("user_id", data.id, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
   
-  // Also store the session ID in a cookie
+  // Also store the session ID in a cookie (this one should ideally be httpOnly, but keeping consistent for now)
   cookieStore.set("device_session_id", newSessionId, { path: "/", maxAge: 60 * 60 * 24 * 30 });
   cookieStore.set("device_login_source", loginSource, { path: "/", maxAge: 60 * 60 * 24 * 30 });
 
