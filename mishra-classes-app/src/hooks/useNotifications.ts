@@ -4,6 +4,8 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
+import { navigationRef } from '../navigationRef';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -28,8 +30,31 @@ export function useNotifications() {
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log(response);
-      // Here you can handle routing based on notification payload
+      console.log('Notification tapped:', response);
+      const data = response.notification.request.content.data;
+      
+      if (data && navigationRef.isReady()) {
+        if (data.type === 'CHAT' && data.groupId) {
+          // @ts-ignore
+          navigationRef.navigate('Home', { path: `/chats/student?group=${data.groupId}` });
+        } else if (data.type === 'LIVE_CLASS') {
+          // @ts-ignore
+          navigationRef.navigate('Home', { path: `/student/live-class/${data.youtubeVideoId}` });
+        } else if (data.type === 'ANNOUNCEMENT') {
+          // @ts-ignore
+          navigationRef.navigate('Home', { path: `/student/batches/${data.batchId}` });
+        } else if (data.type === 'ATTENDANCE') {
+          // @ts-ignore
+          navigationRef.navigate('Home', { path: `/student` });
+        } else if (data.type === 'TEST' && data.testId) {
+          // @ts-ignore
+          navigationRef.navigate('Home', { path: `/test/${data.testId}` });
+        } else if (data.path) {
+          // Fallback generic path
+          // @ts-ignore
+          navigationRef.navigate('Home', { path: data.path });
+        }
+      }
     });
 
     return () => {

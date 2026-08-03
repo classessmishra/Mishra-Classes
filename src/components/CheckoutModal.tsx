@@ -5,6 +5,7 @@ import { X, Tag, Loader2, CheckCircle2 } from "lucide-react";
 import { validateCoupon } from "@/actions/coupons";
 import { useRouter } from "next/navigation";
 import { getUserProfile, updateStudentProfile } from "@/actions/profile";
+import { getRazorpayKeyId } from "@/utils/razorpay-config";
 
 export default function CheckoutModal({ 
   isOpen, 
@@ -179,7 +180,7 @@ export default function CheckoutModal({
 
       // 3. Open Razorpay Modal
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_123",
+        key: getRazorpayKeyId(),
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Mishra Classes",

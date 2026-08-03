@@ -52,7 +52,7 @@ export async function sendNotification(userId: string, title: string, message: s
 export async function sendGlobalNotification(title: string, message: string, link_url?: string) {
   const { data: users, error: fetchError } = await supabase
     .from('users')
-    .select('id')
+    .select('id, expo_push_token')
     .eq('role', 'student');
     
   if (fetchError || !users) {
@@ -65,6 +65,17 @@ export async function sendGlobalNotification(title: string, message: string, lin
   if (inserts.length > 0) {
     const { error } = await supabase.from('notifications').insert(inserts);
     if (error) throw new Error(error.message);
+  }
+
+  // Send push notifications
+  const tokens = users.map(u => u.expo_push_token).filter(Boolean);
+  if (tokens.length > 0) {
+    await sendMultiplePushNotifications(
+      tokens,
+      `📣 ${title}`,
+      message,
+      { type: 'ANNOUNCEMENT', path: link_url || '/student' }
+    );
   }
   
   return { success: true };

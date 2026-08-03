@@ -39,7 +39,7 @@ export async function registerUser(formData: any) {
   return { success: true };
 }
 
-export async function authenticateUser(email: string, plainTextPassword: string) {
+export async function authenticateUser(email: string, plainTextPassword: string, loginSource: 'app' | 'web' = 'web') {
   // Fetch user from database
   const { data, error } = await supabase.from('users').select('id, full_name, role, password, is_email_verified, has_logged_in').eq('email', email).single();
   
@@ -52,25 +52,59 @@ export async function authenticateUser(email: string, plainTextPassword: string)
   }
   
   // Check password using bcrypt
-  // Fallback check for unhashed passwords (during transition phase or for hardcoded old passwords)
   const isMatch = bcrypt.compareSync(plainTextPassword, data.password) || plainTextPassword === data.password;
   
   if (!isMatch) {
     return { success: false, error: "Incorrect password." };
   }
 
-  // Update has_logged_in status on first login
+  // Generate new session ID
+  const newSessionId = crypto.randomUUID();
+
+  // Update session ID and has_logged_in status
+  const updateData: any = {};
   if (data.has_logged_in === false) {
-    await supabase.from('users').update({ has_logged_in: true }).eq('id', data.id);
+    updateData.has_logged_in = true;
   }
+  if (loginSource === 'app') {
+    updateData.current_app_session_id = newSessionId;
+  } else {
+    updateData.current_web_session_id = newSessionId;
+  }
+
+  await supabase.from('users').update(updateData).eq('id', data.id);
 
   // Next.js 15+ cookies() is async
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
   cookieStore.set("auth_role", data.role, { path: "/", maxAge: 60 * 60 * 24 * 30 }); // 30 days
   cookieStore.set("user_id", data.id, { path: "/", maxAge: 60 * 60 * 24 * 30 });
+  
+  // Also store the session ID in a cookie
+  cookieStore.set("device_session_id", newSessionId, { path: "/", maxAge: 60 * 60 * 24 * 30 });
+  cookieStore.set("device_login_source", loginSource, { path: "/", maxAge: 60 * 60 * 24 * 30 });
 
-  return { success: true, data: { id: data.id, role: data.role } };
+  return { success: true, data: { id: data.id, role: data.role, sessionId: newSessionId } };
+}
+
+export async function verifySession(userId: string, localSessionId: string, loginSource: 'app' | 'web') {
+  if (!userId || !localSessionId) return { valid: false };
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('current_app_session_id, current_web_session_id')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data) return { valid: false };
+
+  const dbSessionId = loginSource === 'app' ? data.current_app_session_id : data.current_web_session_id;
+  
+  if (dbSessionId !== localSessionId) {
+    return { valid: false, reason: 'session_expired' };
+  }
+
+  return { valid: true };
 }
 
 export async function adminResetPassword(userId: string, newPassword: string) {

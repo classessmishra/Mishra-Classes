@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Script from "next/script";
+import { getRazorpayKeyId } from "@/utils/razorpay-config";
 
 interface CheckoutButtonProps {
   courseId: string;
@@ -26,7 +27,7 @@ export default function CheckoutButton({ courseId, amount }: CheckoutButtonProps
 
       // 2. Open Razorpay Widget
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_placeholder",
+        key: getRazorpayKeyId(),
         amount: order.amount,
         currency: order.currency,
         name: "Mishra Classes",

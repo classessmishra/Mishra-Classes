@@ -2,13 +2,15 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import HybridWebView from '../components/HybridWebView';
 
-export default function HomeScreen() {
+export default React.memo(function HomeScreen({ route }: any) {
+  const path = route?.params?.path || '/';
+
   return (
     <View style={styles.container}>
-      <HybridWebView path="/" />
+      <HybridWebView path={path} />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
+import { sendPushNotification } from "@/lib/notifications";
 
 export async function createBatch(data: { name: string, description?: string }) {
   // 1. Create the Batch
@@ -118,16 +119,66 @@ export async function getStudentsInBatch(batchId: string) {
   return data.map(item => item.users);
 }
 
+export async function getBatchStudents(batchId: string) {
+  const { data, error } = await supabase
+    .from('batch_students')
+    .select(`
+      id,
+      users:student_id (
+        id,
+        full_name,
+        email,
+        phone,
+        expo_push_token
+      )
+    `)
+    .eq('batch_id', batchId);
+    
+  if (error) {
+    console.error("Error fetching batch students:", error);
+    return [];
+  }
+  
+  return data.map(item => item.users);
+}
+
 export async function markAttendance(batchId: string, studentId: string, date: string, status: 'present' | 'absent') {
   // Upsert to handle updates if they change mind
   const { error } = await supabase.from('attendance').upsert({
     batch_id: batchId,
     student_id: studentId,
-    date,
-    status
-  }, { onConflict: 'batch_id,student_id,date' });
+    date: date,
+    status: status
+  }, {
+    onConflict: 'batch_id,student_id,date'
+  });
   
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Error marking attendance:", error);
+    throw new Error(error.message);
+  }
+
+  // Fetch student push token
+  const { data: user } = await supabase
+    .from('users')
+    .select('expo_push_token')
+    .eq('id', studentId)
+    .single();
+
+  if (user?.expo_push_token) {
+    const statusText = status === 'present' ? 'Present ✅' : 'Absent ❌';
+    const message = status === 'present' 
+      ? `You have been marked present for ${date}.` 
+      : `You have been marked absent for ${date}. Please check your classes.`;
+
+    await sendPushNotification(
+      user.expo_push_token,
+      `Attendance Update: ${statusText}`,
+      message,
+      { type: 'ATTENDANCE', path: '/student' }
+    );
+  }
+  
   return { success: true };
 }
 

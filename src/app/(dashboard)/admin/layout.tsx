@@ -12,6 +12,7 @@ import NotificationBell from "@/components/NotificationBell";
 import AdminTopBarWidget from "@/components/AdminTopBarWidget";
 import ProfileWidget from "@/components/ProfileWidget";
 import { supabase } from "@/lib/supabase";
+import { useSessionEnforcer } from "@/hooks/useSessionEnforcer";
 
 export default function AdminLayout({
   children,
@@ -20,6 +21,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  useSessionEnforcer();
   const [adminId, setAdminId] = useState("");
   const [userRole, setUserRole] = useState("admin");
   const [permissions, setPermissions] = useState<string[]>([]);

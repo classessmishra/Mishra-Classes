@@ -8,6 +8,7 @@ import Link from "next/link";
 import { checkoutCart } from "@/actions/courses";
 import { getCheckoutDetails } from "@/actions/checkout";
 import { getUserProfile, updateStudentProfile } from "@/actions/profile";
+import { getRazorpayKeyId } from "@/utils/razorpay-config";
 
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
@@ -145,7 +146,7 @@ export default function CheckoutPage() {
 
       // 3. Initialize Razorpay Checkout
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_placeholder",
+        key: getRazorpayKeyId(),
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Mishra Classes",

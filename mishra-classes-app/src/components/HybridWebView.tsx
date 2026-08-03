@@ -1,10 +1,11 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, BackHandler, Text, Platform, StatusBar as RNStatusBar, ToastAndroid, Linking } from 'react-native';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
+import { View, StyleSheet, ActivityIndicator, BackHandler, Text, Platform, StatusBar as RNStatusBar, ToastAndroid, Linking, ScrollView, RefreshControl } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useNotifications } from '../hooks/useNotifications';
+import { usePullToRefresh } from '../hooks/usePullToRefresh';
 
 // Replace this with the user's production URL or local network IP for testing
 export const BASE_URL = 'https://mishra-classes.vercel.app';
@@ -13,7 +14,7 @@ interface HybridWebViewProps {
   path: string;
 }
 
-export default function HybridWebView({ path }: HybridWebViewProps) {
+export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
   const { expoPushToken } = useNotifications();
   const webViewRef = useRef<WebView>(null);
   const navigation = useNavigation();
@@ -25,7 +26,7 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
 
   // Handle hardware back button for Android
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       const onBackPress = () => {
         if (canGoBack && webViewRef.current) {
           webViewRef.current.goBack();
@@ -78,14 +79,14 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
     }, [canGoBack])
   );
 
-  const handleFullscreen = async (fullscreen: boolean) => {
+  const handleFullscreen = useCallback(async (fullscreen: boolean) => {
     setIsFullscreen(fullscreen);
     if (fullscreen) {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
     } else {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
     }
-  };
+  }, []);
 
   React.useEffect(() => {
     if (expoPushToken && webViewRef.current) {
@@ -97,27 +98,45 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
     }
   }, [expoPushToken, currentUrl]);
 
+  const { refreshing, onRefresh } = usePullToRefresh(async () => {
+    if (webViewRef.current) {
+      webViewRef.current.reload();
+      // Wait for a short time to let the webview start reloading before dismissing spinner
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+  });
+
+  const onNavigationStateChange = useCallback((navState: any) => {
+    setCanGoBack(navState.canGoBack);
+    setCurrentUrl(navState.url);
+  }, []);
+
+  const onMessage = useCallback((event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'FULLSCREEN') {
+        handleFullscreen(data.value);
+      }
+    } catch(e) {}
+  }, [handleFullscreen]);
+
   return (
     <View style={[styles.container, isFullscreen && { paddingTop: 0, backgroundColor: 'black' }]}>
       <StatusBar style="light" hidden={isFullscreen} backgroundColor="#5B58FF" />
-      <WebView
-        ref={webViewRef}
-        originWhitelist={['*']}
-        source={{ uri: `${BASE_URL}${path}` }}
-        style={styles.webview}
-        onNavigationStateChange={(navState) => {
-          setCanGoBack(navState.canGoBack);
-          setCurrentUrl(navState.url);
-        }}
-        onMessage={(event) => {
-          try {
-            const data = JSON.parse(event.nativeEvent.data);
-            if (data.type === 'FULLSCREEN') {
-              handleFullscreen(data.value);
-            }
-          } catch(e) {}
-        }}
-        renderLoading={() => (
+      <ScrollView
+        contentContainerStyle={{ flex: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#5B58FF"]} />
+        }
+      >
+        <WebView
+          ref={webViewRef}
+          originWhitelist={['*']}
+          source={{ uri: `${BASE_URL}${path}` }}
+          style={styles.webview}
+          onNavigationStateChange={onNavigationStateChange}
+          onMessage={onMessage}
+          renderLoading={() => (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', position: 'absolute', width: '100%', height: '100%' }}>
             <ActivityIndicator size="large" color="#5B58FF" />
           </View>
@@ -189,9 +208,10 @@ export default function HybridWebView({ path }: HybridWebViewProps) {
           true;
         `}
       />
+      </ScrollView>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

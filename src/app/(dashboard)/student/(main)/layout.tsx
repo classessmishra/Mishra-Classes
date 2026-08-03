@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Users, FileText, BarChart2, MessageSquare, BookOpen, ChevronRight, LayoutDashboard } from "lucide-react";
 import MobileTopBar from "@/components/student/MobileTopBar";
 import ResponsiveWrapper from "@/components/student/ResponsiveWrapper";
+import { useSessionEnforcer } from "@/hooks/useSessionEnforcer";
 
 export default function StudentLayout({
   children,
@@ -12,6 +13,7 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  useSessionEnforcer();
 
   const navItems = [
     { name: "My Batches", href: "/student/batches", icon: Users },

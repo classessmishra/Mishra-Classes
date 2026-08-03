@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    // Check for error in URL
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("error") === "session_expired") {
+      setErrorMessage("Your session has expired or you have logged in from another device. Please log in again.");
+      // Clean up URL without reloading
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     const currentRole = document.cookie.split('; ').find(row => row.startsWith('auth_role='))?.split('=')[1];
     if (currentRole === 'admin' || currentRole === 'teacher') {
       window.location.href = "/admin";
@@ -46,7 +54,10 @@ export default function LoginPage() {
         return;
       }
 
-      const result = await authenticateUser(email, password);
+      const isApp = typeof window !== 'undefined' && (window as any).ReactNativeWebView !== undefined;
+      const loginSource = isApp ? 'app' : 'web';
+
+      const result = await authenticateUser(email, password, loginSource);
       
       if (!result) {
         setErrorMessage("System Error: No response from server.");

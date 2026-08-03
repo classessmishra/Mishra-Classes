@@ -93,6 +93,15 @@ export default function StudentChatPage() {
     if (savedPinned) {
       try { setPinnedChats(JSON.parse(savedPinned)); } catch(e) {}
     }
+
+    // Handle deep linking from push notifications
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const groupParam = searchParams.get('group');
+      if (groupParam) {
+        setActiveGroupId(groupParam);
+      }
+    }
   }, []);
 
   const togglePinChat = () => {

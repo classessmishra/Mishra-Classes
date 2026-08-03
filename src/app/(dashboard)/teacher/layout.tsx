@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { LogOut, BookOpen, Users } from "lucide-react";
 import ProfileWidget from "@/components/ProfileWidget";
+import { useSessionEnforcer } from "@/hooks/useSessionEnforcer";
 
 export default function TeacherLayout({
   children,
@@ -13,6 +14,7 @@ export default function TeacherLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  useSessionEnforcer();
   const [permissions, setPermissions] = useState<string[]>([]);
 
   useEffect(() => {

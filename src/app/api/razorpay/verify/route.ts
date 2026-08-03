@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabase } from "@/lib/supabase";
 import { sendPurchaseEmail } from "@/lib/email";
+import { getRazorpayConfig } from "@/utils/razorpay-config";
 
 export async function POST(req: Request) {
   try {
@@ -15,7 +16,8 @@ export async function POST(req: Request) {
       couponCode
     } = await req.json();
 
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || "placeholder_secret";
+    const config = getRazorpayConfig();
+    const key_secret = config.key_secret;
 
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSign = crypto

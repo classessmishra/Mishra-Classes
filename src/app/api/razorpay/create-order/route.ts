@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { supabase } from "@/lib/supabase";
 import { validateCoupon } from "@/actions/coupons";
+import { getRazorpayConfig } from "@/utils/razorpay-config";
 
+const config = getRazorpayConfig();
 const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_test_placeholder",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "placeholder_secret",
+  key_id: config.key_id,
+  key_secret: config.key_secret,
 });
 
 export async function POST(req: Request) {

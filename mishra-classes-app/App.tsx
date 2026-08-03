@@ -57,9 +57,22 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
+import { navigationRef } from './src/navigationRef';
+
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+const screenOptions = { headerShown: false };
+
+const linking = {
+  prefixes: ['mishraclasses://', 'https://mishraclasses.com'],
+  config: {
+    screens: {
+      Home: '*', // Catches all paths and passes to Home
+    },
+  },
+};
+
+export default React.memo(function App() {
   const { expoPushToken } = useNotifications();
 
   useEffect(() => {
@@ -72,8 +85,8 @@ export default function App() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <NavigationContainer ref={navigationRef} linking={linking}>
+          <Stack.Navigator screenOptions={screenOptions}>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="VideoPlayer" component={VideoPlayerScreen} options={{ presentation: 'fullScreenModal' }} />
           </Stack.Navigator>
@@ -81,4 +94,4 @@ export default function App() {
       </SafeAreaProvider>
     </ErrorBoundary>
   );
-}
+});
