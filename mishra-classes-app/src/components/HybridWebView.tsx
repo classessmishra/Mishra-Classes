@@ -1,11 +1,11 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator, BackHandler, Text, Platform, StatusBar as RNStatusBar, ToastAndroid, Linking, ScrollView, RefreshControl } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, BackHandler, Text, Platform, StatusBar as RNStatusBar, ToastAndroid, Linking } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { useNotifications } from '../hooks/useNotifications';
-import { usePullToRefresh } from '../hooks/usePullToRefresh';
+
 
 // Replace this with the user's production URL or local network IP for testing
 export const BASE_URL = 'https://mishra-classes.vercel.app';
@@ -21,7 +21,6 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
   const [canGoBack, setCanGoBack] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isAtTop, setIsAtTop] = useState(true);
 
   const backPressCount = useRef(0);
 
@@ -99,13 +98,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
     }
   }, [expoPushToken, currentUrl]);
 
-  const { refreshing, onRefresh } = usePullToRefresh(async () => {
-    if (webViewRef.current) {
-      webViewRef.current.reload();
-      // Wait for a short time to let the webview start reloading before dismissing spinner
-      await new Promise(resolve => setTimeout(resolve, 800));
-    }
-  });
+
 
   const onNavigationStateChange = useCallback((navState: any) => {
     setCanGoBack(navState.canGoBack);
@@ -124,29 +117,16 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
   return (
     <View style={[styles.container, isFullscreen && { paddingTop: 0, backgroundColor: 'black' }]}>
       <StatusBar style="light" hidden={isFullscreen} backgroundColor="#5B58FF" />
-      <ScrollView
-        contentContainerStyle={{ flex: 1 }}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh} 
-            colors={["#5B58FF"]} 
-            enabled={isAtTop} 
-          />
-        }
-      >
-        <WebView
-          ref={webViewRef}
-          originWhitelist={['*']}
-          source={{ uri: `${BASE_URL}${path}` }}
-          style={styles.webview}
-          onNavigationStateChange={onNavigationStateChange}
-          onMessage={onMessage}
-          onScroll={(e) => {
-            const yOffset = e.nativeEvent.contentOffset.y;
-            setIsAtTop(yOffset <= 0);
-          }}
-          renderLoading={() => (
+      <WebView
+        ref={webViewRef}
+        originWhitelist={['*']}
+        source={{ uri: `${BASE_URL}${path}` }}
+        style={styles.webview}
+        pullToRefreshEnabled={true}
+        nestedScrollEnabled={true}
+        onNavigationStateChange={onNavigationStateChange}
+        onMessage={onMessage}
+        renderLoading={() => (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', position: 'absolute', width: '100%', height: '100%' }}>
             <ActivityIndicator size="large" color="#5B58FF" />
           </View>
@@ -175,7 +155,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         thirdPartyCookiesEnabled={true}
         allowsBackForwardNavigationGestures={true}
         javaScriptCanOpenWindowsAutomatically={true}
-        // @ts-ignore - onPermissionRequest might not be in types but is used on Android
+        // @ts-ignore
         onPermissionRequest={(request: any) => {
           if (Platform.OS === 'android') {
             request.grant();
@@ -184,57 +164,36 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         setSupportMultipleWindows={false}
         onShouldStartLoadWithRequest={(request) => {
           const url = request.url;
-          // Handle UPI intents or other external schemes
           if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('about:blank')) {
-            // Attempt to open the custom intent (UPI, Paytm, GPay, etc.)
             Linking.canOpenURL(url).then(supported => {
               if (supported) {
                 Linking.openURL(url);
               }
             }).catch(() => {});
-            return false; // Prevent WebView from loading it
+            return false;
           }
-
-          // If the payment is successful and tries to redirect to the callback or success page,
-          // let the WebView load it (or intercept it if you want to close the WebView).
-          // Since we are changing CheckoutModal to handle success via JS handler, 
-          // this redirect might not happen, but it's good to be safe.
-          
-          return true; // Let WebView load http/https
+          return true;
         }}
-        bounces={false}
+        bounces={true}
         overScrollMode="never"
         scalesPageToFit={false}
         userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36"
-        // Injected JS to hide scrollbars, prevent zoom, and disable text selection except on inputs
         injectedJavaScript={`
           const meta = document.createElement('meta');
           meta.setAttribute('name', 'viewport');
           meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0');
           document.getElementsByTagName('head')[0].appendChild(meta);
           
-          // Inject native-like CSS
           const style = document.createElement('style');
           style.innerHTML = \`
-            /* Prevent text selection to feel like native app */
-            body {
-              -webkit-user-select: none;
-              user-select: none;
-            }
-            /* Hide all scrollbars */
-            ::-webkit-scrollbar {
-              display: none !important;
-            }
-            /* Hide Next.js bottom nav because React Native has its own tabs now */
-            #web-bottom-nav {
-              display: none !important;
-            }
+            body { -webkit-user-select: none; user-select: none; }
+            ::-webkit-scrollbar { display: none !important; }
+            #web-bottom-nav { display: none !important; }
           \`;
           document.head.appendChild(style);
           true;
         `}
       />
-      </ScrollView>
     </View>
   );
 });
