@@ -51,11 +51,11 @@ export async function POST(req: Request) {
       .insert([{
         student_id: userId,
         course_id: courseId,
+        status: 'completed',
         amount_paid: parseFloat(finalAmount),
         coupon_code: couponCode || null,
         razorpay_payment_id: razorpay_payment_id,
         razorpay_order_id: razorpay_order_id,
-        razorpay_signature: razorpay_signature,
         receipt_id: order.receipt || `rcpt_${userId.substring(0,6)}_${Date.now()}`
       }])
       .select()

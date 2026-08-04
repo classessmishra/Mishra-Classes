@@ -19,10 +19,12 @@ export default function MainWrapper({ children }: { children: React.ReactNode })
       // But if it works for BottomNav, we'll try it here.
       const idMatch = document.cookie.match(/(^| )user_id=([^;]+)/);
       if (idMatch && idMatch[2]) {
-        // Only save if it hasn't been saved in this session to prevent spamming
-        if ((window as any)._lastSavedPushToken !== token) {
-          await savePushToken(idMatch[2], token);
-          (window as any)._lastSavedPushToken = token;
+        const userId = idMatch[2];
+        const tokenKey = `${userId}-${token}`;
+        // Only save if it hasn't been saved in this session for THIS user
+        if ((window as any)._lastSavedPushToken !== tokenKey) {
+          await savePushToken(userId, token);
+          (window as any)._lastSavedPushToken = tokenKey;
         }
       }
     };

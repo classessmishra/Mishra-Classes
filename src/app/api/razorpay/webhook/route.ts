@@ -53,11 +53,11 @@ export async function POST(req: Request) {
           .insert([{
             student_id: userId,
             course_id: courseId,
+            status: 'completed',
             amount_paid: parseFloat(finalAmount || "0"),
             coupon_code: couponCode || null,
             razorpay_payment_id: event.payload.payment?.entity?.id || order.id,
             razorpay_order_id: event.payload.order?.entity?.id || order.order_id,
-            razorpay_signature: "webhook_" + signature.substring(0, 20),
             receipt_id: order.receipt || `rcpt_${userId.substring(0,6)}_${Date.now()}`
           }]);
 

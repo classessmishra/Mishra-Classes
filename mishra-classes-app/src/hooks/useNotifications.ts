@@ -113,12 +113,18 @@ async function registerForPushNotificationsAsync() {
     }
 
     try {
-      token = (await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId ?? 'your-project-id', 
-      })).data;
+      const projectId = 
+        Constants.easConfig?.projectId ?? 
+        Constants.expoConfig?.extra?.eas?.projectId ?? 
+        '2a0db862-19e6-4062-aeb9-3abbbcfc264d';
+
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
       console.log('Expo Push Token:', token);
-    } catch (e) {
+    } catch (e: any) {
       console.log('Failed to fetch push token:', e);
+      if (__DEV__) {
+        alert(`Push Token Error: ${e.message}`);
+      }
     }
   } else {
     console.log('Must use physical device for Push Notifications');
