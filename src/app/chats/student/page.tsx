@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Send, Search, MoreVertical, Paperclip, Hash, User, Check, Ban, X, FileText, Loader2, Image as ImageIcon, Download, Pin, PinOff, Mic, ArrowLeft } from "lucide-react";
+import { Send, Search, MoreVertical, Paperclip, Hash, User, Check, Ban, X, FileText, Loader2, Image as ImageIcon, Download, Pin, PinOff, Mic, ArrowLeft, Eye } from "lucide-react";
 import { checkChatBan, uploadChatAttachment, sendChatPushNotification } from "@/actions/chat";
 import { uploadFiles } from "@/utils/uploadthing";
 
@@ -31,36 +31,44 @@ const parseMessageContent = (content: string) => {
   return { type: 'text', url: null, text: content, filename: '' };
 };
 
-const handleDownloadFile = async (url: string | null, filename?: string) => {
+const handleDownloadFile = async (url: string | null, type: string, filename?: string) => {
   if (!url) return;
   try {
-    if (url.includes('cloudinary.com')) {
-      const baseName = filename ? filename.split('.')[0] : 'mishra_classes_attachment';
-      const downloadUrl = url.replace('/upload/', `/upload/fl_attachment:${baseName}/`);
+    const response = await fetch(url);
+    const blob = await response.blob();
+    
+    const isPdf = type === 'pdf' || url.toLowerCase().endsWith('.pdf') || blob.type.includes('pdf');
+    let mimeType = blob.type;
+    let finalFilename = filename || url.split('/').pop() || 'download';
+    if (isPdf && !mimeType) mimeType = 'application/pdf';
+    if (!isPdf && !mimeType) mimeType = 'image/jpeg';
+
+    if (typeof window !== 'undefined' && (window as any).ReactNativeWebView && (window as any).ReactNativeWebView.postMessage) {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'DOWNLOAD_FILE',
+          base64: base64data,
+          filename: finalFilename,
+          mimeType: mimeType,
+          dialogTitle: `Download Attachment`
+        }));
+      };
+    } else {
+      const objectUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = downloadUrl;
-      // download attribute might be ignored if cross-origin, but fl_attachment handles it
-      a.download = filename || 'mishra_classes_attachment.jpg'; 
+      a.href = objectUrl;
+      a.download = finalFilename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      return;
+      window.URL.revokeObjectURL(objectUrl);
     }
-    
-    // Fallback for Uploadthing PDFs or other sources
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = filename || url.split('/').pop() || 'download';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(blobUrl);
   } catch (err) {
-    console.error("Download failed:", err);
-    window.open(url, '_blank'); // fallback
+    console.error("Failed to download attachment via fetch, falling back to window.open:", err);
+    window.open(url, '_blank');
   }
 };
 
@@ -82,11 +90,16 @@ export default function StudentChatPage() {
   const [acceptType, setAcceptType] = useState("image/*,application/pdf");
   const attachMenuRef = useRef<HTMLDivElement>(null);
   
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isBanned, setIsBanned] = useState(false);
-  
+  const [uploading, setUploading] = useState(false);
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
+  const [isBanned, setIsBanned] = useState(false);
+  const [viewingAttachment, setViewingAttachment] = useState<{url: string, type: string, filename: string} | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  // For scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedPinned = localStorage.getItem('pinnedChats_student');
@@ -749,12 +762,20 @@ export default function StudentChatPage() {
                         if (parsed.type === 'image') {
                           return (
                             <div className="flex flex-col gap-2">
-                              <a href={parsed.url || "#"} target="_blank" rel="noopener noreferrer" className="block max-w-[200px] sm:max-w-[250px] rounded-lg overflow-hidden border border-white/20 relative group/img">
-                                <img src={parsed.url || ""} alt="Attachment" className="w-full object-cover bg-white" />
+                              <button 
+                                onClick={() => setViewingAttachment(parsed as any)} 
+                                className="block w-full max-w-[200px] sm:max-w-[250px] rounded-lg overflow-hidden border border-white/20 relative group/img text-left focus:outline-none"
+                              >
+                                <img src={parsed.url || ""} alt="Attachment" className="w-full h-32 sm:h-40 object-cover bg-white" />
+                                <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
+                                  <div className="bg-black/60 p-2 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                    <Eye size={20} className="text-white" />
+                                  </div>
+                                </div>
                                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] p-1 px-2 text-center backdrop-blur-sm truncate">
                                   {parsed.filename}
                                 </div>
-                              </a>
+                              </button>
                               {parsed.text && <span>{parsed.text}</span>}
                             </div>
                           );
@@ -904,6 +925,49 @@ export default function StudentChatPage() {
           </>
         )}
       </div>
+
+      {/* Attachment Viewer Modal */}
+      {viewingAttachment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 truncate">
+                <ImageIcon size={18} className="text-blue-600" /> {viewingAttachment.filename}
+              </h3>
+              <button 
+                onClick={() => setViewingAttachment(null)}
+                className="p-1.5 bg-slate-200 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-black min-h-[50vh]">
+              {viewingAttachment.type === 'pdf' || viewingAttachment.url.toLowerCase().endsWith('.pdf') ? (
+                <iframe src={viewingAttachment.url} className="w-full h-[70vh] rounded border border-slate-700 bg-white" title="Attachment PDF" />
+              ) : (
+                <img src={viewingAttachment.url} alt="Attachment" className="max-w-full max-h-[70vh] object-contain shadow-sm" />
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+              <button 
+                onClick={() => handleDownloadFile(viewingAttachment.url, viewingAttachment.type, viewingAttachment.filename)}
+                disabled={isDownloading}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                {isDownloading ? "Downloading..." : "Download"}
+              </button>
+              <button 
+                onClick={() => setViewingAttachment(null)}
+                className="px-5 py-2 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 transition-colors"
+              >
+                Close Viewer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
