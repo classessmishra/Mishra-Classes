@@ -1,39 +1,28 @@
 # Dependencies
 node_modules/
 
-# Generated native directories
-android/
-android
-ios/
-ios
-
-# Expo / build caches
+# Expo / Web caches
 .expo/
 dist/
 web-build/
 
-# JDK / temp archives
-jdk*
-jdk17/
-jdk17
-*.zip
-*.tar.gz
-*.txt
-*.bin
-*.log
-
-# Local properties & build caches
+# ONLY machine-specific local properties (Windows SDK path)
 **/local.properties
 local.properties
-android/local.properties
-*.properties
-.cxx/
-android/.cxx/
+
+# Native build cache directories
+android/.gradle/
 android/build/
 android/app/build/
-android/.gradle/
+android/.cxx/
+.cxx/
+ios/build/
+ios/Pods/
+
+# Environment files
 .env*.local
 
 # Git
 .git/
+
 

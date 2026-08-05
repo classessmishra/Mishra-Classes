@@ -35,22 +35,21 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
-android/
-ios/
+# Machine specific local properties
 **/local.properties
 local.properties
-android/local.properties
-*.properties
-.cxx/
-android/.cxx/
+
+# Native build cache directories
+android/.gradle/
 android/build/
 android/app/build/
-android/.gradle/
-jdk*
-*.zip
-*.tar.gz
-*.txt
-*.bin
+android/.cxx/
+.cxx/
+ios/build/
+ios/Pods/
+
+# Logs
+eas_*.txt*
+*.log
+
+

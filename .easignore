@@ -7,14 +7,13 @@ build/
 
 # Mobile build / native caches
 **/local.properties
-*.properties
 **/android/.gradle/
 **/android/build/
 **/android/app/build/
 **/.cxx/
-**/android/local.properties
 
 # Temp
 *.log
 *.tsbuildinfo
 .env*.local
+

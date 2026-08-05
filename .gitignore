@@ -32,7 +32,6 @@ yarn-error.log*
 
 # mobile / native
 **/local.properties
-*.properties
 **/android/.gradle/
 **/android/build/
 **/android/app/build/
