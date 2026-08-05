@@ -48,7 +48,8 @@
         {
           "android": {
             "usesCleartextTraffic": true,
-            "newArchEnabled": true
+            "newArchEnabled": true,
+            "ndkVersion": "27.1.12297006"
           },
           "ios": {
             "newArchEnabled": true
