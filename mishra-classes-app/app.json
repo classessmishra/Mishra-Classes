@@ -49,6 +49,7 @@
           "android": {
             "usesCleartextTraffic": true,
             "newArchEnabled": true,
+            "enableProguardInReleaseBuilds": true,
             "ndkVersion": "27.1.12297006"
           },
           "ios": {
