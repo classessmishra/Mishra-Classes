@@ -21,13 +21,6 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
   const [canGoBack, setCanGoBack] = useState(false);
   const [currentUrl, setCurrentUrl] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isAtTop, setIsAtTop] = useState(true);
-
-  const handleScroll = useCallback((event: any) => {
-    // Only enable pull-to-refresh when scrolled to absolute top
-    const yOffset = Number(event.nativeEvent.contentOffset.y);
-    setIsAtTop(yOffset <= 0);
-  }, []);
 
   const backPressCount = useRef(0);
 
@@ -178,8 +171,8 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         originWhitelist={['*']}
         source={{ uri: `${BASE_URL}${path}` }}
         style={styles.webview}
-        pullToRefreshEnabled={Platform.OS === 'ios' ? true : isAtTop}
-        onScroll={handleScroll}
+        pullToRefreshEnabled={!isFullscreen}
+        overScrollMode="always"
         nestedScrollEnabled={true}
         onLoadStart={(e) => onNavigationStateChange(e.nativeEvent)}
         onNavigationStateChange={onNavigationStateChange}
