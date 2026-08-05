@@ -320,10 +320,12 @@ import { sendMultiplePushNotifications } from "@/lib/notifications";
  */
 export async function sendChatPushNotification(groupId: string, messageContent: string, senderId: string, senderName: string) {
   try {
-    const [{ data: group }, members] = await Promise.all([
+    const [{ data: group }, members, { data: senderData }] = await Promise.all([
       supabase.from('chat_groups').select('name').eq('id', groupId).maybeSingle(),
-      getGroupMembers(groupId)
+      getGroupMembers(groupId),
+      supabase.from('users').select('role, full_name').eq('id', senderId).maybeSingle()
     ]);
+    
     const recipientIds = members.filter((m: any) => m.id !== senderId).map((m: any) => m.id);
     
     if (recipientIds.length === 0) return { success: true };
@@ -341,10 +343,23 @@ export async function sendChatPushNotification(groupId: string, messageContent: 
       if (cleanMessage.startsWith('[ATTACHMENT:IMAGE]')) cleanMessage = '📷 Photo attachment';
       else if (cleanMessage.startsWith('[ATTACHMENT:PDF]')) cleanMessage = '📄 Document PDF';
 
-      const groupPrefix = group?.name ? `${group.name} • ` : '';
+      // Format title based on role
+      const role = senderData?.role || 'student';
+      const name = senderData?.full_name || senderName || 'Student';
+      const groupName = group?.name || 'Group';
+      
+      let pushTitle = '';
+      if (role === 'admin') {
+        pushTitle = '💬 Message from Admin';
+      } else if (role === 'teacher') {
+        pushTitle = `💬 Message from Teacher ${name}`;
+      } else {
+        pushTitle = `💬 Message from ${name} in ${groupName}`;
+      }
+
       await sendMultiplePushNotifications(
         tokens,
-        `💬 ${groupPrefix}${senderName}`,
+        pushTitle,
         cleanMessage,
         { 
           type: 'CHAT', 
