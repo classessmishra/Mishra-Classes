@@ -112,17 +112,36 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
     setCurrentUrl(navState.url);
     
     const url = navState.url;
-    const isAuthPage = url && (url.includes('/login') || url.includes('/signup') || url.includes('/forgot-password'));
-    navigation.getParent()?.setOptions({
-      tabBarStyle: isAuthPage ? { display: 'none' } : {
-        backgroundColor: '#ffffff',
-        borderTopColor: '#f1f5f9',
-        borderTopWidth: 1,
-        height: Platform.OS === 'ios' ? 85 : 65,
-        paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-        paddingTop: 10,
-      }
-    });
+    const hidePaths = [
+      '/login',
+      '/signup',
+      '/forgot-password',
+      '/reset-password',
+      '/verify-email',
+      '/about',
+      '/terms',
+      '/contact-us',
+      '/cancellation-and-refunds',
+      '/checkout',
+      '/test/',
+      '/take',
+      '/result',
+      '/live-class',
+      '/invoice'
+    ];
+    const isHiddenPage = Boolean(url && hidePaths.some(p => url.includes(p)));
+
+    const tabBarStyle = isHiddenPage ? { display: 'none' as const } : {
+      backgroundColor: '#ffffff',
+      borderTopColor: '#f1f5f9',
+      borderTopWidth: 1,
+      height: Platform.OS === 'ios' ? 85 : 65,
+      paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+      paddingTop: 10,
+    };
+
+    navigation.setOptions({ tabBarStyle });
+    navigation.getParent()?.setOptions({ tabBarStyle });
 
     try {
       if (url && url.startsWith(BASE_URL)) {
@@ -162,6 +181,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         pullToRefreshEnabled={Platform.OS === 'ios' ? true : isAtTop}
         onScroll={handleScroll}
         nestedScrollEnabled={true}
+        onLoadStart={(e) => onNavigationStateChange(e.nativeEvent)}
         onNavigationStateChange={onNavigationStateChange}
         onMessage={onMessage}
         renderLoading={() => (
