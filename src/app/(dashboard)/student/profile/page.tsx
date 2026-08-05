@@ -386,12 +386,12 @@ export default function StudentProfilePage() {
                     {REQUIRED_DOCS.map(docType => {
                       const uploadedDoc = documents.find((d: any) => d.type === docType.id || (!d.type && d.name.includes(docType.id)));
                       return (
-                        <div key={docType.id} className="flex items-center justify-between p-4 border border-slate-200 bg-white rounded-xl">
+                        <div key={docType.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-slate-200 bg-white rounded-xl">
                           <div className="flex items-center gap-3">
                             {uploadedDoc ? (
-                              <CheckCircle2 className="text-green-500" size={24} />
+                              <CheckCircle2 className="text-green-500 shrink-0" size={24} />
                             ) : (
-                              <div className="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                              <div className="w-6 h-6 shrink-0 rounded-full border-2 border-slate-300 flex items-center justify-center">
                                 <span className="w-2 h-2 rounded-full bg-slate-300"></span>
                               </div>
                             )}
@@ -401,18 +401,18 @@ export default function StudentProfilePage() {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
                             {uploadedDoc && (
                               <button
                                 onClick={() => setViewingDoc({ url: uploadedDoc.url, type: docType.id })}
-                                className="px-4 py-2 rounded-lg text-sm font-semibold border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-2"
+                                className="flex-1 sm:flex-none justify-center px-4 py-2 rounded-lg text-sm font-semibold border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-2"
                               >
                                 <Eye size={16} /> View
                               </button>
                             )}
                             
                             {!profileLocks.documents && (
-                              <label className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ${
+                              <label className={`flex-1 sm:flex-none justify-center cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ${
                                 uploadedDoc 
                                   ? "border-slate-200 text-slate-600 hover:bg-slate-50" 
                                   : "border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
@@ -422,7 +422,7 @@ export default function StudentProfilePage() {
                                 <input 
                                   type="file" 
                                   className="hidden" 
-                                  accept={docType.id.includes('marksheet') ? "image/*,.pdf" : "image/*"} 
+                                  accept={docType.id.includes('marksheet') ? "image/*,.jpg,.jpeg,.png,.pjp,.pdf" : "image/*,.jpg,.jpeg,.png,.pjp"} 
                                   onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
                                   disabled={uploadingDocId !== null}
                                 />
