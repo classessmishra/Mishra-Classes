@@ -76,7 +76,7 @@ export async function assignTest(testId: string, assignmentData: { batch_id?: st
               { 
                 type: 'TEST', 
                 testId,
-                path: `/test/${testId}`
+                path: assignmentData.batch_id ? `/batches/${assignmentData.batch_id}` : `/student/courses/${assignmentData.course_id}`
               }
             );
           }
