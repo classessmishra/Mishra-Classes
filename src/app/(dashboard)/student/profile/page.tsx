@@ -29,7 +29,7 @@ export default function StudentProfilePage() {
   const [bio, setBio] = useState("");
   const [documents, setDocuments] = useState<any[]>([]);
   const [profilePhoto, setProfilePhoto] = useState("");
-  const [openSection, setOpenSection] = useState<'basic' | 'docs'>('basic');
+  const [openSection, setOpenSection] = useState<'basic' | 'docs' | null>('basic');
   const [profileLocks, setProfileLocks] = useState({ basic_info: false, documents: false });
   const [viewingDoc, setViewingDoc] = useState<{url: string, type: string} | null>(null);
 
