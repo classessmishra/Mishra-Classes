@@ -16,8 +16,17 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    // Check for error in URL
     const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get("logout") === "true") {
+      document.cookie = "auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;";
+      document.cookie = "user_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;";
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch(e) {}
+      return;
+    }
+
     if (searchParams.get("error") === "session_expired") {
       setErrorMessage("Your session has expired or you have logged in from another device. Please log in again.");
       // Clean up URL without reloading

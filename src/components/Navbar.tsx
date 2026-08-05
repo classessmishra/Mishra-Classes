@@ -135,13 +135,19 @@ export default function Navbar() {
     }
   }, [pathname]); // Re-check on route change
 
-  const handleLogout = () => {
-    document.cookie = "auth_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    document.cookie = "auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;";
+    document.cookie = "user_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;";
     localStorage.removeItem("mishra_classes_cart");
+    localStorage.removeItem("student_unread_counts");
+    localStorage.removeItem("student_last_read_times");
     setRole(null);
+    setUserProfile(null);
     setDropdownOpen(false);
-    router.push("/login");
+    window.location.href = "/login?logout=true";
   };
 
   const isAuthOrPublicPage = ['/about', '/terms', '/contact-us', '/cancellation-and-refunds', '/forgot-password', '/reset-password', '/login', '/signup', '/verify-email'].includes(pathname || '');

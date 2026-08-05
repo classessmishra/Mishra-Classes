@@ -140,10 +140,10 @@ export default function AdminLayout({
   });
 
   const handleLogout = () => {
-    document.cookie = "auth_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;";
+    document.cookie = "user_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;";
     localStorage.removeItem("mishra_classes_cart");
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   return (
