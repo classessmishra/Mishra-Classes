@@ -7,15 +7,33 @@ import { useState, useEffect } from "react";
 import { getStudentBatches } from "@/actions/batches";
 
 export default function BatchesPage() {
-  const [batches, setBatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [batches, setBatches] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_student_batches');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !localStorage.getItem('cached_student_batches');
+      } catch(e) {}
+    }
+    return true;
+  });
 
   useEffect(() => {
     async function fetchMyBatches() {
       const match = document.cookie.match(/(^| )user_id=([^;]+)/);
       if (match) {
         const data = await getStudentBatches(match[2]);
-        setBatches(data || []);
+        if (data) {
+          setBatches(data);
+          try { localStorage.setItem('cached_student_batches', JSON.stringify(data)); } catch(e) {}
+        }
       }
       setLoading(false);
     }

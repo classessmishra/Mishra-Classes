@@ -7,8 +7,23 @@ import { BookOpen, Video, PlayCircle } from "lucide-react";
 import { getStudentCourses } from "@/actions/courses";
 
 export default function StudentPage() {
-  const [batches, setBatches] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [batches, setBatches] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_student_enrolled_batches');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !localStorage.getItem('cached_student_enrolled_batches');
+      } catch(e) {}
+    }
+    return true;
+  });
 
   useEffect(() => {
     async function fetchMyBatches() {
@@ -37,6 +52,7 @@ export default function StudentPage() {
           .map((item: any) => item.batches)
           .filter(Boolean);
         setBatches(extractedBatches);
+        try { localStorage.setItem('cached_student_enrolled_batches', JSON.stringify(extractedBatches)); } catch(e) {}
       }
 
       setLoading(false);

@@ -6,8 +6,23 @@ import { PlayCircle, Video } from "lucide-react";
 import { getStudentCourses } from "@/actions/courses";
 
 export default function MyCoursesPage() {
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_student_my_courses');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !localStorage.getItem('cached_student_my_courses');
+      } catch(e) {}
+    }
+    return true;
+  });
 
   useEffect(() => {
     async function fetchMyCourses() {
@@ -20,7 +35,10 @@ export default function MyCoursesPage() {
       }
 
       const purchasedCourses = await getStudentCourses(userId);
-      setCourses(purchasedCourses);
+      if (purchasedCourses) {
+        setCourses(purchasedCourses);
+        try { localStorage.setItem('cached_student_my_courses', JSON.stringify(purchasedCourses)); } catch(e) {}
+      }
       setLoading(false);
     }
 

@@ -10,10 +10,41 @@ import PurchasedCourseCard from "@/components/PurchasedCourseCard";
 import { useRouter } from "next/navigation";
 
 export default function StorePage() {
-  const [storeItems, setStoreItems] = useState<any[]>([]);
-  const [allCourses, setAllCourses] = useState<any[]>([]);
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [storeItems, setStoreItems] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_store_items');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
+  const [allCourses, setAllCourses] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_all_courses');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_enrolled_courses');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !localStorage.getItem('cached_all_courses');
+      } catch(e) {}
+    }
+    return true;
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
@@ -28,9 +59,18 @@ export default function StorePage() {
         userId ? getStudentCourses(userId) : Promise.resolve([])
       ]);
       
-      setStoreItems(itemsData || []);
-      setEnrolledCourses(enrolledData || []);
-      setAllCourses(coursesData || []);
+      if (itemsData) {
+        setStoreItems(itemsData);
+        try { localStorage.setItem('cached_store_items', JSON.stringify(itemsData)); } catch(e) {}
+      }
+      if (coursesData) {
+        setAllCourses(coursesData);
+        try { localStorage.setItem('cached_all_courses', JSON.stringify(coursesData)); } catch(e) {}
+      }
+      if (enrolledData) {
+        setEnrolledCourses(enrolledData);
+        try { localStorage.setItem('cached_enrolled_courses', JSON.stringify(enrolledData)); } catch(e) {}
+      }
       setLoading(false);
     }
     loadData();

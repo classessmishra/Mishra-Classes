@@ -67,7 +67,15 @@ const handleDownloadFile = async (url: string | null, filename?: string) => {
 export default function StudentChatPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [groups, setGroups] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_student_chat_groups');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [replyingTo, setReplyingTo] = useState<any | null>(null);
@@ -82,7 +90,13 @@ export default function StudentChatPage() {
   const [acceptType, setAcceptType] = useState("image/*,application/pdf");
   const attachMenuRef = useRef<HTMLDivElement>(null);
   
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(() => {
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(^| )user_id=([^;]+)/);
+      return match ? match[2] : null;
+    }
+    return null;
+  });
   const [isBanned, setIsBanned] = useState(false);
   
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
@@ -405,6 +419,7 @@ export default function StudentChatPage() {
     }));
 
     setGroups(finalGroups);
+    try { localStorage.setItem('cached_student_chat_groups', JSON.stringify(finalGroups)); } catch(e) {}
   };
 
   const fetchMessages = async (groupId: string) => {

@@ -6,9 +6,32 @@ import Link from "next/link";
 import { Clock, PlayCircle, CheckCircle2, LayoutDashboard, FileText } from "lucide-react";
 
 export default function StudentTestsPage() {
-  const [tests, setTests] = useState<any[]>([]);
-  const [submissions, setSubmissions] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
+  const [tests, setTests] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_student_tests');
+        return cached ? JSON.parse(cached) : [];
+      } catch(e) {}
+    }
+    return [];
+  });
+  const [submissions, setSubmissions] = useState<Record<string, any>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cached_student_submissions');
+        return cached ? JSON.parse(cached) : {};
+      } catch(e) {}
+    }
+    return {};
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return !localStorage.getItem('cached_student_tests');
+      } catch(e) {}
+    }
+    return true;
+  });
 
   useEffect(() => {
     async function loadTests() {
@@ -32,8 +55,12 @@ export default function StudentTestsPage() {
         subMap[s.test_id] = s;
       });
 
-      setTests(testData);
+      if (testData) {
+        setTests(testData);
+        try { localStorage.setItem('cached_student_tests', JSON.stringify(testData)); } catch(e) {}
+      }
       setSubmissions(subMap);
+      try { localStorage.setItem('cached_student_submissions', JSON.stringify(subMap)); } catch(e) {}
       setLoading(false);
     }
     loadTests();

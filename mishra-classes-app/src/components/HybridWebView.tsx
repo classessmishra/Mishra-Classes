@@ -206,6 +206,10 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         )}
         javaScriptEnabled={true}
         domStorageEnabled={true}
+        cacheEnabled={true}
+        cacheMode="LOAD_DEFAULT"
+        androidLayerType="hardware"
+        incognito={false}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         allowsBackForwardNavigationGestures={true}
