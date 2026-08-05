@@ -608,12 +608,18 @@ export default function AdminStudentDetailPage() {
               })}
             </div>
             {isEditingDocuments && (
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-end gap-2">
                 <button 
                   onClick={() => setIsEditingDocuments(false)}
                   className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors"
                 >
                   Cancel
+                </button>
+                <button 
+                  onClick={() => setIsEditingDocuments(false)}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors"
+                >
+                  <Save size={16} /> Save Documents
                 </button>
               </div>
             )}

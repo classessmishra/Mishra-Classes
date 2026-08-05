@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { getUserProfile, updateStudentProfile, uploadProfileMedia } from "@/actions/profile";
-import { Camera, FileText, Upload, Save, Lock, UserCircle, Loader2, ChevronDown, ChevronUp, CheckCircle2, Eye, X } from "lucide-react";
+import { Camera, FileText, Upload, Save, Lock, Unlock, UserCircle, Loader2, ChevronDown, ChevronUp, CheckCircle2, Eye, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { uploadFiles } from "@/utils/uploadthing";
 
@@ -278,16 +278,18 @@ export default function StudentProfilePage() {
                   <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm">1</div>
                   <h3 className="font-bold text-slate-800">Basic Information</h3>
                 </div>
-                {openSection === 'basic' ? <ChevronUp className="text-slate-500" /> : <ChevronDown className="text-slate-500" />}
+                <div className="flex items-center gap-3">
+                  {profileLocks.basic_info ? (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold"><Lock size={12} /> Locked</span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-semibold"><Unlock size={12} /> Unlocked</span>
+                  )}
+                  {openSection === 'basic' ? <ChevronUp className="text-slate-500" /> : <ChevronDown className="text-slate-500" />}
+                </div>
               </button>
               
               {openSection === 'basic' && (
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-5">
-                  {profileLocks.basic_info && (
-                    <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg text-sm font-semibold mb-4">
-                      <Lock size={16} /> This section has been locked by administration and cannot be edited.
-                    </div>
-                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">Parent's Name</label>
@@ -369,18 +371,19 @@ export default function StudentProfilePage() {
                   <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-sm">2</div>
                   <h3 className="font-bold text-slate-800">Your Documents</h3>
                 </div>
-                {openSection === 'docs' ? <ChevronUp className="text-slate-500" /> : <ChevronDown className="text-slate-500" />}
+                <div className="flex items-center gap-3">
+                  {profileLocks.documents ? (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold"><Lock size={12} /> Locked</span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-semibold"><Unlock size={12} /> Unlocked</span>
+                  )}
+                  {openSection === 'docs' ? <ChevronUp className="text-slate-500" /> : <ChevronDown className="text-slate-500" />}
+                </div>
               </button>
               
               {openSection === 'docs' && (
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-                  {profileLocks.documents ? (
-                    <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg text-sm font-semibold mb-6">
-                      <Lock size={16} /> Documents are locked by administration. You can view your uploaded documents, but cannot make changes.
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500 mb-6">Please upload clear images or PDF files for the required documents.</p>
-                  )}
+                  <p className="text-sm text-slate-500 mb-6">Please upload clear images or PDF files for the required documents.</p>
                   
                   <div className="space-y-4">
                     {REQUIRED_DOCS.map(docType => {
