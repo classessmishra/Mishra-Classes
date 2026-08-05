@@ -782,13 +782,16 @@ export default function StudentChatPage() {
                         } else if (parsed.type === 'pdf') {
                           return (
                             <div className="flex flex-col gap-2">
-                              <a href={parsed.url || "#"} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-3 p-3 rounded-lg border ${isOwn ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white' : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-slate-800'} transition-colors`}>
+                              <button 
+                                onClick={() => setViewingAttachment(parsed as any)}
+                                className={`flex items-center gap-3 p-3 w-full max-w-[200px] sm:max-w-[250px] text-left rounded-lg border ${isOwn ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white' : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-slate-800'} transition-colors focus:outline-none`}
+                              >
                                 <FileText size={24} className={isOwn ? 'text-white' : 'text-red-500'} />
                                 <div className="flex flex-col min-w-[120px] max-w-[160px]">
                                   <span className="text-sm font-bold truncate">{parsed.filename}</span>
                                   <span className="text-[10px] opacity-80">Click to view/download</span>
                                 </div>
-                              </a>
+                              </button>
                               {parsed.text && <span>{parsed.text}</span>}
                             </div>
                           );
