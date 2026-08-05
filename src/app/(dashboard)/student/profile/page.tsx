@@ -20,7 +20,7 @@ export default function StudentProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
   
   const [basicInfo, setBasicInfo] = useState({
     parent_name: '', parent_contact: '', address: '', school_name: '', section: '', roll_no: ''
@@ -87,7 +87,7 @@ export default function StudentProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        setIsUploading(true);
+        setUploadingDocId('main_profile');
         const formData = new FormData();
         formData.append("file", file);
         const { url } = await uploadProfileMedia(formData, 'profile-media');
@@ -104,9 +104,9 @@ export default function StudentProfilePage() {
         }
       } catch (err: any) {
         console.error("Photo upload failed:", err);
-        alert("Failed to upload photo.");
+        alert("Failed to upload photo: " + (err.message || "Unknown error"));
       } finally {
-        setIsUploading(false);
+        setUploadingDocId(null);
       }
     }
   };
@@ -115,7 +115,7 @@ export default function StudentProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        setIsUploading(true);
+        setUploadingDocId(docType);
         let url = '';
         if (file.type === "application/pdf") {
           const res = await uploadFiles("coursePdfUploader", { files: [file] });
@@ -128,16 +128,30 @@ export default function StudentProfilePage() {
         }
 
         if (url) {
+          const newDoc = { type: docType, name: file.name, url, date: new Date().toISOString() };
+          
           setDocuments(prev => {
             const filtered = prev.filter((d: any) => d.type !== docType);
-            return [...filtered, { type: docType, name: file.name, url, date: new Date().toISOString() }];
+            return [...filtered, newDoc];
           });
+          
+          // Auto-save instantly
+          if (profile) {
+            const currentDocs = documents || [];
+            const filteredDocs = currentDocs.filter((d: any) => d.type !== docType);
+            await updateStudentProfile(profile.id, {
+              profile_photo_url: profilePhoto,
+              documents: [...filteredDocs, newDoc],
+              bio,
+              basic_info: basicInfo
+            });
+          }
         }
       } catch (err: any) {
         console.error("Doc upload failed:", err);
-        alert("Failed to upload document.");
+        alert("Failed to upload document: " + (err.message || "Please check file size and try again."));
       } finally {
-        setIsUploading(false);
+        setUploadingDocId(null);
       }
     }
   };
@@ -179,8 +193,8 @@ export default function StudentProfilePage() {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex flex-col items-center text-center relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
               
-              <div className={`relative mt-8 mb-4 group ${isUploading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`} onClick={() => !isUploading && fileInputRef.current?.click()}>
-                {isUploading ? (
+              <div className={`relative mt-8 mb-4 group ${uploadingDocId === 'main_profile' ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`} onClick={() => uploadingDocId !== 'main_profile' && fileInputRef.current?.click()}>
+                {uploadingDocId === 'main_profile' ? (
                    <div className="w-32 h-32 rounded-full bg-slate-100 border-4 border-white shadow-md flex items-center justify-center text-slate-400 relative z-10">
                      <Loader2 size={40} className="animate-spin text-blue-500" />
                    </div>
@@ -191,12 +205,12 @@ export default function StudentProfilePage() {
                     <UserCircle size={64} />
                   </div>
                 )}
-                {!isUploading && (
+                {uploadingDocId !== 'main_profile' && (
                   <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                     <Camera className="text-white" size={28} />
                   </div>
                 )}
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={isUploading} />
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={uploadingDocId !== null} />
               </div>
 
               <h2 className="text-xl font-bold text-slate-800">{profile.full_name}</h2>
@@ -362,14 +376,14 @@ export default function StudentProfilePage() {
                                 ? "border-slate-200 text-slate-600 hover:bg-slate-50" 
                                 : "border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
                             }`}>
-                              {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                              {uploadingDocId === docType.id ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
                               {uploadedDoc ? "Re-upload" : "Upload"}
                               <input 
                                 type="file" 
                                 className="hidden" 
                                 accept={docType.id.includes('marksheet') ? "image/*,.pdf" : "image/*"} 
                                 onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
-                                disabled={isUploading}
+                                disabled={uploadingDocId !== null}
                               />
                             </label>
                           </div>
