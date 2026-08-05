@@ -175,7 +175,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         originWhitelist={['*']}
         source={{ uri: `${BASE_URL}${path}` }}
         style={styles.webview}
-        pullToRefreshEnabled={!isFullscreen}
+        pullToRefreshEnabled={!isFullscreen && !path.includes('/chats') && !currentUrl.includes('/chats')}
         overScrollMode="always"
         nestedScrollEnabled={true}
         onLoadStart={(e) => onNavigationStateChange(e.nativeEvent)}
@@ -248,14 +248,46 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
             \`;
             document.head.appendChild(style);
 
-            // Pull-To-Refresh Engine
+            // Pull-To-Refresh Engine (Disabled in chats, live classes, and internal scroll containers)
             if (!window._ptrInitialized) {
               window._ptrInitialized = true;
               let startY = 0;
               let currentPull = 0;
               let isPulling = false;
               let isRefreshing = false;
-              const PULL_THRESHOLD = 70;
+              const PULL_THRESHOLD = 75;
+
+              function isPtrBlocked(target) {
+                const path = window.location.pathname;
+                if (
+                  path.includes('/chats') || 
+                  path.includes('/live-class') || 
+                  path.includes('/test') || 
+                  path.includes('/studio') ||
+                  path.includes('/take') ||
+                  path.includes('/login') ||
+                  path.includes('/signup')
+                ) {
+                  return true;
+                }
+
+                if (!target) return false;
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return true;
+
+                let curr = target;
+                while (curr && curr !== document.body && curr !== document.documentElement) {
+                  if (curr.classList && (
+                    curr.classList.contains('overflow-y-auto') || 
+                    curr.classList.contains('overflow-y-scroll') ||
+                    curr.classList.contains('overflow-auto') ||
+                    curr.classList.contains('overflow-scroll')
+                  )) {
+                    return true;
+                  }
+                  curr = curr.parentElement;
+                }
+                return false;
+              }
 
               const ptrContainer = document.createElement('div');
               ptrContainer.id = 'app-pull-to-refresh';
@@ -272,6 +304,11 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
 
               window.addEventListener('touchstart', function(e) {
                 if (isRefreshing) return;
+                if (isPtrBlocked(e.target)) {
+                  isPulling = false;
+                  startY = 0;
+                  return;
+                }
                 if (getScrollTop() <= 1) {
                   startY = e.touches[0].screenY;
                   isPulling = true;
@@ -283,7 +320,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
 
               window.addEventListener('touchmove', function(e) {
                 if (!isPulling || isRefreshing) return;
-                if (getScrollTop() > 1) {
+                if (isPtrBlocked(e.target) || getScrollTop() > 1) {
                   isPulling = false;
                   ptrContainer.style.top = '-60px';
                   return;
