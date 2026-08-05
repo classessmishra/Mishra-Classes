@@ -55,3 +55,7 @@ body {
 html.is-native-app #web-bottom-nav {
   display: none !important;
 }
+
+html.is-native-app .mobile-buy-bar {
+  bottom: 0 !important;
+}

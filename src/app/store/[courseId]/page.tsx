@@ -576,7 +576,7 @@ export default function CourseDetailsPage() {
       </div>
 
       {/* Sticky Bottom Bar for Mobile */}
-      <div className="md:hidden fixed bottom-[64px] left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40 flex items-center justify-between">
+      <div className="md:hidden fixed bottom-[64px] left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40 flex items-center justify-between mobile-buy-bar">
         <div>
           <p className="text-[10px] text-gray-500 font-bold uppercase mb-0.5">Total Amount</p>
           <div className="flex items-center gap-2">
