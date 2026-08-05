@@ -56,14 +56,20 @@ export async function createLiveClass(payload: any) {
       if (users) {
         const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
         if (tokens.length > 0) {
-          const topic = rest.title || 'Untitled';
+          const topic = rest.title || rest.topic || 'Untitled Session';
           const time = rest.scheduled_time ? new Date(rest.scheduled_time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) : 'Soon';
+          const liveClassId = data?.[0]?.id || rest.youtube_video_id || '';
           
           await sendMultiplePushNotifications(
             tokens,
-            `📅 Live Class Scheduled`,
-            `${topic} has been scheduled for ${time}.`,
-            { type: 'LIVE_CLASS', youtubeVideoId: rest.youtube_video_id || '' }
+            `📅 Live Class Scheduled: ${topic}`,
+            `Live class "${topic}" has been scheduled for ${time}. Tap to view details.`,
+            { 
+              type: 'LIVE_CLASS', 
+              classId: liveClassId, 
+              youtubeVideoId: rest.youtube_video_id || '',
+              path: `/student/live-class/${liveClassId}` 
+            }
           );
         }
       }
@@ -179,11 +185,17 @@ export async function toggleLiveClassStatus(youtubeVideoId: string, isActive: bo
         if (users) {
           const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
           if (tokens.length > 0) {
+            const liveClassId = classes[0]?.id || youtubeVideoId;
             await sendMultiplePushNotifications(
               tokens,
-              `🔴 Live Class Started!`,
-              `${topic} is now live. Tap to join!`,
-              { type: 'LIVE_CLASS', youtubeVideoId }
+              `🔴 LIVE NOW: ${topic}`,
+              `Class has started! Tap here to join the live class now.`,
+              { 
+                type: 'LIVE_CLASS', 
+                classId: liveClassId, 
+                youtubeVideoId, 
+                path: `/student/live-class/${liveClassId}` 
+              }
             );
           }
         }
@@ -232,13 +244,21 @@ export async function getAllLiveClasses() {
 }
 
 export async function getLiveClassById(classId: string) {
-  const { data, error } = await supabase
-    .from('live_classes')
-    .select('*, courses(title)')
-    .eq('id', classId)
-    .single();
+  if (!classId) return null;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(classId);
+  
+  let query = supabase.from('live_classes').select('*, courses(title)');
+  if (isUuid) {
+    query = query.eq('id', classId);
+  } else {
+    query = query.or(`meeting_link.eq.${classId},youtube_video_id.eq.${classId}`);
+  }
 
-  if (error) throw new Error(error.message);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+  if (error) {
+    console.error("Error fetching live class by ID:", error);
+    return null;
+  }
   return data;
 }
 
@@ -417,9 +437,13 @@ export async function endAndSyncLiveClass(meetingLink: string) {
             if (tokens.length > 0) {
               await sendMultiplePushNotifications(
                 tokens,
-                `🛑 Live Class Ended`,
-                `${topic} has ended. The recording will be available in the library shortly.`,
-                { type: 'CLASS_ENDED', youtubeVideoId: meetingLink }
+                `🛑 Class Ended: ${topic}`,
+                `The live session has ended. Recording will be accessible in your course library shortly.`,
+                { 
+                  type: 'COURSE', 
+                  courseId: updated[0].course_id,
+                  path: `/student/courses/${updated[0].course_id}`
+                }
               );
             }
           }

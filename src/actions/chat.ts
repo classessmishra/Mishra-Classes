@@ -74,7 +74,11 @@ export async function sendGlobalNotification(title: string, message: string, lin
       tokens,
       `📣 ${title}`,
       message,
-      { type: 'ANNOUNCEMENT', path: link_url || '/student' }
+      { 
+        type: 'ANNOUNCEMENT', 
+        linkUrl: link_url,
+        path: link_url || '/batches' 
+      }
     );
   }
   
@@ -316,7 +320,10 @@ import { sendMultiplePushNotifications } from "@/lib/notifications";
  */
 export async function sendChatPushNotification(groupId: string, messageContent: string, senderId: string, senderName: string) {
   try {
-    const members = await getGroupMembers(groupId);
+    const [{ data: group }, members] = await Promise.all([
+      supabase.from('chat_groups').select('name').eq('id', groupId).maybeSingle(),
+      getGroupMembers(groupId)
+    ]);
     const recipientIds = members.filter((m: any) => m.id !== senderId).map((m: any) => m.id);
     
     if (recipientIds.length === 0) return { success: true };
@@ -331,14 +338,19 @@ export async function sendChatPushNotification(groupId: string, messageContent: 
       const tokens = users.map(u => u.expo_push_token).filter(Boolean);
       
       let cleanMessage = messageContent;
-      if (cleanMessage.startsWith('[ATTACHMENT:IMAGE]')) cleanMessage = '📷 Image';
-      else if (cleanMessage.startsWith('[ATTACHMENT:PDF]')) cleanMessage = '📄 Document';
+      if (cleanMessage.startsWith('[ATTACHMENT:IMAGE]')) cleanMessage = '📷 Photo attachment';
+      else if (cleanMessage.startsWith('[ATTACHMENT:PDF]')) cleanMessage = '📄 Document PDF';
 
+      const groupPrefix = group?.name ? `${group.name} • ` : '';
       await sendMultiplePushNotifications(
         tokens,
-        `New message from ${senderName}`,
+        `💬 ${groupPrefix}${senderName}`,
         cleanMessage,
-        { type: 'CHAT', groupId }
+        { 
+          type: 'CHAT', 
+          groupId,
+          path: `/chats/student?group=${groupId}`
+        }
       );
     }
     

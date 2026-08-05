@@ -37,6 +37,29 @@ export async function enrollStudent(batchId: string, studentId: string) {
     if (chatMemberError) console.error("Warning: Failed to add student to automated chat group", chatMemberError);
   }
 
+  // 3. Send Push Notification to Student
+  try {
+    const [{ data: user }, { data: batch }] = await Promise.all([
+      supabase.from('users').select('expo_push_token').eq('id', studentId).single(),
+      supabase.from('batches').select('name').eq('id', batchId).single()
+    ]);
+    if (user?.expo_push_token) {
+      const batchName = batch?.name || 'New Batch';
+      await sendPushNotification(
+        user.expo_push_token,
+        `🎉 Enrolled in ${batchName}!`,
+        `You have been added to ${batchName}. Tap to view schedule, announcements, and tests.`,
+        { 
+          type: 'ANNOUNCEMENT', 
+          batchId, 
+          path: `/batches/${batchId}` 
+        }
+      );
+    }
+  } catch (pushErr) {
+    console.error("Failed to send enroll push notification:", pushErr);
+  }
+
   revalidatePath('/admin/batches');
   return { success: true };
 }
@@ -158,25 +181,39 @@ export async function markAttendance(batchId: string, studentId: string, date: s
     throw new Error(error.message);
   }
 
-  // Fetch student push token
-  const { data: user } = await supabase
-    .from('users')
-    .select('expo_push_token')
-    .eq('id', studentId)
-    .single();
+  // Fetch student push token & batch details
+  try {
+    const [{ data: user }, { data: batch }] = await Promise.all([
+      supabase.from('users').select('expo_push_token').eq('id', studentId).single(),
+      supabase.from('batches').select('name').eq('id', batchId).single()
+    ]);
 
-  if (user?.expo_push_token) {
-    const statusText = status === 'present' ? 'Present ✅' : 'Absent ❌';
-    const message = status === 'present' 
-      ? `You have been marked present for ${date}.` 
-      : `You have been marked absent for ${date}. Please check your classes.`;
+    if (user?.expo_push_token) {
+      const statusEmoji = status === 'present' ? '✅' : '❌';
+      const statusText = status === 'present' ? 'Present' : 'Absent';
+      const batchName = batch?.name || 'Class';
+      const formattedDate = new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      
+      const title = `Attendance: ${statusEmoji} ${statusText} (${batchName})`;
+      const message = status === 'present' 
+        ? `You have been marked Present for ${batchName} on ${formattedDate}. Keep up the great work!` 
+        : `You have been marked Absent for ${batchName} on ${formattedDate}. Tap to review your attendance record.`;
 
-    await sendPushNotification(
-      user.expo_push_token,
-      `Attendance Update: ${statusText}`,
-      message,
-      { type: 'ATTENDANCE', path: '/student' }
-    );
+      await sendPushNotification(
+        user.expo_push_token,
+        title,
+        message,
+        { 
+          type: 'ATTENDANCE', 
+          batchId, 
+          date, 
+          status, 
+          path: `/batches/${batchId}?tab=attendance` 
+        }
+      );
+    }
+  } catch (notifErr) {
+    console.error("Failed to send attendance push notification:", notifErr);
   }
   
   return { success: true };

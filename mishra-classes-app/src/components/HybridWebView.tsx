@@ -88,6 +88,23 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
     }
   }, []);
 
+  const lastTargetUrl = useRef(`${BASE_URL}${path}`);
+
+  React.useEffect(() => {
+    if (path && webViewRef.current) {
+      const fullUrl = `${BASE_URL}${path}`;
+      if (lastTargetUrl.current !== fullUrl) {
+        lastTargetUrl.current = fullUrl;
+        webViewRef.current.injectJavaScript(`
+          if (window.location.href !== '${fullUrl}') {
+            window.location.href = '${fullUrl}';
+          }
+          true;
+        `);
+      }
+    }
+  }, [path]);
+
   React.useEffect(() => {
     if (expoPushToken && webViewRef.current) {
       webViewRef.current.injectJavaScript(`

@@ -67,12 +67,17 @@ export async function assignTest(testId: string, assignmentData: { batch_id?: st
         if (users) {
           const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
           if (tokens.length > 0) {
-            const scope = assignmentData.batch_id ? "batch" : "course";
+            const scope = assignmentData.batch_id ? "Batch" : "Course";
+            const durationText = testData.duration_minutes ? `Duration: ${testData.duration_minutes} mins.` : '';
             await sendMultiplePushNotifications(
               tokens, 
-              '📝 New Test Assigned', 
-              `A new test "${testData.title}" has been assigned to your ${scope}.`, 
-              { type: 'TEST', testId }
+              `📝 New Test: ${testData.title}`, 
+              `A new test "${testData.title}" is now available for your ${scope}. ${durationText} Tap to attempt now!`, 
+              { 
+                type: 'TEST', 
+                testId,
+                path: `/test/${testId}`
+              }
             );
           }
         }

@@ -17,7 +17,26 @@ export default function BatchDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const batchId = params.batchId as string;
-  const [activeTab, setActiveTab] = useState<"overview" | "test" | "announcement" | "attendance">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "test" | "announcement" | "attendance">(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tab = searchParams.get('tab');
+      if (tab === 'attendance' || tab === 'announcement' || tab === 'test' || tab === 'overview') {
+        return tab;
+      }
+    }
+    return "overview";
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tab = searchParams.get('tab');
+      if (tab === 'attendance' || tab === 'announcement' || tab === 'test' || tab === 'overview') {
+        setActiveTab(tab);
+      }
+    }
+  }, [batchId]);
 
   // Mock data based on batchId
   const batchName = "Loading Batch Details...";

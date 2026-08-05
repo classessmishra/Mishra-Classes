@@ -15,31 +15,41 @@ export async function createBatchAnnouncement(batchId: string, title: string, me
     throw new Error(error.message);
   }
 
-  // Fetch push tokens for all students in this batch
-  const { data: students } = await supabase
-    .from('batch_students')
-    .select('student_id')
-    .eq('batch_id', batchId);
+  // Fetch push tokens for all students in this batch & batch details
+  try {
+    const [{ data: students }, { data: batch }] = await Promise.all([
+      supabase.from('batch_students').select('student_id').eq('batch_id', batchId),
+      supabase.from('batches').select('name').eq('id', batchId).single()
+    ]);
 
-  if (students && students.length > 0) {
-    const studentIds = students.map((s: any) => s.student_id);
-    
-    const { data: users } = await supabase
-      .from('users')
-      .select('expo_push_token')
-      .in('id', studentIds);
+    if (students && students.length > 0) {
+      const studentIds = students.map((s: any) => s.student_id);
+      
+      const { data: users } = await supabase
+        .from('users')
+        .select('expo_push_token')
+        .in('id', studentIds);
 
-    if (users) {
-      const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
-      if (tokens.length > 0) {
-        await sendMultiplePushNotifications(
-          tokens,
-          `📢 ${title}`,
-          message,
-          { type: 'ANNOUNCEMENT', batchId, linkUrl: link_url }
-        );
+      if (users) {
+        const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
+        if (tokens.length > 0) {
+          const batchName = batch?.name || 'Batch Announcement';
+          await sendMultiplePushNotifications(
+            tokens,
+            `📢 ${batchName}: ${title}`,
+            message,
+            { 
+              type: 'ANNOUNCEMENT', 
+              batchId, 
+              linkUrl: link_url,
+              path: link_url || `/batches/${batchId}?tab=announcement`
+            }
+          );
+        }
       }
     }
+  } catch (notifErr) {
+    console.error("Failed to send batch announcement push notification:", notifErr);
   }
 
   return data[0];
