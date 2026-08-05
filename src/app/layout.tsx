@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -37,7 +38,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: "if(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('MishraClassesApp')){document.documentElement.classList.add('is-native-app');}" }} />
+        <Script 
+          id="native-app-detection"
+          strategy="beforeInteractive" 
+          dangerouslySetInnerHTML={{ __html: "if(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('MishraClassesApp')){document.documentElement.classList.add('is-native-app');}" }} 
+        />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <CartProvider>
