@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, MoreVertical, Menu, ArrowLeft, Mail } from "lucide-react";
+import { Bell, MoreVertical, Menu, ArrowLeft, Mail, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -20,7 +20,15 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('mishra_user_profile');
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return null;
+  });
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const totalUnreadChats = Object.values(unreadCounts).reduce((a: any, b: any) => a + (b > 0 ? 1 : 0), 0) as number;
@@ -41,7 +49,12 @@ export default function Navbar() {
     if (idMatch) {
       getUserProfile(idMatch[2])
         .then(data => {
-          if (data) setUserProfile(data);
+          if (data) {
+            setUserProfile(data);
+            try {
+              localStorage.setItem('mishra_user_profile', JSON.stringify(data));
+            } catch(e) {}
+          }
         })
         .catch(err => {
           console.error("Ignored getUserProfile error:", err);
@@ -144,6 +157,7 @@ export default function Navbar() {
     localStorage.removeItem("mishra_classes_cart");
     localStorage.removeItem("student_unread_counts");
     localStorage.removeItem("student_last_read_times");
+    localStorage.removeItem("mishra_user_profile");
     setRole(null);
     setUserProfile(null);
     setDropdownOpen(false);
@@ -255,12 +269,14 @@ export default function Navbar() {
               {/* Mobile Profile Button */}
               <button 
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="md:hidden w-8 h-8 rounded-full overflow-hidden border border-white/30 bg-indigo-300 flex items-center justify-center"
+                className="md:hidden w-8 h-8 rounded-full overflow-hidden border border-white/40 bg-white/20 flex items-center justify-center shadow-sm"
               >
                 {userProfile?.profile_photo_url ? (
                   <img src={userProfile.profile_photo_url} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=transparent" alt="Profile" className="w-full h-full object-cover" />
+                  <div className="w-full h-full bg-white text-[#5B58FF] flex items-center justify-center font-bold text-xs">
+                    {userProfile?.full_name ? userProfile.full_name.charAt(0).toUpperCase() : (role === 'admin' ? 'A' : 'S')}
+                  </div>
                 )}
               </button>
               
