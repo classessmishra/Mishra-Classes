@@ -128,7 +128,7 @@ export async function adminResetPassword(userId: string, newPassword: string) {
 export async function verifyEmail(token: string) {
   const { data, error } = await supabase
     .from('users')
-    .select('id')
+    .select('id, email, full_name')
     .eq('verification_token', token)
     .single();
 
@@ -146,6 +146,10 @@ export async function verifyEmail(token: string) {
 
   if (updateError) {
     return { success: false, error: "Failed to verify email. Please try again." };
+  }
+
+  if (data.email) {
+    sendWelcomeEmail(data.email, data.full_name || 'Student').catch(err => console.error("Failed to send welcome email:", err));
   }
 
   return { success: true };
