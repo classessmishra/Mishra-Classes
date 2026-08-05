@@ -93,7 +93,18 @@ function PaymentSuccessContent() {
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       
       const studentName = (purchase?.users as any)?.full_name || "Student";
-      pdf.save(`Mishra_Classes_Receipt_${studentName.replace(/\s+/g, '_')}_${receiptId}.pdf`);
+      const filename = `Mishra_Classes_Receipt_${studentName.replace(/\s+/g, '_')}_${receiptId}.pdf`;
+      
+      if (typeof window !== 'undefined' && (window as any).ReactNativeWebView && (window as any).ReactNativeWebView.postMessage) {
+        const base64 = pdf.output('datauristring');
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'DOWNLOAD_PDF',
+          base64: base64,
+          filename: filename
+        }));
+      } else {
+        pdf.save(filename);
+      }
     } catch (err: any) {
       console.error("Error generating PDF:", err);
       alert("Failed to generate PDF: " + (err.message || JSON.stringify(err)));

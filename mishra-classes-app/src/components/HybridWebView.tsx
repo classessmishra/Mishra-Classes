@@ -4,6 +4,8 @@ import { WebView } from 'react-native-webview';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useNotifications } from '../hooks/useNotifications';
 
 
@@ -179,7 +181,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
     } catch(e) {}
   }, [navigation, path]);
 
-  const onMessage = useCallback((event: any) => {
+  const onMessage = useCallback(async (event: any) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'FULLSCREEN') {
@@ -187,6 +189,33 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
       } else if (data.type === 'PULL_TO_REFRESH') {
         if (webViewRef.current) {
           webViewRef.current.reload();
+        }
+      } else if (data.type === 'DOWNLOAD_PDF') {
+        try {
+          const { base64, filename } = data;
+          const fileUri = `${FileSystem.documentDirectory}${filename}`;
+          const pureBase64 = base64.includes('base64,') ? base64.split('base64,')[1] : base64;
+          
+          await FileSystem.writeAsStringAsync(fileUri, pureBase64, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/pdf',
+              dialogTitle: 'Download Invoice',
+              UTI: 'com.adobe.pdf',
+            });
+          } else {
+            if (Platform.OS === 'android') {
+              ToastAndroid.show('PDF saved internally, but sharing is not available', ToastAndroid.LONG);
+            }
+          }
+        } catch (e: any) {
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('Error saving PDF: ' + e.message, ToastAndroid.LONG);
+          }
         }
       }
     } catch(e) {}
