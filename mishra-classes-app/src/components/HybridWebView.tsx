@@ -159,6 +159,10 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'FULLSCREEN') {
         handleFullscreen(data.value);
+      } else if (data.type === 'PULL_TO_REFRESH') {
+        if (webViewRef.current) {
+          webViewRef.current.reload();
+        }
       }
     } catch(e) {}
   }, [handleFullscreen]);
@@ -229,18 +233,106 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         scalesPageToFit={false}
         userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36 MishraClassesApp"
         injectedJavaScript={`
-          const meta = document.createElement('meta');
-          meta.setAttribute('name', 'viewport');
-          meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0');
-          document.getElementsByTagName('head')[0].appendChild(meta);
-          
-          const style = document.createElement('style');
-          style.innerHTML = \`
-            body { -webkit-user-select: none; user-select: none; }
-            ::-webkit-scrollbar { display: none !important; }
-            #web-bottom-nav { display: none !important; }
-          \`;
-          document.head.appendChild(style);
+          (function() {
+            const meta = document.createElement('meta');
+            meta.setAttribute('name', 'viewport');
+            meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0');
+            document.getElementsByTagName('head')[0].appendChild(meta);
+            
+            const style = document.createElement('style');
+            style.innerHTML = \`
+              body { -webkit-user-select: none; user-select: none; }
+              ::-webkit-scrollbar { display: none !important; }
+              #web-bottom-nav { display: none !important; }
+              @keyframes ptrSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            \`;
+            document.head.appendChild(style);
+
+            // Pull-To-Refresh Engine
+            if (!window._ptrInitialized) {
+              window._ptrInitialized = true;
+              let startY = 0;
+              let currentPull = 0;
+              let isPulling = false;
+              let isRefreshing = false;
+              const PULL_THRESHOLD = 70;
+
+              const ptrContainer = document.createElement('div');
+              ptrContainer.id = 'app-pull-to-refresh';
+              ptrContainer.style.cssText = 'position:fixed; top:-60px; left:50%; transform:translateX(-50%); z-index:999999; width:44px; height:44px; background:#ffffff; border-radius:50%; box-shadow:0 4px 18px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center; transition:top 0.15s ease-out; pointer-events:none; border:1px solid #e2e8f0;';
+              
+              ptrContainer.innerHTML = '<svg id="ptr-icon" viewBox="0 0 24 24" width="22" height="22" stroke="#5B58FF" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.1s linear;"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>';
+              
+              document.documentElement.appendChild(ptrContainer);
+              const ptrIcon = document.getElementById('ptr-icon');
+
+              function getScrollTop() {
+                return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+              }
+
+              window.addEventListener('touchstart', function(e) {
+                if (isRefreshing) return;
+                if (getScrollTop() <= 1) {
+                  startY = e.touches[0].screenY;
+                  isPulling = true;
+                } else {
+                  isPulling = false;
+                  startY = 0;
+                }
+              }, { passive: true });
+
+              window.addEventListener('touchmove', function(e) {
+                if (!isPulling || isRefreshing) return;
+                if (getScrollTop() > 1) {
+                  isPulling = false;
+                  ptrContainer.style.top = '-60px';
+                  return;
+                }
+
+                const touchY = e.touches[0].screenY;
+                const diff = touchY - startY;
+
+                if (diff > 0) {
+                  currentPull = Math.min(diff * 0.42, 100);
+                  ptrContainer.style.top = (currentPull - 48) + 'px';
+                  if (ptrIcon) {
+                    ptrIcon.style.transform = 'rotate(' + (currentPull * 4) + 'deg)';
+                  }
+                }
+              }, { passive: true });
+
+              window.addEventListener('touchend', function() {
+                if (!isPulling || isRefreshing) return;
+                isPulling = false;
+
+                if (currentPull >= PULL_THRESHOLD) {
+                  isRefreshing = true;
+                  ptrContainer.style.top = '16px';
+                  if (ptrIcon) {
+                    ptrIcon.style.animation = 'ptrSpin 0.7s linear infinite';
+                  }
+
+                  if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'PULL_TO_REFRESH' }));
+                  } else {
+                    window.location.reload();
+                  }
+
+                  setTimeout(function() {
+                    ptrContainer.style.top = '-60px';
+                    if (ptrIcon) {
+                      ptrIcon.style.animation = '';
+                    }
+                    isRefreshing = false;
+                    currentPull = 0;
+                  }, 1500);
+                } else {
+                  ptrContainer.style.top = '-60px';
+                  currentPull = 0;
+                }
+              }, { passive: true });
+            }
+          })();
           true;
         `}
       />
