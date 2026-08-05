@@ -77,12 +77,13 @@ export default function StudentProfilePage() {
     if (!profile) return;
     setSaving(true);
     try {
-      await updateStudentProfile(profile.id, {
+      const updateRes = await updateStudentProfile(profile.id, {
         profile_photo_url: profilePhoto,
         documents,
         bio,
         basic_info: basicInfo
       });
+      if (updateRes?.error) throw new Error(updateRes.error);
       alert("Profile updated successfully!");
     } catch (error: any) {
       alert("Failed to update profile: " + error.message);
@@ -98,17 +99,20 @@ export default function StudentProfilePage() {
         setUploadingDocId('main_profile');
         const formData = new FormData();
         formData.append("file", file);
-        const { url } = await uploadProfileMedia(formData, 'profile-media');
+        const res = await uploadProfileMedia(formData, 'profile-media');
+        if (res?.error) throw new Error(res.error);
+        const url = res.url;
         setProfilePhoto(url);
         
         // Auto-save the photo instantly
         if (profile) {
-          await updateStudentProfile(profile.id, {
+          const updateRes = await updateStudentProfile(profile.id, {
             profile_photo_url: url,
             documents,
             bio,
             basic_info: basicInfo
           });
+          if (updateRes?.error) throw new Error(updateRes.error);
         }
       } catch (err: any) {
         console.error("Photo upload failed:", err);
@@ -132,6 +136,7 @@ export default function StudentProfilePage() {
           const formData = new FormData();
           formData.append("file", file);
           const res = await uploadProfileMedia(formData, 'profile-documents');
+          if (res?.error) throw new Error(res.error);
           url = res.url;
         }
 
@@ -147,12 +152,13 @@ export default function StudentProfilePage() {
           if (profile) {
             const currentDocs = documents || [];
             const filteredDocs = currentDocs.filter((d: any) => d.type !== docType);
-            await updateStudentProfile(profile.id, {
+            const updateRes = await updateStudentProfile(profile.id, {
               profile_photo_url: profilePhoto,
               documents: [...filteredDocs, newDoc],
               bio,
               basic_info: basicInfo
             });
+            if (updateRes?.error) throw new Error(updateRes.error);
           }
         }
       } catch (err: any) {

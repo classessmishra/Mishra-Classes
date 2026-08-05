@@ -5,14 +5,19 @@ import { revalidatePath } from "next/cache";
 import { uploadMediaToCloudinary } from "@/lib/cloudinary";
 
 export async function uploadProfileMedia(formData: FormData, folder: string = 'profile-media') {
-  const file = formData.get('file') as File;
-  if (!file) throw new Error("No file uploaded");
+  try {
+    const file = formData.get('file') as File;
+    if (!file) return { error: "No file uploaded" };
 
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-  const url = await uploadMediaToCloudinary(buffer, folder);
-  return { url };
+    const url = await uploadMediaToCloudinary(buffer, folder);
+    return { url };
+  } catch (err: any) {
+    console.error("Cloudinary upload failed:", err);
+    return { error: err.message || "Failed to upload to Cloudinary" };
+  }
 }
 
 export async function getUserProfile(userId: string) {
@@ -30,32 +35,35 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function updateStudentProfile(userId: string, data: any) {
-  // Students can only update specific fields, NEVER name, phone, or email
-  const safeData = {
-    profile_photo_url: data.profile_photo_url,
-    documents: data.documents, // JSON array
-    address: data.address,
-    city: data.city,
-    pincode: data.pincode,
-    bio: data.bio,
-    basic_info: data.basic_info // JSON object for new profile details
-  };
+  try {
+    // Students can only update specific fields, NEVER name, phone, or email
+    const safeData = {
+      profile_photo_url: data.profile_photo_url,
+      documents: data.documents, // JSON array
+      address: data.address,
+      city: data.city,
+      pincode: data.pincode,
+      bio: data.bio,
+      basic_info: data.basic_info // JSON object for new profile details
+    };
 
-  // Remove undefined fields
-  Object.keys(safeData).forEach(key => safeData[key as keyof typeof safeData] === undefined && delete safeData[key as keyof typeof safeData]);
+    // Remove undefined fields
+    Object.keys(safeData).forEach(key => safeData[key as keyof typeof safeData] === undefined && delete safeData[key as keyof typeof safeData]);
 
-  const { error } = await supabase
-    .from('users')
-    .update(safeData)
-    .eq('id', userId);
+    const { error } = await supabase
+      .from('users')
+      .update(safeData)
+      .eq('id', userId);
 
-  if (error) {
-    // If column doesn't exist, Supabase will throw an error. We should handle it gracefully or rely on the schema having these columns.
-    throw new Error(error.message);
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath('/student/profile');
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || "Unknown error occurred" };
   }
-
-  revalidatePath('/student/profile');
-  return { success: true };
 }
 
 export async function updateAdminProfileOverrides(userId: string, data: { full_name?: string, phone?: string, email?: string, password?: string, address?: string, map_location?: string, profile_locks?: any }) {
