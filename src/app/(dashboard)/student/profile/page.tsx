@@ -101,7 +101,7 @@ export default function StudentProfilePage() {
         formData.append("file", file);
         const res = await uploadProfileMedia(formData, 'profile-media');
         if (res?.error) throw new Error(res.error);
-        const url = res.url;
+        const url = res.url || '';
         setProfilePhoto(url);
         
         // Auto-save the photo instantly
@@ -131,13 +131,13 @@ export default function StudentProfilePage() {
         let url = '';
         if (file.type === "application/pdf") {
           const res = await uploadFiles("coursePdfUploader", { files: [file] });
-          if (res && res.length > 0) url = res[0].url;
+          if (res && res.length > 0) url = res[0].url || '';
         } else {
           const formData = new FormData();
           formData.append("file", file);
           const res = await uploadProfileMedia(formData, 'profile-documents');
           if (res?.error) throw new Error(res.error);
-          url = res.url;
+          url = res.url || '';
         }
 
         if (url) {
