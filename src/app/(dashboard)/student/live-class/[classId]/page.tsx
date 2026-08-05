@@ -122,6 +122,13 @@ export default function StudentLiveRoom() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      if (typeof window !== 'undefined' && (window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'FULLSCREEN', value: false }));
+      }
     };
   }, []);
 

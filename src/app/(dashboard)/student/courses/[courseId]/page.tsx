@@ -98,6 +98,14 @@ export default function StudentStudyRoom() {
     return () => {
       clearInterval(interval);
       if (bottomNav) bottomNav.style.display = '';
+      
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
+      if (typeof window !== 'undefined' && (window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'FULLSCREEN', value: false }));
+      }
     };
   }, [activeVideoUrl]);
 
