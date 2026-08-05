@@ -715,7 +715,12 @@ export default function AdminChatsPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6" onClick={() => setShowMenu(false)}>
+        <div 
+          data-no-ptr="true"
+          id="chat-message-list"
+          className="flex-1 overflow-y-auto p-6 space-y-6" 
+          onClick={() => setShowMenu(false)}
+        >
           <div className="flex justify-center my-4">
             <span className="text-[10px] text-gray-400 font-medium">2026/07/08</span>
           </div>

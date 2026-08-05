@@ -175,7 +175,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         originWhitelist={['*']}
         source={{ uri: `${BASE_URL}${path}` }}
         style={styles.webview}
-        pullToRefreshEnabled={!isFullscreen && !path.includes('/chats') && !currentUrl.includes('/chats')}
+        pullToRefreshEnabled={!isFullscreen}
         overScrollMode="always"
         nestedScrollEnabled={true}
         onLoadStart={(e) => onNavigationStateChange(e.nativeEvent)}
@@ -248,7 +248,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
             \`;
             document.head.appendChild(style);
 
-            // Pull-To-Refresh Engine (Disabled in chats, live classes, and internal scroll containers)
+            // Pull-To-Refresh Engine (Active on all main browsing screens including Chats list)
             if (!window._ptrInitialized) {
               window._ptrInitialized = true;
               let startY = 0;
@@ -259,29 +259,31 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
 
               function isPtrBlocked(target) {
                 const path = window.location.pathname;
+                
+                // Block in live streaming or test taking
                 if (
-                  path.includes('/chats') || 
                   path.includes('/live-class') || 
-                  path.includes('/test') || 
-                  path.includes('/studio') ||
-                  path.includes('/take') ||
-                  path.includes('/login') ||
-                  path.includes('/signup')
+                  path.includes('/studio') || 
+                  path.includes('/take')
                 ) {
+                  return true;
+                }
+
+                // If inside an active open conversation (reading messages)
+                if (document.querySelector('[data-chat-conversation="active"], [data-no-ptr="true"], #chat-message-list')) {
                   return true;
                 }
 
                 if (!target) return false;
                 if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return true;
 
+                // If inner container is scrolled down
                 let curr = target;
                 while (curr && curr !== document.body && curr !== document.documentElement) {
-                  if (curr.classList && (
-                    curr.classList.contains('overflow-y-auto') || 
-                    curr.classList.contains('overflow-y-scroll') ||
-                    curr.classList.contains('overflow-auto') ||
-                    curr.classList.contains('overflow-scroll')
-                  )) {
+                  if (curr.scrollTop > 2) {
+                    return true;
+                  }
+                  if (curr.getAttribute && (curr.getAttribute('data-no-ptr') === 'true' || curr.getAttribute('data-chat-conversation') === 'active')) {
                     return true;
                   }
                   curr = curr.parentElement;

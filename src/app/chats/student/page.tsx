@@ -632,7 +632,10 @@ export default function StudentChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      <div className={`${!activeGroupId ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#f5f5f5] overflow-hidden ${activeGroupId ? 'fixed inset-0 z-[200] md:relative md:inset-auto md:z-auto' : 'relative'}`}>
+      <div 
+        data-chat-conversation={activeGroupId ? "active" : "none"}
+        className={`${!activeGroupId ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#f5f5f5] overflow-hidden ${activeGroupId ? 'fixed inset-0 z-[200] md:relative md:inset-auto md:z-auto' : 'relative'}`}
+      >
         {!activeGroupId ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#f5f5f5]">
             <div className="w-24 h-24 mb-6 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
@@ -682,7 +685,12 @@ export default function StudentChatPage() {
         </div>
 
         {/* Adjust top padding since header is visible on mobile */}
-        <div className="flex-1 overflow-y-auto p-6 pt-[80px] md:pt-6 space-y-4" onClick={() => setShowMenu(false)}>
+        <div 
+          data-no-ptr="true"
+          id="chat-message-list"
+          className="flex-1 overflow-y-auto p-6 pt-[80px] md:pt-6 space-y-4" 
+          onClick={() => setShowMenu(false)}
+        >
           <div className="flex justify-center my-4">
             <span className="text-[10px] text-gray-400 font-medium">2026/07/08</span>
           </div>
