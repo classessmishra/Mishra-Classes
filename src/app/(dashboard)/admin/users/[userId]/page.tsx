@@ -2,12 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getUserProfile, updateAdminProfileOverrides } from "@/actions/profile";
+import { getUserProfile, updateAdminProfileOverrides, uploadProfileMedia } from "@/actions/profile";
 import { getBatches, enrollStudent, unenrollStudent, getStudentBatches } from "@/actions/batches";
 import { getCourses, getStudentCourses, allocateCourse, revokeCourse } from "@/actions/courses";
 import { adminResetPassword } from "@/actions/auth";
-import { Save, ArrowLeft, UserCircle, BookOpen, MessageSquare, Users, X, Key, Lock, Unlock } from "lucide-react";
+import { Save, ArrowLeft, UserCircle, BookOpen, MessageSquare, Users, X, Key, Lock, Unlock, FileText, Upload, Loader2, Eye, CheckCircle2, Download } from "lucide-react";
 import Link from "next/link";
+import { uploadFiles } from "@/utils/uploadthing";
+
+const REQUIRED_DOCS = [
+  { id: 'passport_photo', label: 'Passport Size Photo' },
+  { id: 'sign', label: 'Signature' },
+  { id: 'aadhar_front', label: 'Aadhar Card Front' },
+  { id: 'aadhar_back', label: 'Aadhar Card Back' },
+  { id: 'identity', label: 'Identity Document' },
+  { id: 'marksheet_10', label: '10th Marksheet (PDF/Image)' },
+  { id: 'marksheet_12', label: '12th Marksheet (PDF/Image)' }
+];
 
 export default function AdminStudentDetailPage() {
   const { userId } = useParams();
@@ -37,6 +48,14 @@ export default function AdminStudentDetailPage() {
   const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
   const [profileLocks, setProfileLocks] = useState({ basic_info: false, documents: false });
+  
+  // New States for Basic Info & Documents
+  const [basicInfo, setBasicInfo] = useState({
+    parent_name: '', parent_contact: '', address: '', school_name: '', section: '', roll_no: ''
+  });
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<{url: string, type: string} | null>(null);
 
   const loadData = async () => {
     const data = await getUserProfile(userId as string);
@@ -52,6 +71,17 @@ export default function AdminStudentDetailPage() {
         setProfileLocks({
           basic_info: data.profile_locks.basic_info || false,
           documents: data.profile_locks.documents || false
+        });
+      }
+      setDocuments(data.documents || []);
+      if (data.basic_info) {
+        setBasicInfo({
+          parent_name: data.basic_info.parent_name || '',
+          parent_contact: data.basic_info.parent_contact || '',
+          address: data.basic_info.address || '',
+          school_name: data.basic_info.school_name || '',
+          section: data.basic_info.section || '',
+          roll_no: data.basic_info.roll_no || '',
         });
       }
     }
@@ -119,6 +149,66 @@ export default function AdminStudentDetailPage() {
     } catch (err: any) {
       alert("Failed to update lock status: " + err.message);
       setProfileLocks(profileLocks); // revert on failure
+    }
+  };
+
+  const handleSaveBasicInfo = async () => {
+    setSaving(true);
+    try {
+      await updateAdminProfileOverrides(userId as string, { basic_info: basicInfo });
+      alert("Basic information updated successfully.");
+      
+      // Update local profile state to reflect changes and remove the "N/A" fallback view if they toggle lock
+      setProfile({ ...profile, basic_info: basicInfo });
+    } catch (err: any) {
+      alert("Failed to save basic info: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSpecificDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        setUploadingDocId(docType);
+        let url = '';
+        if (file.type === "application/pdf") {
+          const res = await uploadFiles("coursePdfUploader", { files: [file] });
+          if (res && res.length > 0) url = res[0].url || '';
+        } else {
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await uploadProfileMedia(formData, 'profile-documents');
+          if (res?.error) throw new Error(res.error);
+          url = res.url || '';
+        }
+
+        if (url) {
+          const newDoc = { type: docType, name: file.name, url, date: new Date().toISOString() };
+          
+          setDocuments(prev => {
+            const filtered = prev.filter((d: any) => d.type !== docType);
+            return [...filtered, newDoc];
+          });
+          
+          if (profile) {
+            const currentDocs = documents || [];
+            const filteredDocs = currentDocs.filter((d: any) => d.type !== docType);
+            const updateRes = await updateAdminProfileOverrides(userId as string, {
+              documents: [...filteredDocs, newDoc]
+            });
+            
+            // update profile state 
+            setProfile({ ...profile, documents: [...filteredDocs, newDoc] });
+          }
+        }
+      } catch (err: any) {
+        console.error("Doc upload failed:", err);
+        alert("Failed to upload document: " + (err.message || "Please check file size and try again."));
+      } finally {
+        setUploadingDocId(null);
+      }
     }
   };
 
@@ -338,37 +428,76 @@ export default function AdminStudentDetailPage() {
                 {profileLocks.basic_info ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
               </button>
             </div>
-            
-            {profile.basic_info ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Parent's Name</p>
-                  <p className="text-sm text-slate-800">{profile.basic_info.parent_name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Parent's Contact No</p>
-                  <p className="text-sm text-slate-800">{profile.basic_info.parent_contact || 'N/A'}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Address</p>
-                  <p className="text-sm text-slate-800">{profile.basic_info.address || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 font-semibold mb-1">School/College</p>
-                  <p className="text-sm text-slate-800">{profile.basic_info.school_name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Section</p>
-                  <p className="text-sm text-slate-800">{profile.basic_info.section || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 font-semibold mb-1">Roll No</p>
-                  <p className="text-sm text-slate-800">{profile.basic_info.roll_no || 'N/A'}</p>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Parent's Name</label>
+                <input 
+                  type="text"
+                  value={basicInfo.parent_name}
+                  onChange={e => setBasicInfo({...basicInfo, parent_name: e.target.value})}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  placeholder="Enter parent's full name"
+                />
               </div>
-            ) : (
-              <p className="text-sm text-slate-500 italic">No basic information provided yet.</p>
-            )}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Parent's Contact No.</label>
+                <input 
+                  type="tel"
+                  value={basicInfo.parent_contact}
+                  onChange={e => setBasicInfo({...basicInfo, parent_contact: e.target.value})}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  placeholder="10-digit mobile number"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Address</label>
+                <textarea 
+                  value={basicInfo.address}
+                  onChange={e => setBasicInfo({...basicInfo, address: e.target.value})}
+                  className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm h-20 resize-none"
+                  placeholder="Enter your complete residential address"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">School / College Name</label>
+                <input 
+                  type="text"
+                  value={basicInfo.school_name}
+                  onChange={e => setBasicInfo({...basicInfo, school_name: e.target.value})}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  placeholder="Enter current school or college name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Section</label>
+                <input 
+                  type="text"
+                  value={basicInfo.section}
+                  onChange={e => setBasicInfo({...basicInfo, section: e.target.value})}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  placeholder="e.g. A, B, Science"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Roll No.</label>
+                <input 
+                  type="text"
+                  value={basicInfo.roll_no}
+                  onChange={e => setBasicInfo({...basicInfo, roll_no: e.target.value})}
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  placeholder="Enter school roll no."
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button 
+                onClick={handleSaveBasicInfo}
+                disabled={saving}
+                className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                <Save size={16} /> {saving ? "Saving..." : "Save Basic Info"}
+              </button>
+            </div>
           </div>
 
           {/* Documents Panel */}
@@ -384,42 +513,55 @@ export default function AdminStudentDetailPage() {
                 {profileLocks.documents ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
               </button>
             </div>
-            
-            {profile.documents && profile.documents.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {profile.documents.map((doc: any, idx: number) => {
-                  let docLabel = doc.type || doc.name;
-                  switch(doc.type) {
-                    case 'passport_photo': docLabel = 'Passport Size Photo'; break;
-                    case 'sign': docLabel = 'Signature'; break;
-                    case 'aadhar_front': docLabel = 'Aadhar Card Front'; break;
-                    case 'aadhar_back': docLabel = 'Aadhar Card Back'; break;
-                    case 'identity': docLabel = 'Identity Document'; break;
-                    case 'marksheet_10': docLabel = '10th Marksheet'; break;
-                    case 'marksheet_12': docLabel = '12th Marksheet'; break;
-                  }
-                  
-                  return (
-                    <div key={idx} className="flex items-center justify-between p-3 border border-slate-200 bg-slate-50 rounded-lg">
+            <div className="space-y-4">
+              {REQUIRED_DOCS.map(docType => {
+                const uploadedDoc = documents.find((d: any) => d.type === docType.id || (!d.type && d.name.includes(docType.id)));
+                return (
+                  <div key={docType.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-slate-200 bg-white rounded-xl">
+                    <div className="flex items-center gap-3">
+                      {uploadedDoc ? (
+                        <CheckCircle2 className="text-green-500 shrink-0" size={24} />
+                      ) : (
+                        <div className="w-6 h-6 shrink-0 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                          <span className="w-2 h-2 rounded-full bg-slate-300"></span>
+                        </div>
+                      )}
                       <div>
-                        <p className="text-sm font-semibold text-slate-800">{docLabel}</p>
-                        <p className="text-xs text-slate-500">{new Date(doc.date).toLocaleDateString()}</p>
+                        <p className="text-sm font-semibold text-slate-800">{docType.label}</p>
+                        {uploadedDoc && <p className="text-xs text-green-600 font-medium">Uploaded Successfully</p>}
                       </div>
-                      <a 
-                        href={doc.url} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded font-semibold hover:bg-indigo-200 transition-colors"
-                      >
-                        View
-                      </a>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500 italic">No documents uploaded yet.</p>
-            )}
+                    
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
+                      {uploadedDoc && (
+                        <button
+                          onClick={() => setViewingDoc({ url: uploadedDoc.url, type: docType.id })}
+                          className="flex-1 sm:flex-none justify-center px-4 py-2 rounded-lg text-sm font-semibold border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-2"
+                        >
+                          <Eye size={16} /> View
+                        </button>
+                      )}
+                      
+                      <label className={`flex-1 sm:flex-none justify-center cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ${
+                        uploadedDoc 
+                          ? "border-slate-200 text-slate-600 hover:bg-slate-50" 
+                          : "border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
+                      }`}>
+                        {uploadingDocId === docType.id ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                        {uploadedDoc ? "Re-upload" : "Upload"}
+                        <input 
+                          type="file" 
+                          className="hidden" 
+                          accept={docType.id.includes('marksheet') ? "image/*,.jpg,.jpeg,.png,.pjp,.pdf" : "image/*,.jpg,.jpeg,.png,.pjp"} 
+                          onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
+                          disabled={uploadingDocId !== null}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Batches Panel */}
@@ -525,6 +667,48 @@ export default function AdminStudentDetailPage() {
         </div>
         )}
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewingDoc && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <FileText size={18} className="text-blue-600" /> Document Viewer
+              </h3>
+              <button 
+                onClick={() => setViewingDoc(null)}
+                className="p-1.5 bg-slate-200 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-slate-100 min-h-[50vh]">
+              {viewingDoc.url.toLowerCase().endsWith('.pdf') ? (
+                <iframe src={viewingDoc.url} className="w-full h-[70vh] rounded border border-slate-300" title="Document PDF" />
+              ) : (
+                <img src={viewingDoc.url} alt="Document" className="max-w-full max-h-[70vh] object-contain rounded shadow-sm" />
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+              <a 
+                href={viewingDoc.url}
+                target="_blank"
+                download
+                className="px-5 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg font-semibold hover:bg-indigo-100 transition-colors flex items-center gap-2"
+              >
+                <Download size={18} /> Download
+              </a>
+              <button 
+                onClick={() => setViewingDoc(null)}
+                className="px-5 py-2 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 transition-colors"
+              >
+                Close Viewer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

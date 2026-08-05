@@ -66,7 +66,7 @@ export async function updateStudentProfile(userId: string, data: any) {
   }
 }
 
-export async function updateAdminProfileOverrides(userId: string, data: { full_name?: string, phone?: string, email?: string, password?: string, address?: string, map_location?: string, profile_locks?: any }) {
+export async function updateAdminProfileOverrides(userId: string, data: { full_name?: string, phone?: string, email?: string, password?: string, address?: string, map_location?: string, profile_locks?: any, basic_info?: any, documents?: any }) {
   // Admin can update identity fields, password, coaching address, and profile locks
   const { error } = await supabase
     .from('users')
