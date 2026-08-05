@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, Download, Home, FileText } from "lucide-react";
+import { CheckCircle, Download, Home, FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
@@ -64,16 +64,43 @@ function PaymentSuccessContent() {
     fetchReceipt();
   }, [receiptId]);
 
-  const handleDownloadPDF = () => {
-    const studentName = (purchase?.users as any)?.full_name || "Student";
-    const originalTitle = document.title;
-    document.title = `Mishra Classes Receipt - ${studentName} - ${receiptId}`;
-    window.print();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) return;
+    setIsDownloading(true);
     
-    // Slight delay to ensure the print dialog uses the new title before reverting
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 500);
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      
+      const element = invoiceRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      
+      const studentName = (purchase?.users as any)?.full_name || "Student";
+      pdf.save(`Mishra_Classes_Receipt_${studentName.replace(/\s+/g, '_')}_${receiptId}.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (loading) return <div className="p-20 text-center">Loading receipt...</div>;
@@ -201,9 +228,11 @@ function PaymentSuccessContent() {
       <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3 sm:gap-4 print:hidden mb-20 sm:mb-0">
         <button 
           onClick={handleDownloadPDF}
-          className="flex justify-center items-center gap-2 bg-blue-600 text-white px-4 sm:px-6 py-3 rounded-xl font-bold shadow-sm shadow-blue-200 hover:bg-blue-700 transition-colors w-full sm:w-auto text-sm sm:text-base"
+          disabled={isDownloading}
+          className="flex justify-center items-center gap-2 bg-blue-600 text-white px-4 sm:px-6 py-3 rounded-xl font-bold shadow-sm shadow-blue-200 hover:bg-blue-700 transition-colors w-full sm:w-auto text-sm sm:text-base disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          <Download size={18} className="shrink-0" /> Download PDF
+          {isDownloading ? <Loader2 size={18} className="shrink-0 animate-spin" /> : <Download size={18} className="shrink-0" />} 
+          {isDownloading ? "Generating PDF..." : "Download PDF"}
         </button>
         <Link 
           href="/student"

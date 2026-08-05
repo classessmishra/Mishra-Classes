@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getInvoiceDetails } from "@/actions/checkout";
-import { Printer, ArrowLeft } from "lucide-react";
+import { Printer, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +13,8 @@ export default function InvoicePage() {
   const [invoiceData, setInvoiceData] = useState<any[] | null>(null);
   const [adminInfo, setAdminInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -34,14 +36,41 @@ export default function InvoicePage() {
     }
   }, [orderId]);
 
-  const handleDownloadPDF = () => {
-    const studentInfo = invoiceData?.[0]?.users || {};
-    const originalTitle = document.title;
-    document.title = `Mishra Classes Invoice - ${studentInfo.full_name || "Student"} - ${orderId}`;
-    window.print();
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 500);
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) return;
+    setIsDownloading(true);
+    
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+      
+      const element = invoiceRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      
+      const studentInfo = invoiceData?.[0]?.users || {};
+      pdf.save(`Mishra_Classes_Invoice_${studentInfo.full_name?.replace(/\s+/g, '_') || 'Student'}_${orderId}.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (loading) {
@@ -74,15 +103,17 @@ export default function InvoicePage() {
         </Link>
         <button 
           onClick={handleDownloadPDF}
-          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm shadow-blue-200 hover:bg-blue-700 transition-colors"
+          disabled={isDownloading}
+          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-sm shadow-blue-200 hover:bg-blue-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          <Printer size={18} /> Print / Download PDF
+          {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
+          {isDownloading ? "Generating PDF..." : "Print / Download PDF"}
         </button>
       </div>
 
       <div className="w-full max-w-2xl bg-white sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6 print:border-none print:shadow-none print:mb-0 print:max-w-none">
         {/* Printable Area */}
-        <div className="relative p-5 sm:p-8 bg-white text-slate-800">
+        <div ref={invoiceRef} className="relative p-5 sm:p-8 bg-white text-slate-800">
           {/* Watermark Logo */}
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-10 pointer-events-none overflow-hidden">
             <img src="/logo.png" alt="Mishra Classes Watermark" className="w-full max-w-lg object-contain blur-[1px]" />
