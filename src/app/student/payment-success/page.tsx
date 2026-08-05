@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, Download, Home, FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
 
 function PaymentSuccessContent() {
@@ -74,10 +74,9 @@ function PaymentSuccessContent() {
     
     try {
       const element = invoiceRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false
+      const canvas = await htmlToImage.toCanvas(element, {
+        pixelRatio: 2,
+        backgroundColor: '#ffffff'
       });
       
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
