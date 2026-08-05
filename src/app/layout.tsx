@@ -34,7 +34,11 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${plusJakartaSans.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "if(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('MishraClassesApp')){document.documentElement.classList.add('is-native-app');}" }} />
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <CartProvider>
           <Navbar />

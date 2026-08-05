@@ -208,7 +208,7 @@ export async function assignMaterialToCourse(materialId: string, targetCourseId:
     .select('id')
     .eq('course_id', targetCourseId)
     .eq('file_url', original.file_url)
-    .single();
+    .maybeSingle();
 
   if (existing) throw new Error("This material is already assigned to the selected course.");
 

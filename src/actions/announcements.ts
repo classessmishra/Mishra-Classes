@@ -18,18 +18,27 @@ export async function createBatchAnnouncement(batchId: string, title: string, me
   // Fetch push tokens for all students in this batch
   const { data: students } = await supabase
     .from('batch_students')
-    .select('users(expo_push_token)')
+    .select('student_id')
     .eq('batch_id', batchId);
 
-  if (students) {
-    const tokens = students.map((s: any) => s.users?.expo_push_token).filter(Boolean);
-    if (tokens.length > 0) {
-      await sendMultiplePushNotifications(
-        tokens,
-        `📢 ${title}`,
-        message,
-        { type: 'ANNOUNCEMENT', batchId, linkUrl: link_url }
-      );
+  if (students && students.length > 0) {
+    const studentIds = students.map((s: any) => s.student_id);
+    
+    const { data: users } = await supabase
+      .from('users')
+      .select('expo_push_token')
+      .in('id', studentIds);
+
+    if (users) {
+      const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
+      if (tokens.length > 0) {
+        await sendMultiplePushNotifications(
+          tokens,
+          `📢 ${title}`,
+          message,
+          { type: 'ANNOUNCEMENT', batchId, linkUrl: link_url }
+        );
+      }
     }
   }
 

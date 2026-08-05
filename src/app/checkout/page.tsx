@@ -155,7 +155,7 @@ export default function CheckoutPage() {
         handler: async function (response: any) {
           try {
             // Verify and save purchase in DB
-            const verifyRes = await fetch("/api/razorpay/verify-order", {
+            const verifyRes = await fetch("/api/razorpay/verify-signature", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

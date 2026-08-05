@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         .select('receipt_id')
         .eq('student_id', userId)
         .eq('course_id', courseId)
-        .single();
+        .maybeSingle();
         
       if (!existing) {
         const newReceiptId = `rcpt_${userId.substring(0,6)}_${Date.now()}`;

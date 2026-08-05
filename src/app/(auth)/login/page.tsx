@@ -100,7 +100,7 @@ export default function LoginPage() {
       <div className="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-white/60 relative">
         
         {/* Left Side - Illustration/Text */}
-        <div className="w-full md:w-1/2 p-10 lg:p-14 flex flex-col justify-center relative bg-gradient-to-br from-primary/[0.04] to-primary/[0.08] overflow-hidden">
+        <div className="hidden md:flex w-full md:w-1/2 p-10 lg:p-14 flex-col justify-center relative bg-gradient-to-br from-primary/[0.04] to-primary/[0.08] overflow-hidden">
           {/* Decorative Elements */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3" />

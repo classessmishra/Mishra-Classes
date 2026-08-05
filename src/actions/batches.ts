@@ -28,7 +28,7 @@ export async function enrollStudent(batchId: string, studentId: string) {
 
   // 2. Automate: Add to corresponding Chat Group
   // First, find the chat group for this batch
-  const { data: groupData } = await supabase.from('chat_groups').select('id').eq('batch_id', batchId).single();
+  const { data: groupData } = await supabase.from('chat_groups').select('id').eq('batch_id', batchId).maybeSingle();
   if (groupData) {
     const { error: chatMemberError } = await supabase.from('chat_members').insert([{
       group_id: groupData.id,
@@ -47,7 +47,7 @@ export async function unenrollStudent(batchId: string, studentId: string) {
   if (unenrollError) throw new Error(unenrollError.message);
 
   // 2. Automate: Remove from corresponding Chat Group
-  const { data: groupData } = await supabase.from('chat_groups').select('id').eq('batch_id', batchId).single();
+  const { data: groupData } = await supabase.from('chat_groups').select('id').eq('batch_id', batchId).maybeSingle();
   if (groupData) {
     const { error: chatMemberError } = await supabase.from('chat_members').delete().match({
       group_id: groupData.id,

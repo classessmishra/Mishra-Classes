@@ -38,23 +38,23 @@ export async function createLiveClass(payload: any) {
 
   // --- AUTOMATION: Send Push Notification for Scheduled Class ---
   try {
-    // 1. Find batches that contain these courses
-    const { data: batches } = await supabase
-      .from('batches')
-      .select('id')
+    // Fetch students enrolled in these courses
+    const { data: purchases } = await supabase
+      .from('purchases')
+      .select('student_id')
       .in('course_id', ids);
       
-    if (batches && batches.length > 0) {
-      const batchIds = batches.map(b => b.id);
+    if (purchases && purchases.length > 0) {
+      const studentIds = purchases.map((p: any) => p.student_id);
       
-      // 2. Fetch students in these batches
-      const { data: students } = await supabase
-        .from('batch_students')
-        .select('users(expo_push_token)')
-        .in('batch_id', batchIds);
+      // Fetch push tokens for these students
+      const { data: users } = await supabase
+        .from('users')
+        .select('expo_push_token')
+        .in('id', studentIds);
 
-      if (students) {
-        const tokens = Array.from(new Set(students.map((s: any) => s.users?.expo_push_token).filter(Boolean)));
+      if (users) {
+        const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
         if (tokens.length > 0) {
           const topic = rest.title || 'Untitled';
           const time = rest.scheduled_time ? new Date(rest.scheduled_time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) : 'Soon';
@@ -160,31 +160,36 @@ export async function toggleLiveClassStatus(youtubeVideoId: string, isActive: bo
     const courseIds = classes.map((c: any) => c.course_id);
     const topic = classes[0].topic;
 
-    // Fetch batches that contain these courses
-    const { data: batches } = await supabase
-      .from('batches')
-      .select('id, course_id')
-      .in('course_id', courseIds);
-      
-    if (batches && batches.length > 0) {
-      const batchIds = batches.map(b => b.id);
-      // Fetch students in these batches
-      const { data: students } = await supabase
-        .from('batch_students')
-        .select('users(expo_push_token)')
-        .in('batch_id', batchIds);
+    try {
+      // Fetch students enrolled in these courses
+      const { data: purchases } = await supabase
+        .from('purchases')
+        .select('student_id')
+        .in('course_id', courseIds);
+        
+      if (purchases && purchases.length > 0) {
+        const studentIds = purchases.map((p: any) => p.student_id);
+        
+        // Fetch push tokens for these students
+        const { data: users } = await supabase
+          .from('users')
+          .select('expo_push_token')
+          .in('id', studentIds);
 
-      if (students) {
-        const tokens = Array.from(new Set(students.map((s: any) => s.users?.expo_push_token).filter(Boolean)));
-        if (tokens.length > 0) {
-          await sendMultiplePushNotifications(
-            tokens,
-            `🔴 Live Class Started!`,
-            `${topic} is now live. Tap to join!`,
-            { type: 'LIVE_CLASS', youtubeVideoId }
-          );
+        if (users) {
+          const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
+          if (tokens.length > 0) {
+            await sendMultiplePushNotifications(
+              tokens,
+              `🔴 Live Class Started!`,
+              `${topic} is now live. Tap to join!`,
+              { type: 'LIVE_CLASS', youtubeVideoId }
+            );
+          }
         }
       }
+    } catch (pushErr) {
+      console.error("Failed to send started class push notification:", pushErr);
     }
   }
 
@@ -385,9 +390,45 @@ export async function endAndSyncLiveClass(meetingLink: string) {
       .from('live_classes')
       .update({ status: 'recorded', duration: durationStr, is_active: false })
       .eq('meeting_link', meetingLink)
-      .select();
+      .select('*, courses(title)');
 
     if (error) throw new Error(error.message);
+    
+    // --- AUTOMATION: Send Push Notification for Ended Class ---
+    try {
+      if (updated && updated.length > 0) {
+        const courseIds = updated.map((c: any) => c.course_id);
+        const topic = updated[0].topic;
+        
+        const { data: purchases } = await supabase
+          .from('purchases')
+          .select('student_id')
+          .in('course_id', courseIds);
+          
+        if (purchases && purchases.length > 0) {
+          const studentIds = purchases.map((p: any) => p.student_id);
+          const { data: users } = await supabase
+            .from('users')
+            .select('expo_push_token')
+            .in('id', studentIds);
+
+          if (users) {
+            const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
+            if (tokens.length > 0) {
+              await sendMultiplePushNotifications(
+                tokens,
+                `🛑 Live Class Ended`,
+                `${topic} has ended. The recording will be available in the library shortly.`,
+                { type: 'CLASS_ENDED', youtubeVideoId: meetingLink }
+              );
+            }
+          }
+        }
+      }
+    } catch (pushErr) {
+      console.error("Failed to send ended class push notification:", pushErr);
+    }
+
     return updated;
   } catch (err: any) {
     throw new Error(err.message);

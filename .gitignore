@@ -30,6 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# mobile / native
+**/local.properties
+*.properties
+**/android/.gradle/
+**/android/build/
+**/android/app/build/
+**/.cxx/
+
 # env files (can opt-in for committing if needed)
 .env*
 
@@ -39,3 +47,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+

@@ -137,17 +137,6 @@ export async function checkoutCart(items: any[], userId: string, paymentData: an
     const { error: purchaseError } = await supabase.from('purchases').insert(purchases);
     if (purchaseError) throw new Error(purchaseError.message);
 
-    // Enroll in live batches if applicable
-    for (const item of items) {
-      if (item.type === 'course' && item.is_live) {
-        const { data: course } = await supabase.from('courses').select('batch_id').eq('id', item.id).single();
-        if (course && course.batch_id) {
-          await supabase.from('batch_students').insert([
-            { batch_id: course.batch_id, student_id: userId }
-          ]);
-        }
-      }
-    }
 
     revalidatePath('/store');
     revalidatePath('/student');

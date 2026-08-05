@@ -38,29 +38,42 @@ export async function assignTest(testId: string, assignmentData: { batch_id?: st
   try {
     const { data: testData } = await supabase.from('tests').select('title').eq('id', testId).single();
     if (testData?.title) {
+      let studentIds: string[] = [];
+
       if (assignmentData.batch_id) {
         const { data: students } = await supabase
           .from('batch_students')
-          .select('users(expo_push_token)')
+          .select('student_id')
           .eq('batch_id', assignmentData.batch_id);
-        
-        if (students) {
-          const tokens = students.map((s: any) => s.users?.expo_push_token).filter(Boolean);
-          if (tokens.length > 0) {
-            await sendMultiplePushNotifications(tokens, '📝 New Test Assigned', `A new test "${testData.title}" has been assigned to your batch.`, { type: 'TEST', testId });
-          }
+        if (students && students.length > 0) {
+          studentIds = students.map((s: any) => s.student_id);
         }
       } else if (assignmentData.course_id) {
-        // Find batches for this course, then students
-        const { data: batches } = await supabase.from('batches').select('id').eq('course_id', assignmentData.course_id);
-        if (batches && batches.length > 0) {
-          const batchIds = batches.map(b => b.id);
-          const { data: students } = await supabase.from('batch_students').select('users(expo_push_token)').in('batch_id', batchIds);
-          if (students) {
-            const tokens = Array.from(new Set(students.map((s: any) => s.users?.expo_push_token).filter(Boolean)));
-            if (tokens.length > 0) {
-              await sendMultiplePushNotifications(tokens, '📝 New Test Assigned', `A new test "${testData.title}" has been assigned to your course.`, { type: 'TEST', testId });
-            }
+        const { data: purchases } = await supabase
+          .from('purchases')
+          .select('student_id')
+          .eq('course_id', assignmentData.course_id);
+        if (purchases && purchases.length > 0) {
+          studentIds = purchases.map((p: any) => p.student_id);
+        }
+      }
+
+      if (studentIds.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('expo_push_token')
+          .in('id', studentIds);
+
+        if (users) {
+          const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
+          if (tokens.length > 0) {
+            const scope = assignmentData.batch_id ? "batch" : "course";
+            await sendMultiplePushNotifications(
+              tokens, 
+              '📝 New Test Assigned', 
+              `A new test "${testData.title}" has been assigned to your ${scope}.`, 
+              { type: 'TEST', testId }
+            );
           }
         }
       }

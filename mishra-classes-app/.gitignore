@@ -40,6 +40,15 @@ yarn-error.*
 /android
 android/
 ios/
+**/local.properties
+local.properties
+android/local.properties
+*.properties
+.cxx/
+android/.cxx/
+android/build/
+android/app/build/
+android/.gradle/
 jdk*
 *.zip
 *.tar.gz

@@ -50,8 +50,8 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
           currentUrl.endsWith('/admin');
           
         if (isNavBarSection && webViewRef.current) {
-          // Tell Next.js to go to the Home tab
-          webViewRef.current.injectJavaScript(`window.dispatchEvent(new CustomEvent('go-home')); true;`);
+          // Tell the Native App to switch to the Home tab
+          navigation.navigate('Home' as never);
           return true;
         }
 
@@ -110,7 +110,37 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
   const onNavigationStateChange = useCallback((navState: any) => {
     setCanGoBack(navState.canGoBack);
     setCurrentUrl(navState.url);
-  }, []);
+    
+    const url = navState.url;
+    const isAuthPage = url && (url.includes('/login') || url.includes('/signup') || url.includes('/forgot-password'));
+    navigation.getParent()?.setOptions({
+      tabBarStyle: isAuthPage ? { display: 'none' } : {
+        backgroundColor: '#ffffff',
+        borderTopColor: '#f1f5f9',
+        borderTopWidth: 1,
+        height: Platform.OS === 'ios' ? 85 : 65,
+        paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+        paddingTop: 10,
+      }
+    });
+
+    try {
+      if (url && url.startsWith(BASE_URL)) {
+        const pathname = url.replace(BASE_URL, '').split('?')[0];
+        if (pathname === '/batches' && path !== '/batches') {
+          navigation.navigate('Batches' as never);
+        } else if (pathname === '/chats' && path !== '/chats') {
+          navigation.navigate('Chats' as never);
+        } else if (pathname === '/store' && path !== '/store') {
+          navigation.navigate('Store' as never);
+        } else if ((pathname === '/student' || pathname === '/admin') && path !== '/student' && path !== '/admin') {
+          navigation.navigate('Profile' as never);
+        } else if (pathname === '/' && path !== '/') {
+          navigation.navigate('Home' as never);
+        }
+      }
+    } catch(e) {}
+  }, [navigation, path]);
 
   const onMessage = useCallback((event: any) => {
     try {
@@ -184,7 +214,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         }}
         bounces={true}
         scalesPageToFit={false}
-        userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36"
+        userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36 MishraClassesApp"
         injectedJavaScript={`
           const meta = document.createElement('meta');
           meta.setAttribute('name', 'viewport');

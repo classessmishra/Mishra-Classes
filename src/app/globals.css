@@ -50,3 +50,8 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Permanent fix to hide web bottom nav inside native app */
+html.is-native-app #web-bottom-nav {
+  display: none !important;
+}

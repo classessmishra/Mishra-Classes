@@ -22,8 +22,16 @@ jdk17
 *.bin
 *.log
 
-# Local properties
+# Local properties & build caches
+**/local.properties
 local.properties
+android/local.properties
+*.properties
+.cxx/
+android/.cxx/
+android/build/
+android/app/build/
+android/.gradle/
 .env*.local
 
 # Git
