@@ -248,6 +248,9 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
         allowsBackForwardNavigationGestures={true}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        allowsFullscreenVideo={true}
         javaScriptCanOpenWindowsAutomatically={true}
         // @ts-ignore
         onPermissionRequest={(request: any) => {
