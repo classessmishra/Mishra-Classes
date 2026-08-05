@@ -805,38 +805,38 @@ export default function StudentChatPage() {
                     </div>
 
                     {/* Message Context Menu (Dots) */}
-                    <div className={`absolute top-1/2 -translate-y-1/2 ${isOwn ? '-left-8' : '-right-8'} opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity`}>
+                    <div className={`absolute top-1/2 -translate-y-1/2 ${isOwn ? '-left-8' : '-right-8'} opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-50`}>
                       <button onClick={() => setActiveMessageId(msg.id === activeMessageId ? null : msg.id)} className="p-1.5 rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-600 transition-colors">
                         <MoreVertical size={16} />
                       </button>
-                    </div>
 
-                    {/* Dropdown Menu */}
-                    {activeMessageId === msg.id && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveMessageId(null); }}></div>
-                        <div className={`absolute top-0 ${isOwn ? 'right-full mr-10' : 'left-full ml-10'} w-32 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50`}>
-                          <button onClick={() => { setReplyingTo(msg); setActiveMessageId(null); }} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
-                            Reply
-                          </button>
-                          <button onClick={() => { handleCopyMessage(msg.content); setActiveMessageId(null); }} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
-                            Copy
-                          </button>
-                          {(() => {
-                            const p = parseMessageContent(msg.content);
-                            if (p.type === 'image' || p.type === 'pdf') {
-                              return (
-                                <button onClick={() => { handleDownloadFile(p.url, p.filename); setActiveMessageId(null); }} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center justify-between">
-                                  <span>Download</span>
-                                  <Download size={14} className="text-gray-400" />
-                                </button>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-                      </>
-                    )}
+                      {/* Dropdown Menu */}
+                      {activeMessageId === msg.id && (
+                        <>
+                          <div className="fixed inset-0 z-40 cursor-default" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setActiveMessageId(null); }}></div>
+                          <div className={`absolute top-full mt-1 ${isOwn ? 'left-0' : 'right-0'} w-32 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50`}>
+                            <button onClick={() => { setReplyingTo(msg); setActiveMessageId(null); }} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                              Reply
+                            </button>
+                            <button onClick={() => { handleCopyMessage(msg.content); setActiveMessageId(null); }} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50">
+                              Copy
+                            </button>
+                            {(() => {
+                              const p = parseMessageContent(msg.content);
+                              if (p.type === 'image' || p.type === 'pdf') {
+                                return (
+                                  <button onClick={() => { handleDownloadFile(p.url, p.type, p.filename); setActiveMessageId(null); }} className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center justify-between">
+                                    <span>Download</span>
+                                    <Download size={14} className="text-gray-400" />
+                                  </button>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
