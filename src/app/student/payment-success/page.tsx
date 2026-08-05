@@ -76,7 +76,8 @@ function PaymentSuccessContent() {
       const element = invoiceRef.current;
       const canvas = await htmlToImage.toCanvas(element, {
         pixelRatio: 2,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        skipFonts: true
       });
       
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
