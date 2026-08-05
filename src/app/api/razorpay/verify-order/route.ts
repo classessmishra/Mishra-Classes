@@ -65,13 +65,17 @@ export async function POST(req: Request) {
         const { data: course } = await supabase.from('courses').select('title').eq('id', courseId).single();
         
         if (user && course && user.email) {
-          sendPurchaseEmail(
-            user.email,
-            user.full_name || 'Student',
-            course.title,
-            parseFloat(finalAmount || "0"),
-            razorpay_order_id
-          ).catch(err => console.error("Failed to send purchase email in verify-order:", err));
+          try {
+            await sendPurchaseEmail(
+              user.email,
+              user.full_name || 'Student',
+              course.title,
+              parseFloat(finalAmount || "0"),
+              razorpay_order_id
+            );
+          } catch (err) {
+            console.error("Failed to send purchase email in verify-order:", err);
+          }
         }
         
         return NextResponse.json({ success: true, receipt_id: newReceiptId });

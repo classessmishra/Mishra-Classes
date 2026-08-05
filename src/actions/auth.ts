@@ -149,7 +149,11 @@ export async function verifyEmail(token: string) {
   }
 
   if (data.email) {
-    sendWelcomeEmail(data.email, data.full_name || 'Student').catch(err => console.error("Failed to send welcome email:", err));
+    try {
+      await sendWelcomeEmail(data.email, data.full_name || 'Student');
+    } catch (err) {
+      console.error("Failed to send welcome email:", err);
+    }
   }
 
   return { success: true };

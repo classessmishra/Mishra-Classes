@@ -51,14 +51,18 @@ export async function POST(req: Request) {
       const { data: course } = await supabase.from('courses').select('title').eq('id', courseId).single();
 
       if (user && course && user.email) {
-        // Send Purchase Confirmation Email asynchronously (don't await so we don't block response)
-        sendPurchaseEmail(
-          user.email, 
-          user.full_name || 'Student', 
-          course.title, 
-          amountPaid, 
-          razorpay_order_id
-        ).catch(err => console.error("Failed to send purchase email:", err));
+        // Send Purchase Confirmation Email and await it so it completes before response
+        try {
+          await sendPurchaseEmail(
+            user.email, 
+            user.full_name || 'Student', 
+            course.title, 
+            amountPaid, 
+            razorpay_order_id
+          );
+        } catch (err) {
+          console.error("Failed to send purchase email:", err);
+        }
       }
 
       return NextResponse.json({ 

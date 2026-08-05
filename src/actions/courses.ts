@@ -143,15 +143,19 @@ export async function checkoutCart(items: any[], userId: string, paymentData: an
     if (user && user.email) {
       for (const purchase of purchases) {
         const course = coursesData?.find(c => c.id === purchase.course_id);
-        const courseName = course?.title || 'Course'; // Note: Assuming title is not fetched, wait, I need to make sure title is fetched
+        const courseName = course?.title || 'Course'; 
         
-        sendPurchaseEmail(
-          user.email,
-          user.full_name || 'Student',
-          courseName, // This will be undefined if title wasn't fetched, let me fix coursesData fetch
-          purchase.amount_paid,
-          purchase.razorpay_order_id
-        ).catch(err => console.error("Failed to send purchase email in checkoutCart:", err));
+        try {
+          await sendPurchaseEmail(
+            user.email,
+            user.full_name || 'Student',
+            courseName, 
+            purchase.amount_paid,
+            purchase.razorpay_order_id
+          );
+        } catch (err) {
+          console.error("Failed to send purchase email in checkoutCart:", err);
+        }
       }
     }
 
@@ -201,13 +205,17 @@ export async function claimFreeCourse(courseId: string, studentId: string) {
       const courseDataForEmail = await supabase.from('courses').select('title').eq('id', courseId).single();
       const courseName = courseDataForEmail.data?.title || 'Course';
       
-      sendPurchaseEmail(
-        user.email,
-        user.full_name || 'Student',
-        courseName,
-        0, // Free course
-        'FREE_CLAIM'
-      ).catch(err => console.error("Failed to send purchase email in claimFreeCourse:", err));
+      try {
+        await sendPurchaseEmail(
+          user.email,
+          user.full_name || 'Student',
+          courseName,
+          0, // Free course
+          'FREE_CLAIM'
+        );
+      } catch (err) {
+        console.error("Failed to send purchase email in claimFreeCourse:", err);
+      }
     }
 
     revalidatePath('/store');
