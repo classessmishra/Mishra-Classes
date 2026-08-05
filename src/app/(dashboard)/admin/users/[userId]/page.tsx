@@ -303,10 +303,91 @@ export default function AdminStudentDetailPage() {
           </div>
         </div>
 
-        {/* Right Column: Allocations (Hidden for Admins) */}
+        {/* Right Column: Profile details & Allocations (Hidden for Admins) */}
         {profile.role !== 'admin' && (
         <div className="lg:col-span-2 space-y-6">
-          
+
+          {/* Basic Information Panel */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <UserCircle size={18} className="text-teal-600" /> Basic Information
+            </h3>
+            
+            {profile.basic_info ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-slate-500 font-semibold mb-1">Parent's Name</p>
+                  <p className="text-sm text-slate-800">{profile.basic_info.parent_name || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-semibold mb-1">Parent's Contact No</p>
+                  <p className="text-sm text-slate-800">{profile.basic_info.parent_contact || 'N/A'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-xs text-slate-500 font-semibold mb-1">Address</p>
+                  <p className="text-sm text-slate-800">{profile.basic_info.address || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-semibold mb-1">School/College</p>
+                  <p className="text-sm text-slate-800">{profile.basic_info.school_name || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-semibold mb-1">Section</p>
+                  <p className="text-sm text-slate-800">{profile.basic_info.section || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-semibold mb-1">Roll No</p>
+                  <p className="text-sm text-slate-800">{profile.basic_info.roll_no || 'N/A'}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 italic">No basic information provided yet.</p>
+            )}
+          </div>
+
+          {/* Documents Panel */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <BookOpen size={18} className="text-indigo-600" /> Uploaded Documents
+            </h3>
+            
+            {profile.documents && profile.documents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profile.documents.map((doc: any, idx: number) => {
+                  let docLabel = doc.type || doc.name;
+                  switch(doc.type) {
+                    case 'passport_photo': docLabel = 'Passport Size Photo'; break;
+                    case 'sign': docLabel = 'Signature'; break;
+                    case 'aadhar_front': docLabel = 'Aadhar Card Front'; break;
+                    case 'aadhar_back': docLabel = 'Aadhar Card Back'; break;
+                    case 'identity': docLabel = 'Identity Document'; break;
+                    case 'marksheet_10': docLabel = '10th Marksheet'; break;
+                    case 'marksheet_12': docLabel = '12th Marksheet'; break;
+                  }
+                  
+                  return (
+                    <div key={idx} className="flex items-center justify-between p-3 border border-slate-200 bg-slate-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{docLabel}</p>
+                        <p className="text-xs text-slate-500">{new Date(doc.date).toLocaleDateString()}</p>
+                      </div>
+                      <a 
+                        href={doc.url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded font-semibold hover:bg-indigo-200 transition-colors"
+                      >
+                        View
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 italic">No documents uploaded yet.</p>
+            )}
+          </div>
+
           {/* Batches Panel */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">

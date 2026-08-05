@@ -37,7 +37,8 @@ export async function updateStudentProfile(userId: string, data: any) {
     address: data.address,
     city: data.city,
     pincode: data.pincode,
-    bio: data.bio
+    bio: data.bio,
+    basic_info: data.basic_info // JSON object for new profile details
   };
 
   // Remove undefined fields
