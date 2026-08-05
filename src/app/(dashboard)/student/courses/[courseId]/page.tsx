@@ -82,6 +82,9 @@ export default function StudentStudyRoom() {
 
   useEffect(() => {
     if (!activeVideoUrl) return;
+    const bottomNav = document.getElementById('web-bottom-nav');
+    if (bottomNav) bottomNav.style.display = 'none';
+    
     const interval = setInterval(() => {
       setWatermark({
         show: true,
@@ -92,7 +95,10 @@ export default function StudentStudyRoom() {
         setWatermark(prev => ({ ...prev, show: false }));
       }, 2000);
     }, 7000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (bottomNav) bottomNav.style.display = '';
+    };
   }, [activeVideoUrl]);
 
   useEffect(() => {
