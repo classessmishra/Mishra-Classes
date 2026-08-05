@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabase } from "@/lib/supabase";
 import { getRazorpayConfig } from "@/utils/razorpay-config";
+import { sendPurchaseEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -57,6 +58,20 @@ export async function POST(req: Request) {
         if (insertError) {
           console.error("Supabase insert error in verify-order:", insertError);
           return NextResponse.json({ error: "Database error during allocation" }, { status: 500 });
+        }
+        
+        // Fetch user and course details for the email
+        const { data: user } = await supabase.from('users').select('email, full_name').eq('id', userId).single();
+        const { data: course } = await supabase.from('courses').select('title').eq('id', courseId).single();
+        
+        if (user && course && user.email) {
+          sendPurchaseEmail(
+            user.email,
+            user.full_name || 'Student',
+            course.title,
+            parseFloat(finalAmount || "0"),
+            razorpay_order_id
+          ).catch(err => console.error("Failed to send purchase email in verify-order:", err));
         }
         
         return NextResponse.json({ success: true, receipt_id: newReceiptId });
