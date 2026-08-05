@@ -805,7 +805,7 @@ export default function AdminChatsPage() {
                                   {parsed.filename}
                                 </div>
                               </button>
-                              {parsed.text && <span>{parsed.text}</span>}
+                              {parsed.text && <div className="break-words whitespace-pre-wrap">{parsed.text}</div>}
                             </div>
                           );
                         } else if (parsed.type === 'pdf') {
@@ -821,11 +821,11 @@ export default function AdminChatsPage() {
                                   <span className="text-[10px] opacity-80">Click to view/download</span>
                                 </div>
                               </button>
-                              {parsed.text && <span>{parsed.text}</span>}
+                              {parsed.text && <div className="break-words whitespace-pre-wrap">{parsed.text}</div>}
                             </div>
                           );
                         }
-                        return <span>{parsed.text}</span>;
+                        return <div className="break-words whitespace-pre-wrap">{parsed.text}</div>;
                       })()}
 
                       <div className={`text-[9px] mt-1 text-right flex items-center justify-end gap-1 ${isAdmin ? "text-blue-100" : "text-gray-400"}`}>

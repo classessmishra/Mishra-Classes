@@ -776,7 +776,7 @@ export default function StudentChatPage() {
                                   {parsed.filename}
                                 </div>
                               </button>
-                              {parsed.text && <span>{parsed.text}</span>}
+                              {parsed.text && <div className="break-words whitespace-pre-wrap">{parsed.text}</div>}
                             </div>
                           );
                         } else if (parsed.type === 'pdf') {
@@ -792,11 +792,11 @@ export default function StudentChatPage() {
                                   <span className="text-[10px] opacity-80">Click to view/download</span>
                                 </div>
                               </button>
-                              {parsed.text && <span>{parsed.text}</span>}
+                              {parsed.text && <div className="break-words whitespace-pre-wrap">{parsed.text}</div>}
                             </div>
                           );
                         }
-                        return <span>{parsed.text}</span>;
+                        return <div className="break-words whitespace-pre-wrap">{parsed.text}</div>;
                       })()}
 
                       <div className={`absolute bottom-1 right-2 text-[10px] font-medium flex items-center justify-end gap-1 ${isOwn ? "text-blue-100" : "text-gray-400"}`}>
