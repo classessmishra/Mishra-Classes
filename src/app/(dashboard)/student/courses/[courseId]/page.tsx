@@ -375,7 +375,7 @@ export default function StudentStudyRoom() {
         </aside>
 
         {/* COLUMN 2: MAIN CONTENT AREA */}
-        <main className={`lg:col-span-4 min-h-[70vh] ${activeTab === 'about' ? 'hidden lg:block' : 'block'}`}>
+        <main className="lg:col-span-4 min-h-[70vh] block">
           <div className="bg-white/90 backdrop-blur-xl rounded-[2rem] border border-slate-200/80 shadow-sm p-6 md:p-8 h-full">
             
             {/* LIVE CLASSES TAB */}
