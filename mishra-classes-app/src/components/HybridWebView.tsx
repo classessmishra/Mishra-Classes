@@ -190,9 +190,9 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         if (webViewRef.current) {
           webViewRef.current.reload();
         }
-      } else if (data.type === 'DOWNLOAD_PDF') {
+      } else if (data.type === 'DOWNLOAD_PDF' || data.type === 'DOWNLOAD_FILE') {
         try {
-          const { base64, filename } = data;
+          const { base64, filename, mimeType = 'application/pdf', dialogTitle = 'Download File' } = data;
           const fileUri = `${FileSystem.documentDirectory}${filename}`;
           const pureBase64 = base64.includes('base64,') ? base64.split('base64,')[1] : base64;
           
@@ -202,19 +202,24 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
           
           const canShare = await Sharing.isAvailableAsync();
           if (canShare) {
+            let uti = 'public.data';
+            if (mimeType.includes('pdf')) uti = 'com.adobe.pdf';
+            else if (mimeType.includes('jpeg') || mimeType.includes('jpg')) uti = 'public.jpeg';
+            else if (mimeType.includes('png')) uti = 'public.png';
+
             await Sharing.shareAsync(fileUri, {
-              mimeType: 'application/pdf',
-              dialogTitle: 'Download Invoice',
-              UTI: 'com.adobe.pdf',
+              mimeType: mimeType,
+              dialogTitle: dialogTitle,
+              UTI: uti,
             });
           } else {
             if (Platform.OS === 'android') {
-              ToastAndroid.show('PDF saved internally, but sharing is not available', ToastAndroid.LONG);
+              ToastAndroid.show('File saved internally, but sharing is not available', ToastAndroid.LONG);
             }
           }
         } catch (e: any) {
           if (Platform.OS === 'android') {
-            ToastAndroid.show('Error saving PDF: ' + e.message, ToastAndroid.LONG);
+            ToastAndroid.show('Error saving file: ' + e.message, ToastAndroid.LONG);
           }
         }
       }

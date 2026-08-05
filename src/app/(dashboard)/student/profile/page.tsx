@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { getUserProfile, updateStudentProfile, uploadProfileMedia } from "@/actions/profile";
-import { Camera, FileText, Upload, Save, Lock, Unlock, UserCircle, Loader2, ChevronDown, ChevronUp, CheckCircle2, Eye, X } from "lucide-react";
+import { Camera, FileText, Upload, Save, Lock, Unlock, UserCircle, Loader2, ChevronDown, ChevronUp, CheckCircle2, Eye, X, Download } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { uploadFiles } from "@/utils/uploadthing";
 
@@ -158,15 +158,73 @@ export default function StudentProfilePage() {
               bio,
               basic_info: basicInfo
             });
-            if (updateRes?.error) throw new Error(updateRes.error);
+            if (!updateRes.success) throw new Error(updateRes.error);
           }
+          alert("Document uploaded successfully");
         }
       } catch (err: any) {
-        console.error("Doc upload failed:", err);
-        alert("Failed to upload document: " + (err.message || "Please check file size and try again."));
+        console.error(err);
+        alert(err.message || "Failed to upload document");
       } finally {
         setUploadingDocId(null);
       }
+    }
+  };
+
+  const [isDownloadingDoc, setIsDownloadingDoc] = useState(false);
+
+  const handleDownloadDocument = async (url: string, type: string) => {
+    if (isDownloadingDoc) return;
+    setIsDownloadingDoc(true);
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      const isPdf = url.toLowerCase().endsWith('.pdf') || blob.type.includes('pdf');
+      let mimeType = blob.type;
+      let filename = `Document_${type}_${Date.now()}`;
+      if (isPdf) {
+        filename += '.pdf';
+        if (!mimeType) mimeType = 'application/pdf';
+      } else {
+        let ext = '.jpg';
+        if (mimeType.includes('png')) ext = '.png';
+        else if (url.toLowerCase().endsWith('.png')) ext = '.png';
+        else if (url.toLowerCase().endsWith('.jpeg')) ext = '.jpeg';
+        
+        filename += ext;
+        if (!mimeType) mimeType = 'image/jpeg';
+      }
+
+      if (typeof window !== 'undefined' && (window as any).ReactNativeWebView && (window as any).ReactNativeWebView.postMessage) {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+          const base64data = reader.result;
+          (window as any).ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'DOWNLOAD_FILE',
+            base64: base64data,
+            filename: filename,
+            mimeType: mimeType,
+            dialogTitle: `Download ${type}`
+          }));
+          setIsDownloadingDoc(false);
+        };
+      } else {
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(objectUrl);
+        setIsDownloadingDoc(false);
+      }
+    } catch (err) {
+      console.error("Failed to download document via fetch, falling back to window.open:", err);
+      window.open(url, '_blank');
+      setIsDownloadingDoc(false);
     }
   };
 
@@ -466,7 +524,15 @@ export default function StudentProfilePage() {
                 <img src={viewingDoc.url} alt="Document" className="max-w-full max-h-[70vh] object-contain rounded shadow-sm" />
               )}
             </div>
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+              <button 
+                onClick={() => handleDownloadDocument(viewingDoc.url, viewingDoc.type)}
+                disabled={isDownloadingDoc}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isDownloadingDoc ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                {isDownloadingDoc ? "Downloading..." : "Download"}
+              </button>
               <button 
                 onClick={() => setViewingDoc(null)}
                 className="px-5 py-2 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 transition-colors"
