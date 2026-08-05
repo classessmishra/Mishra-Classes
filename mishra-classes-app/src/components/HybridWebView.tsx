@@ -133,33 +133,16 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
     }
   }, [expoPushToken, currentUrl]);
 
-
-
-  const onNavigationStateChange = useCallback((navState: any) => {
-    setCanGoBack(navState.canGoBack);
-    setCurrentUrl(navState.url);
-    
-    const url = navState.url;
+  React.useEffect(() => {
     const hidePaths = [
-      '/login',
-      '/signup',
-      '/forgot-password',
-      '/reset-password',
-      '/verify-email',
-      '/about',
-      '/terms',
-      '/contact-us',
-      '/cancellation-and-refunds',
-      '/checkout',
-      '/test/',
-      '/take',
-      '/result',
-      '/live-class',
-      '/invoice'
+      '/login', '/signup', '/forgot-password', '/reset-password', '/verify-email',
+      '/about', '/terms', '/contact-us', '/cancellation-and-refunds', '/checkout',
+      '/test/', '/take', '/result', '/live-class', '/invoice'
     ];
-    const isHiddenPage = Boolean(url && hidePaths.some(p => url.includes(p)));
+    const isHiddenPage = Boolean(currentUrl && hidePaths.some(p => currentUrl.includes(p)));
 
-    const tabBarStyle = isHiddenPage ? { display: 'none' as const } : {
+    // Hide native tab bar if it's a hidden page OR if video is fullscreen
+    const tabBarStyle = (isHiddenPage || isFullscreen) ? { display: 'none' as const } : {
       backgroundColor: '#ffffff',
       borderTopColor: '#f1f5f9',
       borderTopWidth: 1,
@@ -170,7 +153,14 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
 
     navigation.setOptions({ tabBarStyle });
     navigation.getParent()?.setOptions({ tabBarStyle });
+  }, [currentUrl, isFullscreen, navigation]);
 
+
+  const onNavigationStateChange = useCallback((navState: any) => {
+    setCanGoBack(navState.canGoBack);
+    setCurrentUrl(navState.url);
+    
+    const url = navState.url;
     try {
       if (url && url.startsWith(BASE_URL)) {
         const pathname = url.replace(BASE_URL, '').split('?')[0];
