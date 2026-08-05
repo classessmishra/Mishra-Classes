@@ -6,6 +6,8 @@ import { Printer, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 export default function InvoicePage() {
   const params = useParams();
@@ -41,9 +43,6 @@ export default function InvoicePage() {
     setIsDownloading(true);
     
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-      
       const element = invoiceRef.current;
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -65,9 +64,9 @@ export default function InvoicePage() {
       
       const studentInfo = invoiceData?.[0]?.users || {};
       pdf.save(`Mishra_Classes_Invoice_${studentInfo.full_name?.replace(/\s+/g, '_') || 'Student'}_${orderId}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error generating PDF:", err);
-      alert("Failed to generate PDF. Please try again.");
+      alert("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
     } finally {
       setIsDownloading(false);
     }

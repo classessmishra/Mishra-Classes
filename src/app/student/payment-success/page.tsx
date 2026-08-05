@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, Download, Home, FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -71,9 +73,6 @@ function PaymentSuccessContent() {
     setIsDownloading(true);
     
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-      
       const element = invoiceRef.current;
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -95,9 +94,9 @@ function PaymentSuccessContent() {
       
       const studentName = (purchase?.users as any)?.full_name || "Student";
       pdf.save(`Mishra_Classes_Receipt_${studentName.replace(/\s+/g, '_')}_${receiptId}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error generating PDF:", err);
-      alert("Failed to generate PDF. Please try again.");
+      alert("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
     } finally {
       setIsDownloading(false);
     }
