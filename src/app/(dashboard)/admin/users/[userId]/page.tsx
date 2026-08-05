@@ -57,6 +57,7 @@ export default function AdminStudentDetailPage() {
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<{url: string, type: string} | null>(null);
   const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
+  const [isEditingDocuments, setIsEditingDocuments] = useState(false);
 
   const loadData = async () => {
     const data = await getUserProfile(userId as string);
@@ -538,12 +539,22 @@ export default function AdminStudentDetailPage() {
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <BookOpen size={18} className="text-indigo-600" /> Uploaded Documents
               </h3>
-              <button 
-                onClick={() => handleToggleLock('documents')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${profileLocks.documents ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-              >
-                {profileLocks.documents ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
-              </button>
+              <div className="flex items-center gap-2">
+                {!isEditingDocuments && (
+                  <button 
+                    onClick={() => setIsEditingDocuments(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  >
+                    <Edit2 size={14} /> Edit Details
+                  </button>
+                )}
+                <button 
+                  onClick={() => handleToggleLock('documents')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${profileLocks.documents ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  {profileLocks.documents ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
+                </button>
+              </div>
             </div>
             <div className="space-y-4">
               {REQUIRED_DOCS.map(docType => {
@@ -574,26 +585,38 @@ export default function AdminStudentDetailPage() {
                         </button>
                       )}
                       
-                      <label className={`flex-1 sm:flex-none justify-center cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ${
-                        uploadedDoc 
-                          ? "border-slate-200 text-slate-600 hover:bg-slate-50" 
-                          : "border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
-                      }`}>
-                        {uploadingDocId === docType.id ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                        {uploadedDoc ? "Re-upload" : "Upload"}
-                        <input 
-                          type="file" 
-                          className="hidden" 
-                          accept={docType.id.includes('marksheet') ? "image/*,.jpg,.jpeg,.png,.pjp,.pdf" : "image/*,.jpg,.jpeg,.png,.pjp"} 
-                          onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
-                          disabled={uploadingDocId !== null}
-                        />
-                      </label>
+                      {isEditingDocuments && (
+                        <label className={`flex-1 sm:flex-none justify-center cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ${
+                          uploadedDoc 
+                            ? "border-slate-200 text-slate-600 hover:bg-slate-50" 
+                            : "border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
+                        }`}>
+                          {uploadingDocId === docType.id ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                          {uploadedDoc ? "Re-upload" : "Upload"}
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept={docType.id.includes('marksheet') ? "image/*,.jpg,.jpeg,.png,.pjp,.pdf" : "image/*,.jpg,.jpeg,.png,.pjp"} 
+                            onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
+                            disabled={uploadingDocId !== null}
+                          />
+                        </label>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
+            {isEditingDocuments && (
+              <div className="mt-4 flex justify-end">
+                <button 
+                  onClick={() => setIsEditingDocuments(false)}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors"
+                >
+                  <Save size={16} /> Done Editing
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Batches Panel */}
