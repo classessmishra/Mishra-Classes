@@ -58,8 +58,8 @@ export async function updateStudentProfile(userId: string, data: any) {
   return { success: true };
 }
 
-export async function updateAdminProfileOverrides(userId: string, data: { full_name?: string, phone?: string, email?: string, password?: string, address?: string, map_location?: string }) {
-  // Admin can update identity fields, password, and coaching address
+export async function updateAdminProfileOverrides(userId: string, data: { full_name?: string, phone?: string, email?: string, password?: string, address?: string, map_location?: string, profile_locks?: any }) {
+  // Admin can update identity fields, password, coaching address, and profile locks
   const { error } = await supabase
     .from('users')
     .update(data)

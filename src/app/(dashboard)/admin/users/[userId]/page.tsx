@@ -6,7 +6,7 @@ import { getUserProfile, updateAdminProfileOverrides } from "@/actions/profile";
 import { getBatches, enrollStudent, unenrollStudent, getStudentBatches } from "@/actions/batches";
 import { getCourses, getStudentCourses, allocateCourse, revokeCourse } from "@/actions/courses";
 import { adminResetPassword } from "@/actions/auth";
-import { Save, ArrowLeft, UserCircle, BookOpen, MessageSquare, Users, X, Key } from "lucide-react";
+import { Save, ArrowLeft, UserCircle, BookOpen, MessageSquare, Users, X, Key, Lock, Unlock } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminStudentDetailPage() {
@@ -36,6 +36,7 @@ export default function AdminStudentDetailPage() {
   const [resettingPassword, setResettingPassword] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedCourse, setSelectedCourse] = useState("");
+  const [profileLocks, setProfileLocks] = useState({ basic_info: false, documents: false });
 
   const loadData = async () => {
     const data = await getUserProfile(userId as string);
@@ -47,6 +48,12 @@ export default function AdminStudentDetailPage() {
       setAddress(data.address || "");
       setMapLocation(data.map_location || "");
       setNewPassword(""); // Never show current hashed password
+      if (data.profile_locks) {
+        setProfileLocks({
+          basic_info: data.profile_locks.basic_info || false,
+          documents: data.profile_locks.documents || false
+        });
+      }
     }
     
     // Load all options
@@ -101,6 +108,17 @@ export default function AdminStudentDetailPage() {
       alert("Failed to reset password: " + err.message);
     } finally {
       setResettingPassword(false);
+    }
+  };
+
+  const handleToggleLock = async (section: 'basic_info' | 'documents') => {
+    const newLocks = { ...profileLocks, [section]: !profileLocks[section] };
+    setProfileLocks(newLocks); // optimistic UI
+    try {
+      await updateAdminProfileOverrides(userId as string, { profile_locks: newLocks });
+    } catch (err: any) {
+      alert("Failed to update lock status: " + err.message);
+      setProfileLocks(profileLocks); // revert on failure
     }
   };
 
@@ -309,9 +327,17 @@ export default function AdminStudentDetailPage() {
 
           {/* Basic Information Panel */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <UserCircle size={18} className="text-teal-600" /> Basic Information
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <UserCircle size={18} className="text-teal-600" /> Basic Information
+              </h3>
+              <button 
+                onClick={() => handleToggleLock('basic_info')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${profileLocks.basic_info ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                {profileLocks.basic_info ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
+              </button>
+            </div>
             
             {profile.basic_info ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -347,9 +373,17 @@ export default function AdminStudentDetailPage() {
 
           {/* Documents Panel */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <BookOpen size={18} className="text-indigo-600" /> Uploaded Documents
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <BookOpen size={18} className="text-indigo-600" /> Uploaded Documents
+              </h3>
+              <button 
+                onClick={() => handleToggleLock('documents')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${profileLocks.documents ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                {profileLocks.documents ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
+              </button>
+            </div>
             
             {profile.documents && profile.documents.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

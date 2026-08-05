@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { getUserProfile, updateStudentProfile, uploadProfileMedia } from "@/actions/profile";
-import { Camera, FileText, Upload, Save, Lock, UserCircle, Loader2, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+import { Camera, FileText, Upload, Save, Lock, UserCircle, Loader2, ChevronDown, ChevronUp, CheckCircle2, Eye, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { uploadFiles } from "@/utils/uploadthing";
 
@@ -30,6 +30,8 @@ export default function StudentProfilePage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [profilePhoto, setProfilePhoto] = useState("");
   const [openSection, setOpenSection] = useState<'basic' | 'docs'>('basic');
+  const [profileLocks, setProfileLocks] = useState({ basic_info: false, documents: false });
+  const [viewingDoc, setViewingDoc] = useState<{url: string, type: string} | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -57,6 +59,12 @@ export default function StudentProfilePage() {
             school_name: data.basic_info.school_name || '',
             section: data.basic_info.section || '',
             roll_no: data.basic_info.roll_no || '',
+          });
+        }
+        if (data.profile_locks) {
+          setProfileLocks({
+            basic_info: data.profile_locks.basic_info || false,
+            documents: data.profile_locks.documents || false
           });
         }
       }
@@ -269,6 +277,11 @@ export default function StudentProfilePage() {
               
               {openSection === 'basic' && (
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50 space-y-5">
+                  {profileLocks.basic_info && (
+                    <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg text-sm font-semibold mb-4">
+                      <Lock size={16} /> This section has been locked by administration and cannot be edited.
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">Parent's Name</label>
@@ -276,8 +289,9 @@ export default function StudentProfilePage() {
                         type="text"
                         value={basicInfo.parent_name}
                         onChange={e => setBasicInfo({...basicInfo, parent_name: e.target.value})}
-                        className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                        className={`w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm ${profileLocks.basic_info ? 'opacity-70 cursor-not-allowed bg-slate-100' : ''}`}
                         placeholder="Enter parent's full name"
+                        disabled={profileLocks.basic_info}
                       />
                     </div>
                     <div>
@@ -286,8 +300,9 @@ export default function StudentProfilePage() {
                         type="tel"
                         value={basicInfo.parent_contact}
                         onChange={e => setBasicInfo({...basicInfo, parent_contact: e.target.value})}
-                        className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                        className={`w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm ${profileLocks.basic_info ? 'opacity-70 cursor-not-allowed bg-slate-100' : ''}`}
                         placeholder="10-digit mobile number"
+                        disabled={profileLocks.basic_info}
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -295,8 +310,9 @@ export default function StudentProfilePage() {
                       <textarea 
                         value={basicInfo.address}
                         onChange={e => setBasicInfo({...basicInfo, address: e.target.value})}
-                        className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm h-20 resize-none"
+                        className={`w-full p-3 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm h-20 resize-none ${profileLocks.basic_info ? 'opacity-70 cursor-not-allowed bg-slate-100' : ''}`}
                         placeholder="Enter your complete residential address"
+                        disabled={profileLocks.basic_info}
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -305,8 +321,9 @@ export default function StudentProfilePage() {
                         type="text"
                         value={basicInfo.school_name}
                         onChange={e => setBasicInfo({...basicInfo, school_name: e.target.value})}
-                        className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                        className={`w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm ${profileLocks.basic_info ? 'opacity-70 cursor-not-allowed bg-slate-100' : ''}`}
                         placeholder="Enter current school or college name"
+                        disabled={profileLocks.basic_info}
                       />
                     </div>
                     <div>
@@ -315,8 +332,9 @@ export default function StudentProfilePage() {
                         type="text"
                         value={basicInfo.section}
                         onChange={e => setBasicInfo({...basicInfo, section: e.target.value})}
-                        className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                        className={`w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm ${profileLocks.basic_info ? 'opacity-70 cursor-not-allowed bg-slate-100' : ''}`}
                         placeholder="e.g. A, B, Science"
+                        disabled={profileLocks.basic_info}
                       />
                     </div>
                     <div>
@@ -325,8 +343,9 @@ export default function StudentProfilePage() {
                         type="text"
                         value={basicInfo.roll_no}
                         onChange={e => setBasicInfo({...basicInfo, roll_no: e.target.value})}
-                        className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                        className={`w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm ${profileLocks.basic_info ? 'opacity-70 cursor-not-allowed bg-slate-100' : ''}`}
                         placeholder="Enter school roll no."
+                        disabled={profileLocks.basic_info}
                       />
                     </div>
                   </div>
@@ -349,7 +368,13 @@ export default function StudentProfilePage() {
               
               {openSection === 'docs' && (
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-                  <p className="text-sm text-slate-500 mb-6">Please upload clear images or PDF files for the required documents.</p>
+                  {profileLocks.documents ? (
+                    <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg text-sm font-semibold mb-6">
+                      <Lock size={16} /> Documents are locked by administration. You can view your uploaded documents, but cannot make changes.
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500 mb-6">Please upload clear images or PDF files for the required documents.</p>
+                  )}
                   
                   <div className="space-y-4">
                     {REQUIRED_DOCS.map(docType => {
@@ -370,22 +395,33 @@ export default function StudentProfilePage() {
                             </div>
                           </div>
                           
-                          <div>
-                            <label className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ${
-                              uploadedDoc 
-                                ? "border-slate-200 text-slate-600 hover:bg-slate-50" 
-                                : "border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
-                            }`}>
-                              {uploadingDocId === docType.id ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                              {uploadedDoc ? "Re-upload" : "Upload"}
-                              <input 
-                                type="file" 
-                                className="hidden" 
-                                accept={docType.id.includes('marksheet') ? "image/*,.pdf" : "image/*"} 
-                                onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
-                                disabled={uploadingDocId !== null}
-                              />
-                            </label>
+                          <div className="flex items-center gap-2">
+                            {uploadedDoc && (
+                              <button
+                                onClick={() => setViewingDoc({ url: uploadedDoc.url, type: docType.id })}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-2"
+                              >
+                                <Eye size={16} /> View
+                              </button>
+                            )}
+                            
+                            {!profileLocks.documents && (
+                              <label className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold border transition-colors flex items-center gap-2 ${
+                                uploadedDoc 
+                                  ? "border-slate-200 text-slate-600 hover:bg-slate-50" 
+                                  : "border-blue-500 text-blue-600 bg-blue-50 hover:bg-blue-100"
+                              }`}>
+                                {uploadingDocId === docType.id ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                                {uploadedDoc ? "Re-upload" : "Upload"}
+                                <input 
+                                  type="file" 
+                                  className="hidden" 
+                                  accept={docType.id.includes('marksheet') ? "image/*,.pdf" : "image/*"} 
+                                  onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
+                                  disabled={uploadingDocId !== null}
+                                />
+                              </label>
+                            )}
                           </div>
                         </div>
                       );
@@ -398,6 +434,40 @@ export default function StudentProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewingDoc && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative">
+            <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <FileText size={18} className="text-blue-600" /> Document Viewer
+              </h3>
+              <button 
+                onClick={() => setViewingDoc(null)}
+                className="p-1.5 bg-slate-200 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-slate-100 min-h-[50vh]">
+              {viewingDoc.url.toLowerCase().endsWith('.pdf') ? (
+                <iframe src={viewingDoc.url} className="w-full h-[70vh] rounded border border-slate-300" title="Document PDF" />
+              ) : (
+                <img src={viewingDoc.url} alt="Document" className="max-w-full max-h-[70vh] object-contain rounded shadow-sm" />
+              )}
+            </div>
+            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+              <button 
+                onClick={() => setViewingDoc(null)}
+                className="px-5 py-2 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 transition-colors"
+              >
+                Close Viewer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
