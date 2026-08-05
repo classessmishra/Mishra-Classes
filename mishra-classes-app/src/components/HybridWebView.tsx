@@ -79,6 +79,24 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
     }, [canGoBack])
   );
 
+  // Auto-recover if tab is stuck on login page but user is logged in
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUrl.includes('/login') && path !== '/login' && webViewRef.current) {
+        const fullUrl = `${BASE_URL}${path}`;
+        webViewRef.current.injectJavaScript(`
+          if (!document.cookie.includes('auth_role=')) {
+            // User is truly logged out, do nothing
+          } else {
+            // User is logged in but stuck on login page, force reload to correct path
+            window.location.href = '${fullUrl}';
+          }
+          true;
+        `);
+      }
+    }, [currentUrl, path])
+  );
+
   const handleFullscreen = useCallback(async (fullscreen: boolean) => {
     setIsFullscreen(fullscreen);
     if (fullscreen) {

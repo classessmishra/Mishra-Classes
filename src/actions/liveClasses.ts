@@ -185,7 +185,7 @@ export async function toggleLiveClassStatus(youtubeVideoId: string, isActive: bo
         if (users) {
           const tokens = Array.from(new Set(users.map((u: any) => u.expo_push_token).filter(Boolean))) as string[];
           if (tokens.length > 0) {
-            const liveClassId = classes[0]?.id || youtubeVideoId;
+            const liveClassId = (classes[0] as any)?.id || youtubeVideoId;
             await sendMultiplePushNotifications(
               tokens,
               `🔴 LIVE NOW: ${topic}`,

@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function proxy(request: NextRequest) {
+  // Never intercept Next.js Server Actions, let them execute fully
+  if (request.headers.has('next-action')) {
+    return NextResponse.next();
+  }
+
   const authRole = request.cookies.get('auth_role')?.value;
   const path = request.nextUrl.pathname;
 

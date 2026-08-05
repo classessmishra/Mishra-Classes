@@ -81,7 +81,7 @@ function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        lazy: false,
+        lazy: true,
         unmountOnBlur: false,
         tabBarStyle: {
           backgroundColor: '#ffffff',
