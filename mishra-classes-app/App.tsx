@@ -60,12 +60,12 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 import { navigationRef } from './src/navigationRef';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { enableScreens } from 'react-native-screens';
-import { Home, Folder, ShoppingBag, MessageCircle, User } from 'lucide-react-native';
+import { Home, Users, MessageSquare, Store, LayoutDashboard } from 'lucide-react-native';
 
 import BatchesScreen from './src/screens/BatchesScreen';
 import ChatsScreen from './src/screens/ChatsScreen';
 import StoreScreen from './src/screens/StoreScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
+import DashboardScreen from './src/screens/DashboardScreen';
 
 // Optimize memory by using native OS screens
 enableScreens(true);
@@ -81,33 +81,36 @@ function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarLazy: true, // Crucial for memory: only loads the tab when clicked
-        unmountOnBlur: true, // Memory optimization: unmount webviews when switching away
+        tabBarLazy: true,
         tabBarStyle: {
           backgroundColor: '#ffffff',
           borderTopColor: '#f1f5f9',
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 85 : 65,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-          paddingTop: 10,
+          paddingBottom: Platform.OS === 'ios' ? 25 : 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
         },
         tabBarActiveTintColor: '#5B58FF',
         tabBarInactiveTintColor: '#94a3b8',
         tabBarIcon: ({ color, size }) => {
-          if (route.name === 'Home') return <Home color={color} size={24} />;
-          if (route.name === 'Batches') return <Folder color={color} size={24} />;
-          if (route.name === 'Store') return <ShoppingBag color={color} size={24} />;
-          if (route.name === 'Chats') return <MessageCircle color={color} size={24} />;
-          if (route.name === 'Profile') return <User color={color} size={24} />;
+          if (route.name === 'Home') return <Home color={color} size={22} />;
+          if (route.name === 'Batches') return <Users color={color} size={22} />;
+          if (route.name === 'Chats') return <MessageSquare color={color} size={22} />;
+          if (route.name === 'Store') return <Store color={color} size={22} />;
+          if (route.name === 'Dashboard') return <LayoutDashboard color={color} size={22} />;
           return null;
         },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Batches" component={BatchesScreen} />
-      <Tab.Screen name="Store" component={StoreScreen} />
       <Tab.Screen name="Chats" component={ChatsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Store" component={StoreScreen} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} />
     </Tab.Navigator>
   );
 }

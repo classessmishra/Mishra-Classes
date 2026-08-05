@@ -133,8 +133,8 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
           navigation.navigate('Chats' as never);
         } else if (pathname === '/store' && path !== '/store') {
           navigation.navigate('Store' as never);
-        } else if ((pathname === '/student' || pathname === '/admin') && path !== '/student' && path !== '/admin') {
-          navigation.navigate('Profile' as never);
+        } else if ((pathname === '/student' || pathname === '/admin' || pathname === '/dashboard') && path !== '/student' && path !== '/admin') {
+          navigation.navigate('Dashboard' as never);
         } else if (pathname === '/' && path !== '/') {
           navigation.navigate('Home' as never);
         }
