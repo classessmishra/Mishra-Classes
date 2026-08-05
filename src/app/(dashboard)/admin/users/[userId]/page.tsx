@@ -6,7 +6,7 @@ import { getUserProfile, updateAdminProfileOverrides, uploadProfileMedia } from 
 import { getBatches, enrollStudent, unenrollStudent, getStudentBatches } from "@/actions/batches";
 import { getCourses, getStudentCourses, allocateCourse, revokeCourse } from "@/actions/courses";
 import { adminResetPassword } from "@/actions/auth";
-import { Save, ArrowLeft, UserCircle, BookOpen, MessageSquare, Users, X, Key, Lock, Unlock, FileText, Upload, Loader2, Eye, CheckCircle2, Download } from "lucide-react";
+import { Save, ArrowLeft, UserCircle, BookOpen, MessageSquare, Users, X, Key, Lock, Unlock, FileText, Upload, Loader2, Eye, CheckCircle2, Download, Edit2 } from "lucide-react";
 import Link from "next/link";
 import { uploadFiles } from "@/utils/uploadthing";
 
@@ -56,6 +56,7 @@ export default function AdminStudentDetailPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
   const [viewingDoc, setViewingDoc] = useState<{url: string, type: string} | null>(null);
+  const [isEditingBasicInfo, setIsEditingBasicInfo] = useState(false);
 
   const loadData = async () => {
     const data = await getUserProfile(userId as string);
@@ -160,6 +161,7 @@ export default function AdminStudentDetailPage() {
       
       // Update local profile state to reflect changes and remove the "N/A" fallback view if they toggle lock
       setProfile({ ...profile, basic_info: basicInfo });
+      setIsEditingBasicInfo(false);
     } catch (err: any) {
       alert("Failed to save basic info: " + err.message);
     } finally {
@@ -421,12 +423,22 @@ export default function AdminStudentDetailPage() {
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <UserCircle size={18} className="text-teal-600" /> Basic Information
               </h3>
-              <button 
-                onClick={() => handleToggleLock('basic_info')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${profileLocks.basic_info ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-              >
-                {profileLocks.basic_info ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
-              </button>
+              <div className="flex items-center gap-2">
+                {!isEditingBasicInfo && (
+                  <button 
+                    onClick={() => setIsEditingBasicInfo(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  >
+                    <Edit2 size={14} /> Edit Details
+                  </button>
+                )}
+                <button 
+                  onClick={() => handleToggleLock('basic_info')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${profileLocks.basic_info ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  {profileLocks.basic_info ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Unlocked</>}
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <div>
@@ -435,8 +447,9 @@ export default function AdminStudentDetailPage() {
                   type="text"
                   value={basicInfo.parent_name}
                   onChange={e => setBasicInfo({...basicInfo, parent_name: e.target.value})}
-                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                   placeholder="Enter parent's full name"
+                  disabled={!isEditingBasicInfo}
                 />
               </div>
               <div>
@@ -445,8 +458,9 @@ export default function AdminStudentDetailPage() {
                   type="tel"
                   value={basicInfo.parent_contact}
                   onChange={e => setBasicInfo({...basicInfo, parent_contact: e.target.value})}
-                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                   placeholder="10-digit mobile number"
+                  disabled={!isEditingBasicInfo}
                 />
               </div>
               <div className="md:col-span-2">
@@ -454,8 +468,9 @@ export default function AdminStudentDetailPage() {
                 <textarea 
                   value={basicInfo.address}
                   onChange={e => setBasicInfo({...basicInfo, address: e.target.value})}
-                  className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm h-20 resize-none"
+                  className="w-full p-3 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm h-20 resize-none disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                   placeholder="Enter your complete residential address"
+                  disabled={!isEditingBasicInfo}
                 />
               </div>
               <div className="md:col-span-2">
@@ -464,8 +479,9 @@ export default function AdminStudentDetailPage() {
                   type="text"
                   value={basicInfo.school_name}
                   onChange={e => setBasicInfo({...basicInfo, school_name: e.target.value})}
-                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                   placeholder="Enter current school or college name"
+                  disabled={!isEditingBasicInfo}
                 />
               </div>
               <div>
@@ -474,8 +490,9 @@ export default function AdminStudentDetailPage() {
                   type="text"
                   value={basicInfo.section}
                   onChange={e => setBasicInfo({...basicInfo, section: e.target.value})}
-                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                   placeholder="e.g. A, B, Science"
+                  disabled={!isEditingBasicInfo}
                 />
               </div>
               <div>
@@ -484,20 +501,35 @@ export default function AdminStudentDetailPage() {
                   type="text"
                   value={basicInfo.roll_no}
                   onChange={e => setBasicInfo({...basicInfo, roll_no: e.target.value})}
-                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm"
+                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                   placeholder="Enter school roll no."
+                  disabled={!isEditingBasicInfo}
                 />
               </div>
             </div>
-            <div className="mt-4 flex justify-end">
-              <button 
-                onClick={handleSaveBasicInfo}
-                disabled={saving}
-                className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                <Save size={16} /> {saving ? "Saving..." : "Save Basic Info"}
-              </button>
-            </div>
+            
+            {isEditingBasicInfo && (
+              <div className="mt-4 flex justify-end gap-2">
+                <button 
+                  onClick={() => {
+                    setIsEditingBasicInfo(false);
+                    // reset to current profile data
+                    if (profile.basic_info) setBasicInfo(profile.basic_info);
+                  }}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSaveBasicInfo}
+                  disabled={saving}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <Save size={16} /> {saving ? "Saving..." : "Save Basic Info"}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Documents Panel */}
