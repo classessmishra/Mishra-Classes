@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
+import { toast } from 'react-hot-toast';
 
 export default function InvoicePage() {
   const params = useParams();
@@ -77,7 +78,7 @@ export default function InvoicePage() {
       }
     } catch (err: any) {
       console.error("Error generating PDF:", err);
-      alert("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
+      toast.error("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
     } finally {
       setIsDownloading(false);
     }

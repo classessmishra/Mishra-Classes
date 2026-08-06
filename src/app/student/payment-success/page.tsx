@@ -7,6 +7,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
+import { toast } from 'react-hot-toast';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -107,7 +108,7 @@ function PaymentSuccessContent() {
       }
     } catch (err: any) {
       console.error("Error generating PDF:", err);
-      alert("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
+      toast.error("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
     } finally {
       setIsDownloading(false);
     }
