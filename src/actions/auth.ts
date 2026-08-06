@@ -62,14 +62,14 @@ export async function authenticateUser(email: string, plainTextPassword: string,
   const newSessionId = crypto.randomUUID();
 
   // Update session ID and has_logged_in status
-  const updateData: any = {};
+  // SET BOTH app and web session IDs to strictly enforce 1 single device log in at a time globally!
+  const updateData: any = {
+    current_app_session_id: newSessionId,
+    current_web_session_id: newSessionId,
+  };
+  
   if (data.has_logged_in === false) {
     updateData.has_logged_in = true;
-  }
-  if (loginSource === 'app') {
-    updateData.current_app_session_id = newSessionId;
-  } else {
-    updateData.current_web_session_id = newSessionId;
   }
 
   await supabase.from('users').update(updateData).eq('id', data.id);

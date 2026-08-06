@@ -21,7 +21,6 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  useSessionEnforcer();
   const [adminId, setAdminId] = useState("");
   const [userRole, setUserRole] = useState("admin");
   const [permissions, setPermissions] = useState<string[]>([]);

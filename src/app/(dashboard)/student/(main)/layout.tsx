@@ -13,7 +13,7 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  useSessionEnforcer();
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
     { name: "My Batches", href: "/student/batches", icon: Users },

@@ -26,6 +26,8 @@ import MainWrapper from "@/components/MainWrapper";
 import { CartProvider } from "@/contexts/CartContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
+import SessionEnforcerProvider from "@/components/SessionEnforcerProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,6 +47,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <SessionEnforcerProvider />
         <CartProvider>
           <Navbar />
           <MainWrapper>
