@@ -533,12 +533,6 @@ export default function StudentProfilePage() {
                 {isDownloadingDoc ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                 {isDownloadingDoc ? "Downloading..." : "Download"}
               </button>
-              <button 
-                onClick={() => setViewingDoc(null)}
-                className="px-5 py-2 bg-slate-800 text-white rounded-lg font-semibold hover:bg-slate-900 transition-colors"
-              >
-                Close Viewer
-              </button>
             </div>
           </div>
         </div>
