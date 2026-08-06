@@ -8,7 +8,7 @@ export function useSessionEnforcer() {
     // Only run on the client
     if (typeof window === "undefined") return;
 
-    let intervalId: NodeJS.Timeout;
+
 
     const enforceSession = async () => {
       try {
@@ -57,7 +57,7 @@ export function useSessionEnforcer() {
     enforceSession();
 
     // Polling interval: Check every 10 seconds
-    intervalId = setInterval(enforceSession, 10000);
+    const intervalId = setInterval(enforceSession, 10000);
 
     return () => {
       clearInterval(intervalId);
