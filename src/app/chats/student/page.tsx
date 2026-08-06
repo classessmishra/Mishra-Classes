@@ -763,7 +763,8 @@ export default function StudentChatPage() {
                           return (
                             <div className="flex flex-col gap-2">
                               <button 
-                                onClick={() => setViewingAttachment(parsed as any)} 
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingAttachment(parsed as any); }} 
                                 className="block w-full max-w-[200px] sm:max-w-[250px] rounded-lg overflow-hidden border border-white/20 relative group/img text-left focus:outline-none"
                               >
                                 <img src={parsed.url || ""} alt="Attachment" className="w-full h-32 sm:h-40 object-cover bg-white" />
@@ -783,7 +784,8 @@ export default function StudentChatPage() {
                           return (
                             <div className="flex flex-col gap-2">
                               <button 
-                                onClick={() => setViewingAttachment(parsed as any)}
+                                type="button"
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setViewingAttachment(parsed as any); }}
                                 className={`flex items-center gap-3 p-3 w-full max-w-[200px] sm:max-w-[250px] text-left rounded-lg border ${isOwn ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white' : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-slate-800'} transition-colors focus:outline-none`}
                               >
                                 <FileText size={24} className={isOwn ? 'text-white' : 'text-red-500'} />
@@ -931,7 +933,7 @@ export default function StudentChatPage() {
 
       {/* Attachment Viewer Modal */}
       {viewingAttachment && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" onClick={(e) => e.stopPropagation()}>
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden relative">
             <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-slate-800 flex items-center gap-2 truncate">
