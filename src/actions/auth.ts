@@ -80,9 +80,9 @@ export async function authenticateUser(email: string, plainTextPassword: string,
   cookieStore.set("auth_role", data.role, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false }); // 30 days
   cookieStore.set("user_id", data.id, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
   
-  // Also store the session ID in a cookie (this one should ideally be httpOnly, but keeping consistent for now)
-  cookieStore.set("device_session_id", newSessionId, { path: "/", maxAge: 60 * 60 * 24 * 30 });
-  cookieStore.set("device_login_source", loginSource, { path: "/", maxAge: 60 * 60 * 24 * 30 });
+  // Also store the session ID in a cookie so the client-side enforcer can read it
+  cookieStore.set("device_session_id", newSessionId, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
+  cookieStore.set("device_login_source", loginSource, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
 
   return { success: true, data: { id: data.id, role: data.role, sessionId: newSessionId } };
 }

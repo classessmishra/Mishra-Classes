@@ -41,6 +41,12 @@ export function useSessionEnforcer() {
             // Redirect to login page
             window.location.href = "/login?error=session_expired";
           }
+        } else if (userIdCookie && (!sessionIdCookie || !loginSourceCookie)) {
+          // Legacy session where session cookies were httpOnly or missing
+          // Force logout to ensure they get the new verifiable cookies
+          document.cookie = "auth_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          document.cookie = "user_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          window.location.href = "/login?error=session_expired";
         }
       } catch (error) {
         console.error("Session verification failed:", error);
