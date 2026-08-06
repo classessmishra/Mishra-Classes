@@ -193,7 +193,11 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
       } else if (data.type === 'DOWNLOAD_PDF' || data.type === 'DOWNLOAD_FILE') {
         try {
           const { base64, filename, mimeType = 'application/pdf', dialogTitle = 'Download File' } = data;
-          const fileUri = `${FileSystem.documentDirectory}${filename}`;
+          
+          // Sanitize filename: remove query parameters and invalid characters
+          const cleanFilename = filename.split('?')[0].replace(/[^a-zA-Z0-9.\-_]/g, '_') || 'download_file';
+          const fileUri = `${FileSystem.documentDirectory}${cleanFilename}`;
+          
           const pureBase64 = base64.includes('base64,') ? base64.split('base64,')[1] : base64;
           
           await FileSystem.writeAsStringAsync(fileUri, pureBase64, {
