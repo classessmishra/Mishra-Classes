@@ -6,8 +6,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { LogOut, BookOpen, Users } from "lucide-react";
 import ProfileWidget from "@/components/ProfileWidget";
-import { useSessionEnforcer } from "@/hooks/useSessionEnforcer";
-
 export default function TeacherLayout({
   children,
 }: {

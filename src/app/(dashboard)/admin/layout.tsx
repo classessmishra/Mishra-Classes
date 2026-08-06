@@ -12,8 +12,6 @@ import NotificationBell from "@/components/NotificationBell";
 import AdminTopBarWidget from "@/components/AdminTopBarWidget";
 import ProfileWidget from "@/components/ProfileWidget";
 import { supabase } from "@/lib/supabase";
-import { useSessionEnforcer } from "@/hooks/useSessionEnforcer";
-
 export default function AdminLayout({
   children,
 }: {

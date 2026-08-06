@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, FileText, BarChart2, MessageSquare, BookOpen, ChevronRight, LayoutDashboard } from "lucide-react";
+import { useState } from "react";
 import MobileTopBar from "@/components/student/MobileTopBar";
 import ResponsiveWrapper from "@/components/student/ResponsiveWrapper";
-import { useSessionEnforcer } from "@/hooks/useSessionEnforcer";
 
 export default function StudentLayout({
   children,
