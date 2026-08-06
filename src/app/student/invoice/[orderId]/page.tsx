@@ -8,7 +8,6 @@ import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { toast } from 'react-hot-toast';
 
 export default function InvoicePage() {
   const params = useParams();
@@ -17,6 +16,7 @@ export default function InvoicePage() {
   const [adminInfo, setAdminInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function InvoicePage() {
       }
     } catch (err: any) {
       console.error("Error generating PDF:", err);
-      toast.error("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
+      setPdfError("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
     } finally {
       setIsDownloading(false);
     }
@@ -209,6 +209,11 @@ export default function InvoicePage() {
 
           <div className="text-center pt-8 border-t border-slate-100 text-xs text-slate-400 relative z-10">
             <p>This is a computer-generated receipt and does not require a physical signature.</p>
+            {pdfError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg text-center font-medium">
+                {pdfError}
+              </div>
+            )}
           </div>
         </div>
       </div>

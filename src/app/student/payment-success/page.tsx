@@ -7,7 +7,6 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
-import { toast } from 'react-hot-toast';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -18,6 +17,7 @@ function PaymentSuccessContent() {
   const [adminInfo, setAdminInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [debugError, setDebugError] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchReceipt() {
@@ -108,7 +108,7 @@ function PaymentSuccessContent() {
       }
     } catch (err: any) {
       console.error("Error generating PDF:", err);
-      toast.error("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
+      setPdfError("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
     } finally {
       setIsDownloading(false);
     }
@@ -232,6 +232,11 @@ function PaymentSuccessContent() {
 
           <div className="text-center pt-6 border-t border-slate-100 text-[10px] sm:text-xs text-slate-400 relative z-10">
             <p>This is a computer-generated receipt and does not require a physical signature.</p>
+            {pdfError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg text-center font-medium">
+                {pdfError}
+              </div>
+            )}
           </div>
         </div>
       </div>
