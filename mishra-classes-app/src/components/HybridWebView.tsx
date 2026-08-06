@@ -251,7 +251,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         )}
         startInLoadingState={true}
         renderError={(errorDomain, errorCode, errorDesc) => (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', padding: 20 }}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', padding: 20, position: 'absolute', width: '100%', height: '100%', zIndex: 9999 }}>
             <View style={{ backgroundColor: '#fee2e2', padding: 16, borderRadius: 50, marginBottom: 20 }}>
               <Text style={{ fontSize: 32 }}>📶</Text>
             </View>
