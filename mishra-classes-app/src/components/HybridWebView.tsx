@@ -197,7 +197,7 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
           const pureBase64 = base64.includes('base64,') ? base64.split('base64,')[1] : base64;
           
           await FileSystem.writeAsStringAsync(fileUri, pureBase64, {
-            encoding: FileSystem.EncodingType.Base64,
+            encoding: 'base64',
           });
           
           const canShare = await Sharing.isAvailableAsync();
