@@ -6,8 +6,6 @@ import { Printer, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import * as htmlToImage from 'html-to-image';
-import { jsPDF } from 'jspdf';
 
 export default function InvoicePage() {
   const params = useParams();
@@ -38,48 +36,69 @@ export default function InvoicePage() {
       loadData();
     }
   }, [orderId]);
-
   const handleDownloadPDF = async () => {
-    if (!invoiceRef.current) return;
     setIsDownloading(true);
     
     try {
-      const element = invoiceRef.current;
-      const canvas = await htmlToImage.toCanvas(element, {
-        pixelRatio: 2,
-        backgroundColor: '#ffffff',
-        skipFonts: true
-      });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 1.0);
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-      
       const studentInfo = invoiceData?.[0]?.users || {};
       const filename = `Mishra_Classes_Invoice_${studentInfo.full_name?.replace(/\s+/g, '_') || 'Student'}_${orderId}.pdf`;
       
       if (typeof window !== 'undefined' && (window as any).ReactNativeWebView && (window as any).ReactNativeWebView.postMessage) {
-        const base64 = pdf.output('datauristring');
+        // Get the full HTML
+        let htmlContent = document.documentElement.outerHTML;
+        
+        // Fetch and inline all CSS to ensure perfect rendering in expo-print without network race conditions
+        const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+        let inlinedCss = '';
+        for (const link of styleLinks) {
+          try {
+            const href = (link as HTMLLinkElement).href;
+            if (href) {
+              const res = await fetch(href);
+              const cssText = await res.text();
+              inlinedCss += cssText + '\n';
+            }
+          } catch (e) {
+            console.error("Failed to fetch CSS", e);
+          }
+        }
+        
+        // Inject <base> tag and inlined CSS
+        const baseUrl = window.location.origin;
+        htmlContent = htmlContent.replace('<head>', `<head>
+          <base href="${baseUrl}/" />
+          <style>
+            ${inlinedCss}
+            /* Explicitly add Tailwind print utility classes just in case */
+            @media print {
+              .print\\:hidden { display: none !important; }
+              .print\\:bg-transparent { background-color: transparent !important; }
+              .print\\:border-none { border: none !important; }
+              .print\\:shadow-none { box-shadow: none !important; }
+              .print\\:block { display: block !important; }
+              .print\\:m-0 { margin: 0 !important; }
+              .print\\:p-0 { padding: 0 !important; }
+              .print\\:bg-white { background-color: white !important; }
+            }
+          </style>
+        `);
+        
+        // Send HTML to Native App
         (window as any).ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'DOWNLOAD_PDF',
-          base64: base64,
+          type: 'PRINT_HTML',
+          html: htmlContent,
           filename: filename
         }));
+        
+        setTimeout(() => setIsDownloading(false), 2000);
       } else {
-        pdf.save(filename);
+        // Standard desktop browser print dialog
+        window.print();
+        setIsDownloading(false);
       }
     } catch (err: any) {
       console.error("Error generating PDF:", err);
       setPdfError("Failed to generate PDF: " + (err.message || JSON.stringify(err)));
-    } finally {
       setIsDownloading(false);
     }
   };
@@ -122,7 +141,7 @@ export default function InvoicePage() {
         </button>
       </div>
 
-      <div className="w-full max-w-2xl bg-white sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6 print:border-none print:shadow-none print:mb-0 print:max-w-none">
+      <div className="w-full max-w-2xl bg-white sm:rounded-2xl shadow-sm border border-slate-200 mb-6 print:border-none print:shadow-none print:mb-0 print:max-w-none">
         {/* Printable Area */}
         <div ref={invoiceRef} className="relative p-5 sm:p-8 bg-white text-slate-800">
           {/* Watermark Logo */}
@@ -177,35 +196,31 @@ export default function InvoicePage() {
             </div>
           </div>
 
-          <table className="w-full text-left mb-8 relative z-10">
-            <thead className="bg-slate-50/50 text-slate-500 text-xs uppercase font-bold border-y border-slate-200 print:bg-transparent">
-              <tr>
-                <th className="py-3 px-4">Description</th>
-                <th className="py-3 px-4 text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              <tr>
-                <td className="py-4 px-4">
+          <div className="w-full text-left mb-8 relative z-10 flex flex-col">
+            <div className="bg-slate-50/50 text-slate-500 text-xs uppercase font-bold border-y border-slate-200 flex justify-between print:bg-transparent">
+              <div className="py-3 px-4 flex-1">Description</div>
+              <div className="py-3 px-4 text-right">Amount</div>
+            </div>
+            <div className="flex flex-col divide-y divide-slate-100">
+              <div className="flex justify-between items-center py-4 px-4">
+                <div className="flex-1">
                   <p className="font-bold text-slate-800">{course.title || "Course Enrollment"}</p>
                   <p className="text-xs text-slate-500">Digital Course Access</p>
-                </td>
-                <td className="py-4 px-4 text-right font-medium">₹{originalPrice.toFixed(2)}</td>
-              </tr>
+                </div>
+                <div className="text-right font-medium">₹{originalPrice.toFixed(2)}</div>
+              </div>
               {discount > 0 && (
-                <tr>
-                  <td className="py-3 px-4 text-right font-medium text-slate-500">Discount Applied</td>
-                  <td className="py-3 px-4 text-right font-medium text-green-600">- ₹{discount.toFixed(2)}</td>
-                </tr>
+                <div className="flex justify-between items-center py-3 px-4">
+                  <div className="flex-1 text-right font-medium text-slate-500 pr-4">Discount Applied</div>
+                  <div className="text-right font-medium text-green-600">- ₹{discount.toFixed(2)}</div>
+                </div>
               )}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td className="py-4 px-4 text-right font-bold text-slate-800 border-t border-slate-200">Total Paid</td>
-                <td className="py-4 px-4 text-right font-black text-lg sm:text-xl text-slate-900 border-t border-slate-200">₹{amountPaid.toFixed(2)}</td>
-              </tr>
-            </tfoot>
-          </table>
+            </div>
+            <div className="flex justify-between items-center py-4 px-4 border-t border-slate-200">
+              <div className="flex-1 text-right font-bold text-slate-800 pr-4">Total Paid</div>
+              <div className="text-right font-black text-lg sm:text-xl text-slate-900">₹{amountPaid.toFixed(2)}</div>
+            </div>
+          </div>
 
           <div className="text-center pt-8 border-t border-slate-100 text-xs text-slate-400 relative z-10">
             <p>This is a computer-generated receipt and does not require a physical signature.</p>
