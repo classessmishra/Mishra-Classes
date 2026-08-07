@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, FileText, BarChart2, MessageSquare, BookOpen, ChevronRight, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
-import MobileTopBar from "@/components/student/MobileTopBar";
 import ResponsiveWrapper from "@/components/student/ResponsiveWrapper";
 
 export default function StudentLayout({
@@ -24,7 +23,6 @@ export default function StudentLayout({
 
   return (
     <div className="relative min-h-[100dvh] w-full bg-white md:bg-slate-50 flex flex-col md:block m-0 p-0 overflow-x-hidden">
-      <MobileTopBar />
 
       {/* Abstract Background Elements */}
       <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-blue-900/5 to-transparent pointer-events-none hidden md:block" />
