@@ -30,16 +30,18 @@ export default function MobileTopBar() {
   }, []);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     }
     if (dropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [dropdownOpen]);
 
@@ -73,8 +75,8 @@ export default function MobileTopBar() {
           iconSize={24} 
           buttonClassName="relative text-white flex items-center justify-center p-1" 
         />
-        <div 
-          className="w-8 h-8 rounded-full overflow-hidden border border-white/30 bg-indigo-300 flex items-center justify-center cursor-pointer"
+        <button 
+          className="w-8 h-8 rounded-full overflow-hidden border border-white/30 bg-indigo-300 flex items-center justify-center cursor-pointer outline-none p-0"
           onClick={() => setDropdownOpen(!dropdownOpen)}
         >
           {profilePhoto ? (
@@ -82,7 +84,7 @@ export default function MobileTopBar() {
           ) : (
             <UserCircle className="text-white w-6 h-6" />
           )}
-        </div>
+        </button>
 
         {dropdownOpen && (
           <div className="absolute top-[45px] right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 flex flex-col z-[101]">
