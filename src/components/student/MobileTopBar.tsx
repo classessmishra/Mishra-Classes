@@ -8,6 +8,7 @@ import Link from 'next/link';
 
 export default function MobileTopBar() {
   const [profilePhoto, setProfilePhoto] = useState<string>("");
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -18,8 +19,11 @@ export default function MobileTopBar() {
         if (match) {
           const userId = match[2];
           const data = await getUserProfile(userId);
-          if (data && data.profile_photo_url) {
-            setProfilePhoto(data.profile_photo_url);
+          if (data) {
+            setUserProfile(data);
+            if (data.profile_photo_url) {
+              setProfilePhoto(data.profile_photo_url);
+            }
           }
         }
       } catch (err) {
@@ -88,6 +92,12 @@ export default function MobileTopBar() {
 
         {dropdownOpen && (
           <div className="absolute top-[45px] right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 flex flex-col z-[101]">
+            {userProfile && (
+              <div className="px-4 py-3 border-b border-gray-100 mb-1 bg-slate-50 rounded-t-xl">
+                <p className="text-sm font-bold text-gray-800 truncate">{userProfile.full_name || 'Student'}</p>
+                <p className="text-xs text-gray-500 truncate">{userProfile.phone || ''}</p>
+              </div>
+            )}
             <Link 
               href="/student/profile" 
               className="px-4 py-3 text-[15px] text-gray-800 hover:bg-gray-50 font-medium"
