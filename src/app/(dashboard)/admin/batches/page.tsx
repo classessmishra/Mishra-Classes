@@ -82,23 +82,30 @@ export default function AdminBatchesPage() {
     setShowEditModal(true);
   };
 
+  const fetchAllStudentsForEnroll = async () => {
+    setSearching(true);
+    const results = await searchUsers("");
+    setSearchResults(results);
+    setSearching(false);
+  };
+
   const openEnrollModal = (batch: any) => {
     setActiveBatch(batch);
     setSearchQuery("");
-    setSearchResults([]);
+    fetchAllStudentsForEnroll();
     setShowEnrollModal(true);
   };
 
   const handleSearchUsers = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value;
     setSearchQuery(q);
-    if (q.length > 2) {
+    if (q.trim().length === 0) {
+      fetchAllStudentsForEnroll();
+    } else {
       setSearching(true);
       const results = await searchUsers(q);
       setSearchResults(results);
       setSearching(false);
-    } else {
-      setSearchResults([]);
     }
   };
 
@@ -286,7 +293,7 @@ export default function AdminBatchesPage() {
                   type="text" 
                   value={searchQuery}
                   onChange={handleSearchUsers}
-                  placeholder="Search student by name or mobile (min 3 chars)..." 
+                  placeholder="Search student by name or mobile..." 
                   className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                 />
               </div>
@@ -318,10 +325,8 @@ export default function AdminBatchesPage() {
                     </div>
                   ))}
                 </div>
-              ) : searchQuery.length > 2 ? (
-                <div className="text-center p-8 text-sm text-slate-500">No students found matching your query.</div>
               ) : (
-                <div className="text-center p-8 text-sm text-slate-500">Type to search for students to enroll.</div>
+                <div className="text-center p-8 text-sm text-slate-500">No students found.</div>
               )}
             </div>
 
