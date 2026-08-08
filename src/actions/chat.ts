@@ -1,12 +1,13 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { uploadMediaToCloudinary, deleteMediaFromCloudinary } from "@/lib/cloudinary";
 import { UTApi } from "uploadthing/server";
 
 const utapi = new UTApi();
 
 export async function uploadChatAttachment(formData: FormData) {
+  const supabase = await createClient();
   const file = formData.get('file') as File;
   if (!file) throw new Error("No file uploaded");
 
@@ -20,36 +21,42 @@ export async function uploadChatAttachment(formData: FormData) {
 }
 
 export async function createChatGroup(name: string, isGlobal: boolean = false) {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('chat_groups').insert([{ name, is_global: isGlobal }]).select();
   if (error) throw new Error(error.message);
   return data[0];
 }
 
 export async function addMemberToGroup(groupId: string, userId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('chat_members').insert([{ group_id: groupId, user_id: userId }]);
   if (error) throw new Error(error.message);
   return { success: true };
 }
 
 export async function removeMemberFromGroup(groupId: string, userId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('chat_members').delete().eq('group_id', groupId).eq('user_id', userId);
   if (error) throw new Error(error.message);
   return { success: true };
 }
 
 export async function getAllStudents() {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('users').select('id, full_name, phone, profile_photo_url').eq('role', 'student');
   if (error) throw new Error(error.message);
   return data || [];
 }
 
 export async function sendNotification(userId: string, title: string, message: string, link_url?: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('notifications').insert([{ user_id: userId, title, message, link_url }]);
   if (error) throw new Error(error.message);
   return { success: true };
 }
 
 export async function sendGlobalNotification(title: string, message: string, link_url?: string) {
+  const supabase = await createClient();
   const { data: users, error: fetchError } = await supabase
     .from('users')
     .select('id, expo_push_token')
@@ -86,6 +93,7 @@ export async function sendGlobalNotification(title: string, message: string, lin
 }
 
 export async function getUserNotifications(userId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
@@ -100,6 +108,7 @@ export async function getUserNotifications(userId: string) {
 }
 
 export async function markNotificationAsRead(notifId: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('notifications')
     .update({ is_read: true })
@@ -110,30 +119,35 @@ export async function markNotificationAsRead(notifId: string) {
 }
 
 export async function clearAllNotifications(userId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.rpc('clear_all_notifications', { p_user_id: userId });
   if (error) throw new Error(error.message);
   return { success: true };
 }
 
 export async function clearNotification(notifId: string, userId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.rpc('clear_notification', { p_notif_id: notifId, p_user_id: userId });
   if (error) throw new Error(error.message);
   return { success: true };
 }
 
 export async function toggleChatBan(userId: string, isBanned: boolean) {
+  const supabase = await createClient();
   const { error } = await supabase.from('users').update({ is_banned_from_chat: isBanned }).eq('id', userId);
   if (error) throw new Error(error.message);
   return { success: true };
 }
 
 export async function checkChatBan(userId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('users').select('is_banned_from_chat').eq('id', userId).single();
   if (error) return false;
   return data?.is_banned_from_chat || false;
 }
 
 export async function getGroupMembers(groupId: string) {
+  const supabase = await createClient();
   // First check if it's a batch group
   const { data: groupData } = await supabase
     .from('chat_groups')
@@ -226,6 +240,7 @@ function extractFileId(content: string): { type: 'image' | 'pdf', id: string } |
  * Safely deletes a single message and its associated cloud files.
  */
 export async function deleteMessageAdmin(msgId: string) {
+  const supabase = await createClient();
   // 1. Guard against temporary UI IDs
   if (msgId.startsWith('temp-')) {
     return { success: true };
@@ -260,6 +275,7 @@ export async function deleteMessageAdmin(msgId: string) {
  * Safely clears a whole group chat and deletes all its associated cloud files.
  */
 export async function clearGroupChatAdmin(groupId: string) {
+  const supabase = await createClient();
   // 1. Fetch all messages in this group that might have attachments
   const { data: messages } = await supabase
     .from('messages')
@@ -303,6 +319,7 @@ export async function clearGroupChatAdmin(groupId: string) {
  * Safely deletes a whole chat group and all its contents
  */
 export async function deleteChatGroupAdmin(groupId: string) {
+  const supabase = await createClient();
   // First clear messages to clean up files
   await clearGroupChatAdmin(groupId);
   
@@ -319,6 +336,7 @@ import { sendMultiplePushNotifications } from "@/lib/notifications";
  * Sends a push notification to all members of a chat group (except the sender).
  */
 export async function sendChatPushNotification(groupId: string, messageContent: string, senderId: string, senderName: string) {
+  const supabase = await createClient();
   try {
     const [{ data: group }, members, { data: senderData }] = await Promise.all([
       supabase.from('chat_groups').select('name, is_direct_message').eq('id', groupId).maybeSingle(),

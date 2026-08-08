@@ -1,8 +1,9 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 
 export async function getCheckoutDetails(cartItemIds: string[]) {
+  const supabase = await createClient();
   // Fetch detailed info for all items in the cart
   const { data: courses } = await supabase
     .from('courses')
@@ -24,6 +25,7 @@ export async function getCheckoutDetails(cartItemIds: string[]) {
 }
 
 export async function getInvoiceDetails(orderId: string) {
+  const supabase = await createClient();
   const { data: purchases, error } = await supabase
     .from('purchases')
     .select(`

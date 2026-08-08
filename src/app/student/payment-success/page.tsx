@@ -74,24 +74,36 @@ function PaymentSuccessContent() {
     setIsDownloading(true);
     
     try {
-      const element = invoiceRef.current;
-      const canvas = await htmlToImage.toCanvas(element, {
+      // MAGIC FIX: Clone the element and render it at desktop width off-screen
+      const originalElement = invoiceRef.current;
+      const clone = originalElement.cloneNode(true) as HTMLElement;
+      
+      clone.style.position = 'absolute';
+      clone.style.top = '-9999px';
+      clone.style.left = '0';
+      clone.style.width = '800px';
+      clone.style.height = 'max-content';
+      clone.style.backgroundColor = '#ffffff';
+      
+      document.body.appendChild(clone);
+      
+      const canvas = await htmlToImage.toCanvas(clone, {
         pixelRatio: 2,
         backgroundColor: '#ffffff',
-        skipFonts: true
+        skipFonts: true,
+        style: { width: '800px' }
       });
+      
+      document.body.removeChild(clone);
       
       const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
       });
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
       
       const studentName = (purchase?.users as any)?.full_name || "Student";
       const filename = `Mishra_Classes_Receipt_${studentName.replace(/\s+/g, '_')}_${receiptId}.pdf`;
@@ -198,36 +210,32 @@ function PaymentSuccessContent() {
             </div>
           </div>
 
-          <div className="overflow-x-auto mb-8 relative z-10 print:overflow-visible">
-            <table className="w-full text-left min-w-[300px]">
-              <thead className="bg-slate-50/50 text-slate-500 text-[10px] sm:text-xs uppercase font-bold border-y border-slate-200 print:bg-transparent">
-                <tr>
-                  <th className="py-2 sm:py-3 px-3 sm:px-4">Description</th>
-                  <th className="py-2 sm:py-3 px-3 sm:px-4 text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                <tr>
-                  <td className="py-3 sm:py-4 px-3 sm:px-4">
+          <div className="mb-8 relative z-10 print:overflow-visible">
+            <div className="w-full text-left min-w-[300px] flex flex-col">
+              <div className="bg-slate-50/50 text-slate-500 text-[10px] sm:text-xs uppercase font-bold border-y border-slate-200 flex justify-between print:bg-transparent">
+                <div className="py-2 sm:py-3 px-3 sm:px-4 flex-1">Description</div>
+                <div className="py-2 sm:py-3 px-3 sm:px-4 text-right">Amount</div>
+              </div>
+              <div className="flex flex-col divide-y divide-slate-100">
+                <div className="flex justify-between items-center py-3 sm:py-4 px-3 sm:px-4">
+                  <div className="flex-1">
                     <p className="text-sm sm:text-base font-bold text-slate-800">{(purchase.courses as any)?.title || "Course Enrollment"}</p>
                     <p className="text-[10px] sm:text-xs text-slate-500">Digital Course Access</p>
-                  </td>
-                  <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-sm sm:text-base font-medium">₹{originalPrice.toFixed(2)}</td>
-                </tr>
+                  </div>
+                  <div className="text-right text-sm sm:text-base font-medium">₹{originalPrice.toFixed(2)}</div>
+                </div>
                 {discount > 0 && (
-                  <tr>
-                    <td className="py-2 sm:py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-medium text-slate-500">Discount Applied</td>
-                    <td className="py-2 sm:py-3 px-3 sm:px-4 text-right text-xs sm:text-sm font-medium text-green-600">- ₹{discount.toFixed(2)}</td>
-                  </tr>
+                  <div className="flex justify-between items-center py-2 sm:py-3 px-3 sm:px-4">
+                    <div className="flex-1 text-right text-xs sm:text-sm font-medium text-slate-500 pr-4">Discount Applied</div>
+                    <div className="text-right text-xs sm:text-sm font-medium text-green-600">- ₹{discount.toFixed(2)}</div>
+                  </div>
                 )}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-sm sm:text-base font-bold text-slate-800 border-t border-slate-200">Total Paid</td>
-                  <td className="py-3 sm:py-4 px-3 sm:px-4 text-right font-black text-lg sm:text-xl text-slate-900 border-t border-slate-200">₹{amountPaid.toFixed(2)}</td>
-                </tr>
-              </tfoot>
-            </table>
+              </div>
+              <div className="flex justify-between items-center py-3 sm:py-4 px-3 sm:px-4 border-t border-slate-200">
+                <div className="flex-1 text-right text-sm sm:text-base font-bold text-slate-800 pr-4">Total Paid</div>
+                <div className="text-right font-black text-lg sm:text-xl text-slate-900">₹{amountPaid.toFixed(2)}</div>
+              </div>
+            </div>
           </div>
 
           <div className="text-center pt-6 border-t border-slate-100 text-[10px] sm:text-xs text-slate-400 relative z-10">

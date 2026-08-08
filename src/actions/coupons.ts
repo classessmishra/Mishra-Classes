@@ -1,6 +1,6 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function createCoupon(data: {
@@ -10,6 +10,7 @@ export async function createCoupon(data: {
   expiry_date?: string;
   show_on_checkout?: boolean;
 }) {
+  const supabase = await createClient();
   const { error } = await supabase.from('coupons').insert([data]);
   if (error) {
     throw new Error(error.message);
@@ -19,6 +20,7 @@ export async function createCoupon(data: {
 }
 
 export async function getCoupons() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('coupons')
     .select('*')
@@ -29,6 +31,7 @@ export async function getCoupons() {
 }
 
 export async function toggleCouponActive(id: string, is_active: boolean) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('coupons')
     .update({ is_active })
@@ -46,6 +49,7 @@ export async function updateCoupon(id: string, data: {
   expiry_date?: string;
   show_on_checkout?: boolean;
 }) {
+  const supabase = await createClient();
   const { error } = await supabase.from('coupons').update(data).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/admin/coupons');
@@ -53,6 +57,7 @@ export async function updateCoupon(id: string, data: {
 }
 
 export async function deleteCoupon(id: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('coupons').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/admin/coupons');
@@ -60,6 +65,7 @@ export async function deleteCoupon(id: string) {
 }
 
 export async function validateCoupon(code: string, coursePrice: number) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('coupons')
     .select('*')

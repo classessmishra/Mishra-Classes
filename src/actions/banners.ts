@@ -1,9 +1,10 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export async function getActiveBanners() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('hero_banners')
     .select('*')
@@ -15,6 +16,7 @@ export async function getActiveBanners() {
 }
 
 export async function getAllBanners() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('hero_banners')
     .select('*')
@@ -25,6 +27,7 @@ export async function getAllBanners() {
 }
 
 export async function createBanner(data: { image_url: string, title?: string, subtitle?: string, badge_text?: string, order_index?: number }) {
+  const supabase = await createClient();
   const { error } = await supabase.from('hero_banners').insert([data]);
   if (error) throw new Error(error.message);
   revalidatePath('/');
@@ -33,6 +36,7 @@ export async function createBanner(data: { image_url: string, title?: string, su
 }
 
 export async function updateBanner(id: string, data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('hero_banners').update(data).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/');
@@ -41,6 +45,7 @@ export async function updateBanner(id: string, data: any) {
 }
 
 export async function deleteBanner(id: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('hero_banners').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/');

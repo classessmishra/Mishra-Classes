@@ -1,10 +1,11 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 
 export async function getAllUsers() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -19,6 +20,7 @@ export async function getAllUsers() {
 }
 
 export async function searchUsers(query: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -33,6 +35,7 @@ export async function searchUsers(query: string) {
 }
 
 export async function getStaffUsers() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -47,6 +50,7 @@ export async function getStaffUsers() {
 }
 
 export async function createStaffUser(formData: any) {
+  const supabase = await createClient();
   const newUserId = crypto.randomUUID();
   
   // Hash the password securely with bcrypt
@@ -74,6 +78,7 @@ export async function createStaffUser(formData: any) {
 }
 
 export async function updateTeacherPermissions(userId: string, permissions: string[]) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('users')
     .update({ bio: JSON.stringify({ permissions }) })
@@ -87,6 +92,7 @@ export async function updateTeacherPermissions(userId: string, permissions: stri
 }
 
 export async function deleteUser(userId: string) {
+  const supabase = await createClient();
   try {
     // 1. Manually delete references that don't have ON DELETE CASCADE
     await supabase.from('attendance').delete().eq('student_id', userId);
@@ -113,6 +119,7 @@ export async function deleteUser(userId: string) {
 }
 
 export async function savePushToken(userId: string, token: string) {
+  const supabase = await createClient();
   if (!userId || !token) return { success: false, error: "Missing user ID or token" };
 
   try {

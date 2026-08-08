@@ -1,10 +1,11 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import { uploadMediaToCloudinary } from "@/lib/cloudinary";
 
 export async function getAdvertisements(sectionType?: string) {
+  const supabase = await createClient();
   noStore();
   let query = supabase
     .from('advertisements')
@@ -25,6 +26,7 @@ export async function getAdvertisements(sectionType?: string) {
 }
 
 export async function getAllAdvertisements() {
+  const supabase = await createClient();
   noStore();
   const { data, error } = await supabase
     .from('advertisements')
@@ -36,6 +38,7 @@ export async function getAllAdvertisements() {
 }
 
 export async function createAdvertisement(data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('advertisements').insert([data]);
   if (error) throw new Error(error.message);
   revalidatePath('/');
@@ -44,6 +47,7 @@ export async function createAdvertisement(data: any) {
 }
 
 export async function updateAdvertisement(id: string, data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('advertisements').update(data).eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/');
@@ -52,6 +56,7 @@ export async function updateAdvertisement(id: string, data: any) {
 }
 
 export async function deleteAdvertisement(id: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('advertisements').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath('/');
@@ -60,6 +65,7 @@ export async function deleteAdvertisement(id: string) {
 }
 
 export async function uploadAdvertisementImage(formData: FormData) {
+  const supabase = await createClient();
   const file = formData.get('file') as File;
   if (!file) throw new Error("No file uploaded");
 

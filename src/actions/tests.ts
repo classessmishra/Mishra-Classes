@@ -1,11 +1,12 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
 import { sendMultiplePushNotifications } from "@/lib/notifications";
 
 export async function assignTest(testId: string, assignmentData: { batch_id?: string, student_id?: string, course_id?: string, start_time?: string, end_time?: string }) {
+  const supabase = await createClient();
   // Check if assignment already exists for this batch or student
   let query = supabase.from('test_assignments').select('*').eq('test_id', testId);
   if (assignmentData.batch_id) {
@@ -92,12 +93,14 @@ export async function assignTest(testId: string, assignmentData: { batch_id?: st
 }
 
 export async function getTests() {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('tests').select('*').order('start_date', { ascending: false });
   if (error) return [];
   return data;
 }
 
 export async function getBatchTests(batchId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('test_assignments')
     .select('*, tests(*)')
@@ -127,12 +130,14 @@ export async function getBatchTests(batchId: string) {
 }
 
 export async function getTestById(testId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('tests').select('*').eq('id', testId).single();
   if (error) return null;
   return data;
 }
 
 export async function createTest(payload: any) {
+  const supabase = await createClient();
   // Ensure default structure
   const testData = {
     test_title: payload.test_title,
@@ -152,6 +157,7 @@ export async function createTest(payload: any) {
 }
 
 export async function submitTest(testId: string, studentId: string, submissionData: { score: number, time_taken_seconds: number, answers: any, time_spent: any, course_id?: string }) {
+  const supabase = await createClient();
   console.log("submitTest called with:", testId, studentId, JSON.stringify(submissionData).substring(0, 100));
   const { course_id, ...dataToInsert } = submissionData;
   
@@ -176,18 +182,21 @@ export async function submitTest(testId: string, studentId: string, submissionDa
 }
 
 export async function getStudentSubmissions(studentId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('test_submissions').select('*').eq('student_id', studentId);
   if (error) return [];
   return data;
 }
 
 export async function getSubmission(testId: string, studentId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('test_submissions').select('*').eq('test_id', testId).eq('student_id', studentId).single();
   if (error) return null;
   return data;
 }
 
 export async function reportQuestion(testId: string, studentId: string, questionIndex: number, reason: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('question_reports').insert([{
     test_id: testId,
     student_id: studentId,
@@ -200,6 +209,7 @@ export async function reportQuestion(testId: string, studentId: string, question
 }
 
 export async function getReportedQuestions() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('question_reports')
     .select('*, tests(*), users(*)')
@@ -211,6 +221,7 @@ export async function getReportedQuestions() {
 }
 
 export async function getReportedQuestionsByTest(testId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('question_reports')
     .select('*, tests(*), users(*)')
@@ -223,6 +234,7 @@ export async function getReportedQuestionsByTest(testId: string) {
 }
 
 export async function updateTestQuestions(testId: string, questions: any[]) {
+  const supabase = await createClient();
   const { error } = await supabase.from('tests').update({ questions }).eq('id', testId);
   if (error) throw new Error(error.message);
   revalidatePath('/admin/tests');
@@ -230,6 +242,7 @@ export async function updateTestQuestions(testId: string, questions: any[]) {
 }
 
 export async function unassignTest(assignmentId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('test_assignments').delete().eq('id', assignmentId);
   if (error) throw new Error(error.message);
   revalidatePath('/admin/tests');
@@ -237,6 +250,7 @@ export async function unassignTest(assignmentId: string) {
 }
 
 export async function deleteTest(testId: string) {
+  const supabase = await createClient();
   // Delete dependent records first to avoid foreign key constraint errors
   await supabase.from('question_reports').delete().eq('test_id', testId);
   await supabase.from('test_submissions').delete().eq('test_id', testId);
@@ -249,6 +263,7 @@ export async function deleteTest(testId: string) {
 }
 
 export async function getTestLeaderboard(testId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('test_submissions')
     .select('*, users(full_name, id)')
@@ -272,6 +287,7 @@ export async function getTestLeaderboard(testId: string) {
 }
 
 export async function getComprehensiveTestAnalytics(testId: string) {
+  const supabase = await createClient();
   // 1. Get test info to know max score & questions
   const { data: testInfo } = await supabase.from('tests').select('*').eq('id', testId).single();
   if (!testInfo) throw new Error("Test not found");
@@ -457,6 +473,7 @@ export async function getComprehensiveTestAnalytics(testId: string) {
 }
 
 export async function resolveReport(reportId: string, testId: string, newCorrectOption: number, questionIndex: number) {
+  const supabase = await createClient();
   // 1. Mark report as resolved
   await supabase.from('question_reports').update({ status: 'resolved' }).eq('id', reportId);
   

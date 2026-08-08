@@ -1,95 +1,80 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import bcrypt from "bcryptjs";
-import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } from "@/lib/email";
 import crypto from 'crypto';
 
 export async function registerUser(formData: any) {
-  const newUserId = crypto.randomUUID();
+  const supabase = await createClient();
   
-  // Hash the password securely with bcrypt
-  const salt = bcrypt.genSaltSync(10);
-  const hashedPassword = bcrypt.hashSync(formData.password, salt);
-
-  // Generate verification token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-
-  const { error } = await supabase.from('users').insert([{
-    id: newUserId,
-    full_name: formData.fullName,
+  // Use Supabase Auth for registration
+  const { data, error } = await supabase.auth.signUp({
     email: formData.email,
-    phone: formData.phone,
-    password: hashedPassword, // Storing hash instead of plain text
-    role: 'student',
-    verification_token: verificationToken,
-    is_email_verified: false
-  }]);
-  
+    password: formData.password,
+    options: {
+      data: {
+        full_name: formData.fullName,
+        phone: formData.phone,
+        role: 'student'
+      }
+    }
+  });
+
   if (error) {
-    if (error.code === '23505') { 
-      return { success: false, error: "User with this email or phone already exists." };
+    if (error.status === 400 && error.message.includes("already registered")) {
+        return { success: false, error: "User with this email already exists." };
     }
     return { success: false, error: error.message || "Failed to register. Please try again." };
   }
-  // Send verification email
-  await sendVerificationEmail(formData.email, verificationToken);
 
+  // Supabase Auth sends verification email automatically if enabled in dashboard
   return { success: true };
 }
 
 export async function authenticateUser(email: string, plainTextPassword: string, loginSource: 'app' | 'web' = 'web') {
-  // Fetch user from database
-  const { data, error } = await supabase.from('users').select('id, full_name, role, password, is_email_verified, has_logged_in').eq('email', email).single();
+  const supabase = await createClient();
   
-  if (error || !data) {
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email,
+    password: plainTextPassword,
+  });
+  
+  if (authError || !authData.user) {
     return { success: false, error: "Invalid credentials or user not found." };
   }
-  
-  if (data.is_email_verified === false) {
-    return { success: false, error: "Please verify your email address before logging in. Check your inbox." };
-  }
-  
-  // Check password using bcrypt
-  const isMatch = bcrypt.compareSync(plainTextPassword, data.password) || plainTextPassword === data.password;
-  
-  if (!isMatch) {
-    return { success: false, error: "Incorrect password." };
-  }
 
-  // Generate new session ID
+  // Generate new session ID for single-device tracking
   const newSessionId = crypto.randomUUID();
 
-  // Update session ID and has_logged_in status
-  // SET BOTH app and web session IDs to strictly enforce 1 single device log in at a time globally!
+  // Update session ID in public.users table
   const updateData: any = {
     current_app_session_id: newSessionId,
     current_web_session_id: newSessionId,
+    has_logged_in: true
   };
-  
-  if (data.has_logged_in === false) {
-    updateData.has_logged_in = true;
-  }
 
-  await supabase.from('users').update(updateData).eq('id', data.id);
+  await supabase.from('users').update(updateData).eq('id', authData.user.id);
 
   // Next.js 15+ cookies() is async
   const { cookies } = await import("next/headers");
   const cookieStore = await cookies();
-  cookieStore.set("auth_role", data.role, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false }); // 30 days
-  cookieStore.set("user_id", data.id, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
   
-  // Also store the session ID in a cookie so the client-side enforcer can read it
+  // Set custom cookies for our enforcer and fast client checks
+  const { data: userData } = await supabase.from('users').select('role').eq('id', authData.user.id).single();
+  const role = userData?.role || 'student';
+  
+  cookieStore.set("auth_role", role, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
+  cookieStore.set("user_id", authData.user.id, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
   cookieStore.set("device_session_id", newSessionId, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
   cookieStore.set("device_login_source", loginSource, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
 
-  return { success: true, data: { id: data.id, role: data.role, sessionId: newSessionId } };
+  return { success: true, data: { id: authData.user.id, role: role, sessionId: newSessionId } };
 }
 
 export async function verifySession(userId: string, localSessionId: string, loginSource: 'app' | 'web') {
   if (!userId || !localSessionId) return { valid: false };
 
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('users')
     .select('current_app_session_id, current_web_session_id')
@@ -108,119 +93,89 @@ export async function verifySession(userId: string, localSessionId: string, logi
 }
 
 export async function adminResetPassword(userId: string, newPassword: string) {
-  // Hash the new password securely
-  const salt = bcrypt.genSaltSync(10);
-  const hashedPassword = bcrypt.hashSync(newPassword, salt);
-
-  const { error } = await supabase
-    .from('users')
-    .update({ password: hashedPassword })
-    .eq('id', userId);
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  revalidatePath(`/admin/users/${userId}`);
-  return { success: true };
+  return { success: false, error: "Updating other users' passwords requires Supabase Admin API setup." };
 }
 
 export async function verifyEmail(token: string) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, email, full_name')
-    .eq('verification_token', token)
-    .single();
-
-  if (error || !data) {
-    return { success: false, error: "Invalid or expired verification token." };
-  }
-
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ 
-      is_email_verified: true, 
-      verification_token: null 
-    })
-    .eq('id', data.id);
-
-  if (updateError) {
-    return { success: false, error: "Failed to verify email. Please try again." };
-  }
-
-  if (data.email) {
-    try {
-      await sendWelcomeEmail(data.email, data.full_name || 'Student');
-    } catch (err) {
-      console.error("Failed to send welcome email:", err);
-    }
-  }
-
-  return { success: true };
+  // Supabase Auth handles email verification via links usually.
+  return { success: false, error: "Email verification is now handled directly by Supabase Auth links." };
 }
 
 export async function forgotPassword(email: string) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('email', email)
-    .single();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/reset-password`,
+  });
 
-  if (error || !data) {
-    // Return success anyway to prevent email enumeration attacks
-    return { success: true };
-  }
-
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour from now
-
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ 
-      reset_password_token: resetToken,
-      reset_token_expires_at: expiresAt
-    })
-    .eq('id', data.id);
-
-  if (updateError) {
+  if (error) {
     return { success: false, error: "Failed to process request." };
   }
-
-  await sendPasswordResetEmail(email, resetToken);
   return { success: true };
 }
 
 export async function resetPassword(token: string, newPassword: string) {
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, reset_token_expires_at')
-    .eq('reset_password_token', token)
-    .single();
+  // Assuming the user has clicked the email link and established a session
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
 
-  if (error || !data) {
-    return { success: false, error: "Invalid or expired reset token." };
-  }
-
-  if (new Date(data.reset_token_expires_at) < new Date()) {
-    return { success: false, error: "Reset token has expired. Please request a new one." };
-  }
-
-  const salt = bcrypt.genSaltSync(10);
-  const hashedPassword = bcrypt.hashSync(newPassword, salt);
-
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ 
-      password: hashedPassword,
-      reset_password_token: null,
-      reset_token_expires_at: null,
-      is_email_verified: true
-    })
-    .eq('id', data.id);
-
-  if (updateError) {
+  if (error) {
     return { success: false, error: "Failed to reset password." };
   }
-
   return { success: true };
+}
+
+export async function sendOtp(email: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false, // Prevent signing up non-existent users via OTP login
+    }
+  });
+
+  if (error) {
+    return { success: false, error: error.message || "Failed to send OTP." };
+  }
+  return { success: true };
+}
+
+export async function verifyOtpLogin(email: string, otp: string, loginSource: 'app' | 'web' = 'web') {
+  const supabase = await createClient();
+  
+  const { data: authData, error: authError } = await supabase.auth.verifyOtp({
+    email,
+    token: otp,
+    type: 'email',
+  });
+  
+  if (authError || !authData.user) {
+    return { success: false, error: "Invalid or expired OTP." };
+  }
+
+  // Generate new session ID for single-device tracking
+  const newSessionId = crypto.randomUUID();
+
+  // Update session ID in public.users table
+  const updateData: any = {
+    current_app_session_id: newSessionId,
+    current_web_session_id: newSessionId,
+    has_logged_in: true
+  };
+
+  await supabase.from('users').update(updateData).eq('id', authData.user.id);
+
+  // Next.js 15+ cookies() is async
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  
+  // Set custom cookies for our enforcer and fast client checks
+  const { data: userData } = await supabase.from('users').select('role').eq('id', authData.user.id).single();
+  const role = userData?.role || 'student';
+  
+  cookieStore.set("auth_role", role, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
+  cookieStore.set("user_id", authData.user.id, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
+  cookieStore.set("device_session_id", newSessionId, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
+  cookieStore.set("device_login_source", loginSource, { path: "/", maxAge: 60 * 60 * 24 * 30, httpOnly: false });
+
+  return { success: true, data: { id: authData.user.id, role: role, sessionId: newSessionId } };
 }

@@ -4,8 +4,10 @@ import { WebView } from 'react-native-webview';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import * as ScreenOrientation from 'expo-screen-orientation';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
+import * as Print from 'expo-print';
 import { useNotifications } from '../hooks/useNotifications';
 
 
@@ -110,20 +112,24 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
 
   const lastTargetUrl = useRef(`${BASE_URL}${path}`);
 
-  React.useEffect(() => {
-    if (path && webViewRef.current) {
-      const fullUrl = `${BASE_URL}${path}`;
-      if (lastTargetUrl.current !== fullUrl) {
-        lastTargetUrl.current = fullUrl;
+  // Sync the WebView URL with the React Navigation tab path whenever the tab comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (webViewRef.current) {
+        const fullUrl = path.startsWith('http') ? path : `${BASE_URL}${path}`;
+        
+        // We inject a script that checks if the browser's current URL matches what the tab expects.
+        // If the user was redirected (e.g. after login to /student) but is on the /store tab,
+        // this will force the WebView back to /store when they tap the tab.
         webViewRef.current.injectJavaScript(`
-          if (window.location.href !== '${fullUrl}') {
+          if (!window.location.href.includes('${path}')) {
             window.location.href = '${fullUrl}';
           }
           true;
         `);
       }
-    }
-  }, [path]);
+    }, [path])
+  );
 
   React.useEffect(() => {
     if (expoPushToken && webViewRef.current) {
@@ -204,6 +210,50 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
             encoding: 'base64',
           });
           
+          // For images, save directly to gallery
+          let savedToGallery = false;
+          if (mimeType.includes('image/')) {
+            try {
+              const { status } = await MediaLibrary.requestPermissionsAsync();
+              if (status === 'granted') {
+                await MediaLibrary.saveToLibraryAsync(fileUri);
+                if (Platform.OS === 'android') {
+                  ToastAndroid.show('Image saved to Gallery', ToastAndroid.SHORT);
+                }
+                savedToGallery = true;
+              }
+            } catch (mediaError) {
+              console.log('MediaLibrary permission error:', mediaError);
+              // Will fallback to SAF or Share below
+            }
+          }
+          
+          // For Android, if it's not an image OR if saving to gallery failed, use StorageAccessFramework to "Save As"
+          if (Platform.OS === 'android' && !savedToGallery) {
+            try {
+              const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+              if (permissions.granted) {
+                const createdUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                  permissions.directoryUri,
+                  cleanFilename,
+                  mimeType
+                );
+                await FileSystem.writeAsStringAsync(createdUri, pureBase64, {
+                  encoding: 'base64',
+                });
+                ToastAndroid.show('File downloaded successfully', ToastAndroid.SHORT);
+                return; // End here, don't show share sheet
+              }
+            } catch (safError) {
+              console.log('SAF error', safError);
+            }
+          }
+          
+          // If all else fails or user cancelled SAF, just use Share
+          if (savedToGallery) {
+            return; // We already saved it to gallery successfully
+          }
+          
           const canShare = await Sharing.isAvailableAsync();
           if (canShare) {
             let uti = 'public.data';
@@ -224,6 +274,56 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         } catch (e: any) {
           if (Platform.OS === 'android') {
             ToastAndroid.show('Error saving file: ' + e.message, ToastAndroid.LONG);
+          }
+        }
+      } else if (data.type === 'PRINT_HTML') {
+        try {
+          const { html, filename } = data;
+          const cleanFilename = filename.split('?')[0].replace(/[^a-zA-Z0-9.\-_]/g, '_') || 'document.pdf';
+          
+          // Generate PDF using expo-print (Native WebKit rendering = perfect layout)
+          const { uri } = await Print.printToFileAsync({
+            html: html,
+            base64: false
+          });
+          
+          const fileUri = `${FileSystem.documentDirectory}${cleanFilename}`;
+          await FileSystem.moveAsync({
+            from: uri,
+            to: fileUri
+          });
+
+          // Save directly to device on Android using SAF
+          if (Platform.OS === 'android') {
+            try {
+              const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+              if (permissions.granted) {
+                const createdUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                  permissions.directoryUri,
+                  cleanFilename,
+                  'application/pdf'
+                );
+                const base64Data = await FileSystem.readAsStringAsync(fileUri, { encoding: 'base64' });
+                await FileSystem.writeAsStringAsync(createdUri, base64Data, { encoding: 'base64' });
+                ToastAndroid.show('PDF downloaded successfully', ToastAndroid.SHORT);
+                return;
+              }
+            } catch (safError) {
+              console.log('SAF error', safError);
+            }
+          }
+          
+          // Fallback to share
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/pdf',
+              UTI: 'com.adobe.pdf',
+            });
+          }
+        } catch (e: any) {
+          if (Platform.OS === 'android') {
+            ToastAndroid.show('Error generating PDF: ' + e.message, ToastAndroid.LONG);
           }
         }
       }

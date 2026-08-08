@@ -1,11 +1,12 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { uploadMediaToCloudinary } from "@/lib/cloudinary";
 import { sendPurchaseEmail } from "@/lib/email";
 
 export async function createCourse(data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('courses').insert([data]);
   if (error) {
     throw new Error(error.message);
@@ -17,6 +18,7 @@ export async function createCourse(data: any) {
 }
 
 export async function updateCourse(id: string, data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('courses').update(data).eq('id', id);
   if (error) {
     throw new Error(error.message);
@@ -28,6 +30,7 @@ export async function updateCourse(id: string, data: any) {
 }
 
 export async function getStudentCourses(studentId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('purchases')
     .select(`
@@ -43,6 +46,7 @@ export async function getStudentCourses(studentId: string) {
 }
 
 export async function allocateCourse(studentId: string, courseId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('purchases').insert({
     student_id: studentId,
     course_id: courseId,
@@ -58,6 +62,7 @@ export async function allocateCourse(studentId: string, courseId: string) {
 }
 
 export async function revokeCourse(studentId: string, courseId: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('purchases')
     .delete()
@@ -70,6 +75,7 @@ export async function revokeCourse(studentId: string, courseId: string) {
 }
 
 export async function getCourses() {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('courses').select('*').order('id', { ascending: false });
   if (error) {
     console.error("Error fetching courses:", error);
@@ -79,6 +85,7 @@ export async function getCourses() {
 }
 
 export async function uploadCourseThumbnail(formData: FormData) {
+  const supabase = await createClient();
   const file = formData.get('file') as File;
   if (!file) throw new Error("No file uploaded");
 
@@ -91,6 +98,7 @@ export async function uploadCourseThumbnail(formData: FormData) {
 }
 
 export async function getStoreItems() {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('store_items').select('*').order('created_at', { ascending: false });
   if (error) {
     console.error("Error fetching store items:", error);
@@ -100,6 +108,7 @@ export async function getStoreItems() {
 }
 
 export async function checkoutCart(items: any[], userId: string, paymentData: any) {
+  const supabase = await createClient();
   try {
     // Fetch course details to get validity_days
     const courseIds = items.filter(i => i.type === 'course').map(i => i.id);
@@ -169,6 +178,7 @@ export async function checkoutCart(items: any[], userId: string, paymentData: an
 }
 
 export async function claimFreeCourse(courseId: string, studentId: string) {
+  const supabase = await createClient();
   try {
     const { data: course } = await supabase.from('courses').select('is_free, price, validity_days, batch_id').eq('id', courseId).single();
     if (!course || (!course.is_free && course.price > 0)) {

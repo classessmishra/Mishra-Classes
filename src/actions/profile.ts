@@ -1,6 +1,6 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { uploadMediaToCloudinary } from "@/lib/cloudinary";
 
@@ -21,6 +21,7 @@ export async function uploadProfileMedia(formData: FormData, folder: string = 'p
 }
 
 export async function getUserProfile(userId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -36,6 +37,7 @@ export async function getUserProfile(userId: string) {
 
 export async function updateStudentProfile(userId: string, data: any) {
   try {
+    const supabase = await createClient();
     // Students can only update specific fields, NEVER name, phone, or email
     const safeData = {
       profile_photo_url: data.profile_photo_url,

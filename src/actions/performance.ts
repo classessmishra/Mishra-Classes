@@ -1,8 +1,9 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 
 export async function getStudentPerformance(studentId: string) {
+  const supabase = await createClient();
   // Fetch all test submissions for this student, joined with test titles
   const { data: submissions, error } = await supabase
     .from('test_submissions')

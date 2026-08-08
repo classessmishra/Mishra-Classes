@@ -1,10 +1,11 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 
 import { sendMultiplePushNotifications } from "@/lib/notifications";
 
 export async function createBatchAnnouncement(batchId: string, title: string, message: string, link_url?: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('batch_announcements')
     .insert([{ batch_id: batchId, title, message, link_url }])
@@ -56,6 +57,7 @@ export async function createBatchAnnouncement(batchId: string, title: string, me
 }
 
 export async function getBatchAnnouncements(batchId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('batch_announcements')
     .select('*')
@@ -70,6 +72,7 @@ export async function getBatchAnnouncements(batchId: string) {
 }
 
 export async function deleteBatchAnnouncement(id: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('batch_announcements')
     .delete()

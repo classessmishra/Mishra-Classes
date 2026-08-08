@@ -1,10 +1,11 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sendPushNotification } from "@/lib/notifications";
 
 export async function createBatch(data: { name: string, description?: string }) {
+  const supabase = await createClient();
   // 1. Create the Batch
   const { data: batchData, error: batchError } = await supabase.from('batches').insert([data]).select().single();
   if (batchError) throw new Error(batchError.message);
@@ -22,6 +23,7 @@ export async function createBatch(data: { name: string, description?: string }) 
 }
 
 export async function enrollStudent(batchId: string, studentId: string) {
+  const supabase = await createClient();
   // 1. Enroll in batch
   const { error: enrollError } = await supabase.from('batch_students').insert([{ batch_id: batchId, student_id: studentId }]);
   if (enrollError) throw new Error(enrollError.message);
@@ -65,6 +67,7 @@ export async function enrollStudent(batchId: string, studentId: string) {
 }
 
 export async function unenrollStudent(batchId: string, studentId: string) {
+  const supabase = await createClient();
   // 1. Remove from batch
   const { error: unenrollError } = await supabase.from('batch_students').delete().match({ batch_id: batchId, student_id: studentId });
   if (unenrollError) throw new Error(unenrollError.message);
@@ -85,6 +88,7 @@ export async function unenrollStudent(batchId: string, studentId: string) {
 }
 
 export async function getStudentBatches(studentId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('batch_students')
     .select(`
@@ -98,6 +102,7 @@ export async function getStudentBatches(studentId: string) {
 }
 
 export async function updateBatch(batchId: string, data: { name?: string, description?: string, course?: string, subject?: string }) {
+  const supabase = await createClient();
   const { error } = await supabase.from('batches').update(data).eq('id', batchId);
   if (error) throw new Error(error.message);
   
@@ -111,6 +116,7 @@ export async function updateBatch(batchId: string, data: { name?: string, descri
 }
 
 export async function getBatches() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('batches')
     .select(`
@@ -130,6 +136,7 @@ export async function getBatches() {
 }
 
 export async function getStudentsInBatch(batchId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('batch_students')
     .select(`
@@ -143,6 +150,7 @@ export async function getStudentsInBatch(batchId: string) {
 }
 
 export async function getBatchStudents(batchId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('batch_students')
     .select(`
@@ -166,6 +174,7 @@ export async function getBatchStudents(batchId: string) {
 }
 
 export async function markAttendance(batchId: string, studentId: string, date: string, status: 'present' | 'absent') {
+  const supabase = await createClient();
   // Upsert to handle updates if they change mind
   const { error } = await supabase.from('attendance').upsert({
     batch_id: batchId,
@@ -220,6 +229,7 @@ export async function markAttendance(batchId: string, studentId: string, date: s
 }
 
 export async function getStudentAttendance(batchId: string, studentId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('attendance')
     .select('*')
@@ -232,6 +242,7 @@ export async function getStudentAttendance(batchId: string, studentId: string) {
 }
 
 export async function getBatchAttendanceHistory(batchId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('attendance')
     .select(`
@@ -253,6 +264,7 @@ export async function getBatchAttendanceHistory(batchId: string) {
 }
 
 export async function getAttendanceByDate(batchId: string, date: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('attendance')
     .select('student_id, status')
@@ -263,6 +275,7 @@ export async function getAttendanceByDate(batchId: string, date: string) {
 }
 
 export async function removeAttendance(batchId: string, studentId: string, date: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('attendance')
     .delete()
@@ -274,12 +287,14 @@ export async function removeAttendance(batchId: string, studentId: string, date:
 }
 
 export async function getBatchTimings(batchId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase.from('batch_timings').select('*').eq('batch_id', batchId).order('start_time', { ascending: true });
   if (error) return [];
   return data;
 }
 
 export async function addBatchTiming(batchId: string, dayOfWeek: string, startTime: string, endTime: string, subject: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('batch_timings').insert([{
     batch_id: batchId,
     day_of_week: dayOfWeek,
@@ -292,6 +307,7 @@ export async function addBatchTiming(batchId: string, dayOfWeek: string, startTi
 }
 
 export async function removeBatchTiming(timingId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('batch_timings').delete().eq('id', timingId);
   if (error) throw new Error(error.message);
   return { success: true };

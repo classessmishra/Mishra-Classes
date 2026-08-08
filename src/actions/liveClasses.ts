@@ -11,6 +11,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function createLiveClass(payload: any) {
+  const supabase = await createClient();
   // Extract courseIds if it's an array, otherwise fallback to single course_id
   const { course_id, course_ids, ...rest } = payload;
   const ids = course_ids && Array.isArray(course_ids) && course_ids.length > 0 
@@ -82,6 +83,7 @@ export async function createLiveClass(payload: any) {
 }
 
 export async function updateLiveClassGroup(oldYoutubeVideoId: string, payload: any) {
+  const supabase = await createClient();
   const { course_id, course_ids, ...rest } = payload;
   
   const { data: existingClasses } = await supabase
@@ -143,6 +145,7 @@ export async function updateLiveClassGroup(oldYoutubeVideoId: string, payload: a
 }
 
 export async function deleteLiveClassGroup(youtubeVideoId: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('live_classes')
     .delete()
@@ -154,6 +157,7 @@ export async function deleteLiveClassGroup(youtubeVideoId: string) {
 
 
 export async function toggleLiveClassStatus(youtubeVideoId: string, isActive: boolean) {
+  const supabase = await createClient();
   const { error, data: classes } = await supabase
     .from('live_classes')
     .update({ is_active: isActive })
@@ -209,6 +213,7 @@ export async function toggleLiveClassStatus(youtubeVideoId: string, isActive: bo
 }
 
 export async function getLiveClassesForCourse(courseId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('live_classes')
     .select('*, courses(title)')
@@ -221,6 +226,7 @@ export async function getLiveClassesForCourse(courseId: string) {
 }
 
 export async function getRecordedClassesForCourse(courseId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('live_classes')
     .select('*, courses(title)')
@@ -233,6 +239,7 @@ export async function getRecordedClassesForCourse(courseId: string) {
 }
 
 export async function getAllLiveClasses() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('live_classes')
     .select('*, courses(title)')
@@ -244,6 +251,7 @@ export async function getAllLiveClasses() {
 }
 
 export async function getLiveClassById(classId: string) {
+  const supabase = await createClient();
   if (!classId) return null;
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(classId);
   
@@ -263,6 +271,7 @@ export async function getLiveClassById(classId: string) {
 }
 
 export async function getCanonicalLiveClassId(youtubeVideoId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('live_classes')
     .select('id')
@@ -276,6 +285,7 @@ export async function getCanonicalLiveClassId(youtubeVideoId: string) {
 }
 
 export async function updateLiveClass(classId: string, payload: any) {
+  const supabase = await createClient();
   // Map updates to old columns too
   const finalPayload = { ...payload };
   if (payload.title) finalPayload.topic = payload.title;
@@ -294,6 +304,7 @@ export async function updateLiveClass(classId: string, payload: any) {
 }
 
 export async function deleteLiveClass(classId: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('live_classes')
     .delete()
@@ -304,6 +315,7 @@ export async function deleteLiveClass(classId: string) {
 }
 
 export async function sendChatMessage(classId: string, userName: string, userRole: string, message: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('live_class_chat')
     .insert([{ class_id: classId, user_name: userName, user_role: userRole, message }])
@@ -315,6 +327,7 @@ export async function sendChatMessage(classId: string, userName: string, userRol
 }
 
 export async function getChatHistory(classId: string) {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('live_class_chat')
     .select('*')
@@ -327,6 +340,7 @@ export async function getChatHistory(classId: string) {
 }
 
 export async function deleteChatForClass(classId: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('live_class_chat')
     .delete()
@@ -337,6 +351,7 @@ export async function deleteChatForClass(classId: string) {
 }
 
 export async function deleteChatMessageById(messageId: string) {
+  const supabase = await createClient();
   const { error } = await supabase
     .from('live_class_chat')
     .delete()
@@ -362,6 +377,7 @@ function parseISODuration(duration: string) {
 }
 
 export async function endAndSyncLiveClass(meetingLink: string) {
+  const supabase = await createClient();
   try {
     const apiKey = process.env.YOUTUBE_API_KEY;
     let durationStr = "00:00:00";
@@ -460,6 +476,7 @@ export async function endAndSyncLiveClass(meetingLink: string) {
 }
 
 export async function getAllRecordedClassesGlobally() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('live_classes')
     .select('*, courses(title)')
@@ -471,6 +488,7 @@ export async function getAllRecordedClassesGlobally() {
 }
 
 export async function assignRecordingToCourse(recordingId: string, targetCourseId: string) {
+  const supabase = await createClient();
   // 1. Fetch the original recording
   const { data: original, error: fetchErr } = await supabase
     .from('live_classes')
@@ -510,6 +528,7 @@ export async function assignRecordingToCourse(recordingId: string, targetCourseI
 }
 
 export async function addManualVOD(payload: { title: string, youtubeVideoId: string, courseId?: string, duration?: string }) {
+  const supabase = await createClient();
   const apiKey = process.env.YOUTUBE_API_KEY;
   let durationStr = payload.duration || "00:00:00";
 

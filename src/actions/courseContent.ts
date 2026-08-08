@@ -1,11 +1,12 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import { uploadMediaToCloudinary } from "@/lib/cloudinary";
 
 // Live Classes
 export async function getLiveClasses(courseId: string) {
+  const supabase = await createClient();
   noStore();
   const { data, error } = await supabase
     .from('live_classes')
@@ -21,6 +22,7 @@ export async function getLiveClasses(courseId: string) {
 }
 
 export async function createLiveClass(data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('live_classes').insert([data]);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${data.course_id}`);
@@ -29,6 +31,7 @@ export async function createLiveClass(data: any) {
 }
 
 export async function deleteLiveClass(id: string, courseId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('live_classes').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${courseId}`);
@@ -38,6 +41,7 @@ export async function deleteLiveClass(id: string, courseId: string) {
 
 // Recorded Classes
 export async function getRecordedClasses(courseId: string) {
+  const supabase = await createClient();
   noStore();
   const { data: oldData, error: oldErr } = await supabase
     .from('recorded_classes')
@@ -141,6 +145,7 @@ export async function getRecordedClasses(courseId: string) {
 }
 
 export async function createRecordedClass(data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('recorded_classes').insert([data]);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${data.course_id}`);
@@ -149,6 +154,7 @@ export async function createRecordedClass(data: any) {
 }
 
 export async function deleteRecordedClass(id: string, courseId: string, isLiveVod: boolean = false) {
+  const supabase = await createClient();
   let error;
   if (isLiveVod) {
     const res = await supabase.from('live_classes').delete().eq('id', id);
@@ -166,6 +172,7 @@ export async function deleteRecordedClass(id: string, courseId: string, isLiveVo
 
 // Course Materials
 export async function getCourseMaterials(courseId: string) {
+  const supabase = await createClient();
   noStore();
   const { data, error } = await supabase
     .from('course_materials')
@@ -181,6 +188,7 @@ export async function getCourseMaterials(courseId: string) {
 }
 
 export async function getAllCourseMaterialsGlobally() {
+  const supabase = await createClient();
   noStore();
   const { data, error } = await supabase
     .from('course_materials')
@@ -195,6 +203,7 @@ export async function getAllCourseMaterialsGlobally() {
 }
 
 export async function assignMaterialToCourse(materialId: string, targetCourseId: string) {
+  const supabase = await createClient();
   const { data: original, error: fetchErr } = await supabase
     .from('course_materials')
     .select('*')
@@ -223,6 +232,7 @@ export async function assignMaterialToCourse(materialId: string, targetCourseId:
 }
 
 export async function createCourseMaterial(data: any) {
+  const supabase = await createClient();
   const { error } = await supabase.from('course_materials').insert([data]);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${data.course_id}`);
@@ -231,6 +241,7 @@ export async function createCourseMaterial(data: any) {
 }
 
 export async function deleteCourseMaterial(id: string, courseId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('course_materials').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${courseId}`);
@@ -239,6 +250,7 @@ export async function deleteCourseMaterial(id: string, courseId: string) {
 }
 
 export async function uploadMaterialFile(formData: FormData) {
+  const supabase = await createClient();
   const file = formData.get('file') as File;
   if (!file) throw new Error("No file uploaded");
 
@@ -252,6 +264,7 @@ export async function uploadMaterialFile(formData: FormData) {
 
 // Folders
 export async function getCourseFolders(courseId: string) {
+  const supabase = await createClient();
   noStore();
   const { data, error } = await supabase
     .from('course_folders')
@@ -267,6 +280,7 @@ export async function getCourseFolders(courseId: string) {
 }
 
 export async function createCourseFolder(courseId: string, name: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('course_folders').insert([{ course_id: courseId, name }]);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${courseId}`);
@@ -275,6 +289,7 @@ export async function createCourseFolder(courseId: string, name: string) {
 }
 
 export async function deleteCourseFolder(folderId: string, courseId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('course_folders').delete().eq('id', folderId);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${courseId}`);

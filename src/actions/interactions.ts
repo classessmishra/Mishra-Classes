@@ -1,9 +1,10 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 
 // 1. Get stats
 export async function getCourseInteractions(courseId: string, userId?: string) {
+  const supabase = await createClient();
   
   try {
     // Get Likes
@@ -70,6 +71,7 @@ export async function getCourseInteractions(courseId: string, userId?: string) {
 
 // 2. Toggle Like
 export async function toggleLikeCourse(courseId: string, userId: string, isLiked: boolean) {
+  const supabase = await createClient();
   try {
     if (isLiked) {
       // Remove Like
@@ -96,6 +98,7 @@ export async function toggleLikeCourse(courseId: string, userId: string, isLiked
 
 // 3. Rate Course
 export async function rateCourse(courseId: string, userId: string, rating: number) {
+  const supabase = await createClient();
   try {
     // Check if exists
     const { data: existing } = await supabase

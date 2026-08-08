@@ -1,9 +1,10 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 
 export async function getCourseTests(courseId: string, studentId?: string) {
+  const supabase = await createClient();
   noStore();
   // Fetch tests assigned to this course
   const { data: assignments, error: assignError } = await supabase
@@ -72,6 +73,7 @@ export async function getCourseTests(courseId: string, studentId?: string) {
 }
 
 export async function getAllTests() {
+  const supabase = await createClient();
   // For the bank, we fetch all tests. 
   // Ideally, tests meant for courses might have batch_id as NULL
   const { data, error } = await supabase
@@ -87,6 +89,7 @@ export async function getAllTests() {
 }
 
 export async function assignTestToCourse(courseId: string, testId: string, maxAttempts: number, folderId?: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('course_tests').insert([{
     course_id: courseId,
     test_id: testId,
@@ -101,6 +104,7 @@ export async function assignTestToCourse(courseId: string, testId: string, maxAt
 }
 
 export async function removeTestFromCourse(id: string, courseId: string) {
+  const supabase = await createClient();
   const { error } = await supabase.from('course_tests').delete().eq('id', id);
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${courseId}`);
