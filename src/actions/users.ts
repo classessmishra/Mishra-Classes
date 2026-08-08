@@ -24,6 +24,7 @@ export async function searchUsers(query: string) {
   const { data, error } = await supabase
     .from('users')
     .select('*')
+    .eq('role', 'student')
     .or(`full_name.ilike.%${query}%,phone.ilike.%${query}%`)
     .limit(20);
     
