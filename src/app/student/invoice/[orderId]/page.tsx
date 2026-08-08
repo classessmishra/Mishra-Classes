@@ -66,15 +66,15 @@ export default function InvoicePage() {
         
         // Inject <base> tag and construct clean HTML
         const baseUrl = window.location.origin;
-        let htmlContent = \`
+        let htmlContent = `
           <!DOCTYPE html>
           <html>
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <base href="\${baseUrl}/" />
+              <base href="${baseUrl}/" />
               <style>
-                \${inlinedCss}
+                ${inlinedCss}
                 @page { margin: 20px; size: A4; }
                 body {
                   background-color: white !important;
@@ -85,11 +85,11 @@ export default function InvoicePage() {
             </head>
             <body class="bg-white p-4">
               <div class="max-w-3xl mx-auto bg-white">
-                \${invoiceHtml}
+                ${invoiceHtml}
               </div>
             </body>
           </html>
-        \`;
+        `;
         
         // Send HTML to Native App
         (window as any).ReactNativeWebView.postMessage(JSON.stringify({

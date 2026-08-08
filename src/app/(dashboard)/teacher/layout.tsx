@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import { LogOut, BookOpen, Users } from "lucide-react";
 import ProfileWidget from "@/components/ProfileWidget";
 export default function TeacherLayout({

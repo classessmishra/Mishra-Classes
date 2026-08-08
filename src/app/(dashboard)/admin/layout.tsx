@@ -12,6 +12,7 @@ import NotificationBell from "@/components/NotificationBell";
 import AdminTopBarWidget from "@/components/AdminTopBarWidget";
 import ProfileWidget from "@/components/ProfileWidget";
 import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 export default function AdminLayout({
   children,
 }: {
