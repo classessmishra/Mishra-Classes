@@ -10,45 +10,27 @@ import PurchasedCourseCard from "@/components/PurchasedCourseCard";
 import { useRouter } from "next/navigation";
 
 export default function StorePage() {
-  const [storeItems, setStoreItems] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('cached_store_items');
-        return cached ? JSON.parse(cached) : [];
-      } catch(e) {}
-    }
-    return [];
-  });
-  const [allCourses, setAllCourses] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('cached_all_courses');
-        return cached ? JSON.parse(cached) : [];
-      } catch(e) {}
-    }
-    return [];
-  });
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('cached_enrolled_courses');
-        return cached ? JSON.parse(cached) : [];
-      } catch(e) {}
-    }
-    return [];
-  });
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return !localStorage.getItem('cached_all_courses');
-      } catch(e) {}
-    }
-    return true;
-  });
+  const [storeItems, setStoreItems] = useState<any[]>([]);
+  const [allCourses, setAllCourses] = useState<any[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
   useEffect(() => {
+    try {
+      const items = localStorage.getItem('cached_store_items');
+      const courses = localStorage.getItem('cached_all_courses');
+      const enrolled = localStorage.getItem('cached_enrolled_courses');
+      
+      if (items) setStoreItems(JSON.parse(items));
+      if (courses) {
+        setAllCourses(JSON.parse(courses));
+        setLoading(false);
+      }
+      if (enrolled) setEnrolledCourses(JSON.parse(enrolled));
+    } catch (e) {}
+
     async function loadData() {
       const match = document.cookie.match(/(^| )user_id=([^;]+)/);
       const userId = match ? match[2] : null;

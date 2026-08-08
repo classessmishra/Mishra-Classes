@@ -9,31 +9,19 @@ export default function StudentTestsPage() {
   const [tests, setTests] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const cached = localStorage.getItem('cached_student_tests');
-        return cached ? JSON.parse(cached) : [];
-      } catch(e) {}
-    }
-    return [];
-  });
-  const [submissions, setSubmissions] = useState<Record<string, any>>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('cached_student_submissions');
-        return cached ? JSON.parse(cached) : {};
-      } catch(e) {}
-    }
-    return {};
-  });
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return !localStorage.getItem('cached_student_tests');
-      } catch(e) {}
-    }
-    return true;
-  });
+  const [tests, setTests] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    try {
+      const cachedTests = localStorage.getItem('cached_student_tests');
+      const cachedSubmissions = localStorage.getItem('cached_student_submissions');
+      if (cachedTests) setTests(JSON.parse(cachedTests));
+      if (cachedSubmissions) setSubmissions(JSON.parse(cachedSubmissions));
+      if (cachedTests) setLoading(false);
+    } catch(e) {}
+
     async function loadTests() {
       // 1. Get user ID from cookies
       let userId = null;

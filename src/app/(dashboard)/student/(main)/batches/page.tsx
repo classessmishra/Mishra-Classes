@@ -7,25 +7,18 @@ import { BookOpen, Video, PlayCircle } from "lucide-react";
 import { getStudentCourses } from "@/actions/courses";
 
 export default function StudentPage() {
-  const [batches, setBatches] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('cached_student_enrolled_batches');
-        return cached ? JSON.parse(cached) : [];
-      } catch(e) {}
-    }
-    return [];
-  });
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        return !localStorage.getItem('cached_student_enrolled_batches');
-      } catch(e) {}
-    }
-    return true;
-  });
+  const [batches, setBatches] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    try {
+      const cached = localStorage.getItem('cached_student_my_batches');
+      if (cached) {
+        setBatches(JSON.parse(cached));
+        setLoading(false);
+      }
+    } catch(e) {}
+
     async function fetchMyBatches() {
       // 1. Get user ID from cookies
       let userId = null;

@@ -40,9 +40,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <Script 
+        <script 
           id="native-app-detection"
-          strategy="beforeInteractive" 
           dangerouslySetInnerHTML={{ __html: "if(typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('MishraClassesApp')){document.documentElement.classList.add('is-native-app');}" }} 
         />
       </head>
