@@ -394,3 +394,32 @@ export async function sendChatPushNotification(groupId: string, messageContent: 
     return { success: false, error: err.message };
   }
 }
+
+export async function getOrCreateSupportGroup(userId: string) {
+  const supabase = await createClient();
+  
+  // Try to find it
+  const { data: existingGroup } = await supabase
+    .from('chat_groups')
+    .select('*')
+    .eq('is_direct_message', true)
+    .eq('name', `Support-${userId}`)
+    .single();
+
+  if (existingGroup) {
+    return existingGroup;
+  }
+
+  // Create it
+  const { data: newDm, error: insertError } = await supabase.from('chat_groups').insert([{
+    name: `Support-${userId}`,
+    is_direct_message: true
+  }]).select().single();
+
+  if (newDm) {
+    // Add student to the chat
+    await supabase.from('chat_members').insert([{ group_id: newDm.id, user_id: userId }]);
+  }
+  
+  return newDm;
+}

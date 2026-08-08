@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Send, Search, MoreVertical, Paperclip, Hash, User, Check, Ban, X, FileText, Loader2, Image as ImageIcon, Download, Pin, PinOff, Mic, ArrowLeft, Eye } from "lucide-react";
-import { checkChatBan, uploadChatAttachment, sendChatPushNotification } from "@/actions/chat";
+import { checkChatBan, uploadChatAttachment, sendChatPushNotification, getOrCreateSupportGroup } from "@/actions/chat";
 import { uploadFiles } from "@/utils/uploadthing";
 
 const getHashStr = (str: string) => {
@@ -354,26 +354,10 @@ export default function StudentChatPage() {
     // Ensure they always have a 1-on-1 direct message group with Admin
     let supportGroup = fetchedGroups.find(g => g.name === `Support-${userId}`);
     if (!supportGroup) {
-      const { data: dmGroup } = await supabase
-        .from('chat_groups')
-        .select('*')
-        .eq('is_direct_message', true)
-        .eq('name', `Support-${userId}`)
-        .single();
-      
-      supportGroup = dmGroup;
-    }
-
-    if (!supportGroup) {
-      // Create it if it doesn't exist
-      const { data: newDm } = await supabase.from('chat_groups').insert([{
-        name: `Support-${userId}`,
-        is_direct_message: true
-      }]).select().single();
-      
-      supportGroup = newDm;
-      if (newDm) {
-        await supabase.from('chat_members').insert([{ group_id: newDm.id, user_id: userId }]);
+      try {
+        supportGroup = await getOrCreateSupportGroup(userId);
+      } catch (e) {
+        console.error("Failed to fetch or create support group:", e);
       }
     }
 
