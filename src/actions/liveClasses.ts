@@ -1,14 +1,7 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/utils/supabase/server";
 import { sendMultiplePushNotifications } from "@/lib/notifications";
-
-// Initialize Supabase Client internally for Server Actions
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-url.supabase.co";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-key";
-
-// Use a service key if available to bypass RLS for admin actions, or anon key if not (assuming RLS is configured appropriately)
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function createLiveClass(payload: any) {
   const supabase = await createClient();
