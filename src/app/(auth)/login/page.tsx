@@ -328,12 +328,12 @@ export default function LoginPage() {
                   ) : (
                     <form onSubmit={handleVerifyOtp} className="space-y-5">
                       <div className="space-y-1">
-                        <label className="block text-[13px] font-medium text-slate-700">Enter 6-Digit OTP</label>
+                        <label className="block text-[13px] font-medium text-slate-700">Enter OTP</label>
                         <div className="relative group">
                           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                             <KeyRound className="h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
                           </div>
-                          <input type="text" required maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)} className="block w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 outline-none tracking-widest font-mono text-center text-lg" placeholder="------" />
+                          <input type="text" required maxLength={8} value={otp} onChange={(e) => setOtp(e.target.value)} className="block w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white text-slate-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 outline-none tracking-widest font-mono text-center text-lg" placeholder="------" />
                         </div>
                       </div>
                       
