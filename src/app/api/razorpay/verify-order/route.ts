@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { createClient } from "@/utils/supabase/server";
 import { getRazorpayConfig } from "@/utils/razorpay-config";
 import { sendPurchaseEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
     const { 
       razorpay_order_id, 
       razorpay_payment_id, 
