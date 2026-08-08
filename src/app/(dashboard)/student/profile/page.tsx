@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { getUserProfile, updateStudentProfile, uploadProfileMedia } from "@/actions/profile";
 import { Camera, FileText, Upload, Save, Lock, Unlock, UserCircle, Loader2, ChevronDown, ChevronUp, CheckCircle2, Eye, X, Download } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import { uploadFiles } from "@/utils/uploadthing";
 
 const REQUIRED_DOCS = [

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
+// Note: You must call `await createClient()` inside the server component
 import { LogOut, BookOpen, Users } from "lucide-react";
 import ProfileWidget from "@/components/ProfileWidget";
 export default function TeacherLayout({

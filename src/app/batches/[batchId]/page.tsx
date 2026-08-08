@@ -10,7 +10,8 @@ import { useParams, useRouter } from "next/navigation";
 import { getBatchTests, getStudentSubmissions, assignTest, unassignTest } from "@/actions/tests";
 import { getBatchAnnouncements, deleteBatchAnnouncement } from "@/actions/announcements";
 import { getStudentAttendance, getBatchAttendanceHistory } from "@/actions/batches";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import Link from "next/link";
 
 export default function BatchDetailsPage() {

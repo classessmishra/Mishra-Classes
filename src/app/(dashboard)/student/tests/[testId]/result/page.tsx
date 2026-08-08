@@ -2,7 +2,8 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import TestPlayer from "@/components/TestPlayer";
 import { getSubmission, getComprehensiveTestAnalytics } from "@/actions/tests";
 

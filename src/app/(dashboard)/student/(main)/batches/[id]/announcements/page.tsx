@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { getBatchAnnouncements } from "@/actions/announcements";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import { Megaphone, Calendar, ExternalLink } from "lucide-react";
 import { use } from "react";
 

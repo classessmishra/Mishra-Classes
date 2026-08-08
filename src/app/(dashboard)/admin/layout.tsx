@@ -11,7 +11,8 @@ import {
 import NotificationBell from "@/components/NotificationBell";
 import AdminTopBarWidget from "@/components/AdminTopBarWidget";
 import ProfileWidget from "@/components/ProfileWidget";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
+// Note: You must call `await createClient()` inside the server component
 export default function AdminLayout({
   children,
 }: {
@@ -34,7 +35,8 @@ export default function AdminLayout({
       if (role === 'teacher' && id) {
         // Fetch teacher permissions directly here using a dynamic import of supabase
         // to avoid any client/server component conflicts if any
-        const { supabase } = await import("@/lib/supabase");
+        const { createClient } = await import("@/utils/supabase/server");
+        const supabase = await createClient();
         const { data } = await supabase.from('users').select('bio').eq('id', id).single();
         if (data?.bio) {
           try {
@@ -61,7 +63,8 @@ export default function AdminLayout({
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        const { supabase } = await import("@/lib/supabase");
+        const { createClient } = await import("@/utils/supabase/server");
+        const supabase = await createClient();
         const { data: recentMessages } = await supabase
           .from('messages')
           .select('group_id, created_at')

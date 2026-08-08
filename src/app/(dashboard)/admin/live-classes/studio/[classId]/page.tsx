@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Send, Users, ShieldAlert, Circle, Settings, Activity, Power, RefreshCw, Trash2, Heart, VolumeX, Volume2, VideoOff, Video, Mic, MicOff, MessageSquare, ChevronRight, Play, MessageSquareOff, Hand, BarChart2, X } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import { getLiveClassById, updateLiveClass, getChatHistory, sendChatMessage, deleteChatForClass, deleteChatMessageById, getCanonicalLiveClassId, toggleLiveClassStatus } from "@/actions/liveClasses";
 import LivePlayer from "@/components/LivePlayer";
 import { motion, AnimatePresence } from "framer-motion";

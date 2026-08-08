@@ -7,7 +7,8 @@ import Link from "next/link";
 import { getLiveClasses, createLiveClass, deleteLiveClass, getRecordedClasses, createRecordedClass, deleteRecordedClass, getCourseMaterials, createCourseMaterial, deleteCourseMaterial, getCourseFolders, createCourseFolder, deleteCourseFolder } from "@/actions/courseContent";
 import { getCourseTests, getAllTests, assignTestToCourse, removeTestFromCourse } from "@/actions/courseTests";
 import { getAllRecordedClassesGlobally, assignRecordingToCourse } from "@/actions/liveClasses";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import { UploadDropzone } from "@/utils/uploadthing";
 import "@uploadthing/react/styles.css";
 

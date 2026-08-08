@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { getUserProfile } from "@/actions/profile";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import NotificationBell from "./NotificationBell";
 
 const navLinks = [

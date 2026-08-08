@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Clock, Check, X, Minus, AlertTriangle, ArrowRight, ArrowLeft, Flag, Trophy, Target, BarChart2, Hash, Users } from "lucide-react";
 import { submitTest, reportQuestion, getComprehensiveTestAnalytics } from "@/actions/tests";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 
 type Question = {
   id?: string;

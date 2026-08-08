@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import TestPlayer from "@/components/TestPlayer";
 import { getSubmission, getTestLeaderboard } from "@/actions/tests";
 import Link from "next/link";

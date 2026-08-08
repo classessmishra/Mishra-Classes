@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { FileJson, AlertCircle, CheckCircle2, Plus, Trash2, Image as ImageIcon, Settings, Layers } from "lucide-react";
 import { updateTestQuestions } from "@/actions/tests";
 import { useRouter, useParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 
 type SectionConfig = {
   name: string;

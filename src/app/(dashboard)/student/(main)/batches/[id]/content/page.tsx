@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import { FolderOpen, FileText, Film, ArrowLeft, Video, Download } from "lucide-react";
 import { getCourseFolders, getRecordedClasses, getCourseMaterials } from "@/actions/courseContent";
 import { getCourseTests } from "@/actions/courseTests";

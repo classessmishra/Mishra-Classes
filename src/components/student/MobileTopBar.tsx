@@ -51,7 +51,8 @@ export default function MobileTopBar() {
 
   const handleLogout = async () => {
     try {
-      const { supabase } = await import('@/lib/supabase');
+      const { createClient } = await import('@/utils/supabase/client');
+      const supabase = createClient();
       await supabase.auth.signOut();
     } catch (e) {}
     document.cookie = "auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;";

@@ -4,7 +4,8 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, Download, Home, FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
 

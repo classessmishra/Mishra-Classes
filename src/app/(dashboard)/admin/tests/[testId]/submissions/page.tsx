@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getComprehensiveTestAnalytics } from "@/actions/tests";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
+const supabase = createClient();
 import Link from "next/link";
 import { Trophy, ArrowLeft, Clock, Target, BarChart2, AlertTriangle, Users, CheckCircle, XCircle } from "lucide-react";
 
