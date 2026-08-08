@@ -304,7 +304,9 @@ export default function AdminBatchesPage() {
                 <div className="flex justify-center p-8 text-sm text-slate-500">Searching...</div>
               ) : searchResults.length > 0 ? (
                 <div className="space-y-1">
-                  {searchResults.map(user => (
+                  {searchResults.map(user => {
+                    const isEnrolled = activeBatch?.batch_students?.some((bs: any) => bs.student_id === user.id);
+                    return (
                     <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100 hover:border-blue-200 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold uppercase">
@@ -317,13 +319,13 @@ export default function AdminBatchesPage() {
                       </div>
                       <button 
                         onClick={() => handleEnroll(user.id)}
-                        disabled={enrollingUser === user.id || user.phone === 'admin'}
-                        className="px-4 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white rounded-md text-xs font-bold transition-colors disabled:opacity-50"
+                        disabled={isEnrolled || enrollingUser === user.id || user.phone === 'admin'}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors disabled:opacity-50 ${isEnrolled ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white'}`}
                       >
-                        {enrollingUser === user.id ? 'Adding...' : 'Add'}
+                        {isEnrolled ? 'Added' : (enrollingUser === user.id ? 'Adding...' : 'Add')}
                       </button>
                     </div>
-                  ))}
+                  )})}
                 </div>
               ) : (
                 <div className="text-center p-8 text-sm text-slate-500">No students found.</div>
