@@ -45,8 +45,8 @@ export default function InvoicePage() {
       const filename = `Mishra_Classes_Invoice_${studentInfo.full_name?.replace(/\s+/g, '_') || 'Student'}_${orderId}.pdf`;
       
       if (typeof window !== 'undefined' && (window as any).ReactNativeWebView && (window as any).ReactNativeWebView.postMessage) {
-        // Get the full HTML
-        let htmlContent = document.documentElement.outerHTML;
+        // Get the specific invoice HTML to avoid Next.js hydration scripts crashing the print view
+        const invoiceHtml = invoiceRef.current?.innerHTML || '';
         
         // Fetch and inline all CSS to ensure perfect rendering in expo-print without network race conditions
         const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
@@ -57,32 +57,39 @@ export default function InvoicePage() {
             if (href) {
               const res = await fetch(href);
               const cssText = await res.text();
-              inlinedCss += cssText + '\n';
+              inlinedCss += cssText + '\\n';
             }
           } catch (e) {
             console.error("Failed to fetch CSS", e);
           }
         }
         
-        // Inject <base> tag and inlined CSS
+        // Inject <base> tag and construct clean HTML
         const baseUrl = window.location.origin;
-        htmlContent = htmlContent.replace('<head>', `<head>
-          <base href="${baseUrl}/" />
-          <style>
-            ${inlinedCss}
-            /* Explicitly add Tailwind print utility classes just in case */
-            @media print {
-              .print\\:hidden { display: none !important; }
-              .print\\:bg-transparent { background-color: transparent !important; }
-              .print\\:border-none { border: none !important; }
-              .print\\:shadow-none { box-shadow: none !important; }
-              .print\\:block { display: block !important; }
-              .print\\:m-0 { margin: 0 !important; }
-              .print\\:p-0 { padding: 0 !important; }
-              .print\\:bg-white { background-color: white !important; }
-            }
-          </style>
-        `);
+        let htmlContent = \`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <base href="\${baseUrl}/" />
+              <style>
+                \${inlinedCss}
+                @page { margin: 20px; size: A4; }
+                body {
+                  background-color: white !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+              </style>
+            </head>
+            <body class="bg-white p-4">
+              <div class="max-w-3xl mx-auto bg-white">
+                \${invoiceHtml}
+              </div>
+            </body>
+          </html>
+        \`;
         
         // Send HTML to Native App
         (window as any).ReactNativeWebView.postMessage(JSON.stringify({
