@@ -50,18 +50,7 @@ export default function LoginPage() {
     setErrorMessage("");
     
     try {
-      // Main Admin hardcoded login
-      if (email === "classessmishra@gmail.com" && password === "Nitich14@in") {
-        if (role !== "admin") {
-          setErrorMessage("Please select 'Admin' in the 'Login As' dropdown.");
-          setLoading(false);
-          return;
-        }
-        document.cookie = "auth_role=admin; path=/";
-        document.cookie = "user_id=00000000-0000-0000-0000-000000000000; path=/";
-        window.location.href = "/admin";
-        return;
-      }
+
 
       const isApp = typeof window !== 'undefined' && (window as any).ReactNativeWebView !== undefined;
       const loginSource = isApp ? 'app' : 'web';
