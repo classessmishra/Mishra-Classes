@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/client";
 import { Send, Search, MoreVertical, Paperclip, Hash, User, Ban, Users, X, Check, FileText, Loader2, Image as ImageIcon, Download, Pin, PinOff, Eye } from "lucide-react";
 import { toggleChatBan, getGroupMembers, uploadChatAttachment, addMemberToGroup, removeMemberFromGroup, getAllStudents, deleteMessageAdmin, clearGroupChatAdmin, deleteChatGroupAdmin, sendChatPushNotification } from "@/actions/chat";
 import { uploadFiles } from "@/utils/uploadthing";
@@ -73,6 +73,7 @@ const handleDownloadFile = async (url: string | null, type: string, filename?: s
 };
 
 export default function AdminChatsPage() {
+  const supabase = createClient();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [groups, setGroups] = useState<any[]>([]);
