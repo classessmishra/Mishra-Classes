@@ -356,6 +356,23 @@ export default function LoginPage() {
             </AnimatePresence>
 
             <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col items-center gap-3">
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-slate-500 max-w-sm">
+                <Link href="/about" className="hover:text-primary hover:underline transition-colors">
+                  About Us
+                </Link>
+                <span className="hidden sm:inline">•</span>
+                <Link href="/terms" className="hover:text-primary hover:underline transition-colors">
+                  Terms & Conditions
+                </Link>
+                <span className="hidden sm:inline">•</span>
+                <Link href="/contact-us" className="hover:text-primary hover:underline transition-colors">
+                  Contact Us
+                </Link>
+                <span className="hidden sm:inline">•</span>
+                <Link href="/cancellation-and-refunds" className="hover:text-primary hover:underline transition-colors">
+                  Cancellation and Refunds
+                </Link>
+              </div>
               <p className="text-center text-sm text-slate-500 mt-1">
                 Don&apos;t have an account?{" "}
                 <Link href="/signup" className="text-primary font-semibold hover:underline">
