@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { getStudentBatches } from "@/actions/batches";
 import { BookOpen, Video, PlayCircle } from "lucide-react";
-import { getStudentCourses } from "@/actions/courses";
 
 export default function StudentPage() {
   const [batches, setBatches] = useState<any[]>([]);
@@ -31,16 +30,9 @@ export default function StudentPage() {
       }
 
       // 2. Fetch enrollments for this user
-      const { data, error } = await supabase
-        .from('batch_students')
-        .select(`
-          batch_id,
-          batches ( id, name, description )
-        `)
-        .eq('student_id', userId);
-
-      if (!error && data) {
-        // Extract the nested 'batches' object
+      const data = await getStudentBatches(userId);
+      if (data) {
+        // getStudentBatches returns an array of { batch_id, batches: {...} }
         const extractedBatches = data
           .map((item: any) => item.batches)
           .filter(Boolean);
