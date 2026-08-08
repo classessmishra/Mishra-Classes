@@ -407,9 +407,19 @@ export async function getOrCreateSupportGroup(userId: string) {
     .single();
 
   if (existingGroup) {
+    // Ensure the student is a member of this chat group
+    const { data: member } = await supabase
+      .from('chat_members')
+      .select('id')
+      .eq('group_id', existingGroup.id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!member) {
+      await supabase.from('chat_members').insert([{ group_id: existingGroup.id, user_id: userId }]);
+    }
     return existingGroup;
   }
-
   // Create it
   const { data: newDm, error: insertError } = await supabase.from('chat_groups').insert([{
     name: `Support-${userId}`,

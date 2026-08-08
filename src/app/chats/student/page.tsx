@@ -518,7 +518,8 @@ export default function StudentChatPage() {
     }]);
 
     if (error) {
-      console.error("Error sending message:", error);
+      console.error("Error sending message:", JSON.stringify(error, null, 2));
+      alert("Failed to send message: " + (error.message || "Security Policy Violation (RLS)"));
     } else {
       // Find current user's name
       const userNameMatch = document.cookie.match(/(^| )user_name=([^;]+)/);
