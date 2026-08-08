@@ -6,9 +6,6 @@ import Link from "next/link";
 import { Clock, PlayCircle, CheckCircle2, LayoutDashboard, FileText } from "lucide-react";
 
 export default function StudentTestsPage() {
-  const [tests, setTests] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
   const [tests, setTests] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<boolean>(true);
