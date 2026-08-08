@@ -11,7 +11,7 @@ export default function StudentPage() {
 
   useEffect(() => {
     try {
-      const cached = localStorage.getItem('cached_student_my_batches');
+      const cached = localStorage.getItem('cached_student_enrolled_batches');
       if (cached) {
         setBatches(JSON.parse(cached));
         setLoading(false);
@@ -32,12 +32,8 @@ export default function StudentPage() {
       // 2. Fetch enrollments for this user
       const data = await getStudentBatches(userId);
       if (data) {
-        // getStudentBatches returns an array of { batch_id, batches: {...} }
-        const extractedBatches = data
-          .map((item: any) => item.batches)
-          .filter(Boolean);
-        setBatches(extractedBatches);
-        try { localStorage.setItem('cached_student_enrolled_batches', JSON.stringify(extractedBatches)); } catch(e) {}
+        setBatches(data);
+        try { localStorage.setItem('cached_student_enrolled_batches', JSON.stringify(data)); } catch(e) {}
       }
 
       setLoading(false);
