@@ -6,9 +6,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+
   allowedDevOrigins: ['192.168.31.237', 'localhost', '127.0.0.1'],
   experimental: {
     serverActions: {
