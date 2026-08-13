@@ -32,7 +32,7 @@ export default function StudentProfilePage() {
   const [profilePhoto, setProfilePhoto] = useState("");
   const [openSection, setOpenSection] = useState<'basic' | 'docs' | null>('basic');
   const [profileLocks, setProfileLocks] = useState({ basic_info: false, documents: false });
-  const [viewingDoc, setViewingDoc] = useState<{url: string, type: string} | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<{url: string, type: string, name?: string} | null>(null);
 
   const [isDirty, setIsDirty] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
@@ -531,7 +531,7 @@ export default function StudentProfilePage() {
                           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
                             {uploadedDoc && (
                               <button
-                                onClick={() => setViewingDoc({ url: uploadedDoc.url, type: docType.id })}
+                                onClick={() => setViewingDoc({ url: uploadedDoc.url, type: docType.id, name: uploadedDoc.name })}
                                 className="flex-1 sm:flex-none justify-center px-4 py-2 rounded-lg text-sm font-semibold border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-2"
                               >
                                 <Eye size={16} /> View
@@ -584,7 +584,7 @@ export default function StudentProfilePage() {
               </button>
             </div>
             <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-slate-100 min-h-[50vh]">
-              {viewingDoc.url.toLowerCase().endsWith('.pdf') ? (
+              {viewingDoc.name?.toLowerCase().endsWith('.pdf') || viewingDoc.url.toLowerCase().endsWith('.pdf') || viewingDoc.url.includes('utfs.io') ? (
                 <iframe src={viewingDoc.url} className="w-full h-[70vh] rounded border border-slate-300" title="Document PDF" />
               ) : (
                 <img src={viewingDoc.url} alt="Document" className="max-w-full max-h-[70vh] object-contain rounded shadow-sm" />
