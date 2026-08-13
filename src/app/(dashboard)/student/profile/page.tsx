@@ -34,6 +34,9 @@ export default function StudentProfilePage() {
   const [profileLocks, setProfileLocks] = useState({ basic_info: false, documents: false });
   const [viewingDoc, setViewingDoc] = useState<{url: string, type: string} | null>(null);
 
+  const [isDirty, setIsDirty] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -74,6 +77,37 @@ export default function StudentProfilePage() {
     fetchProfile();
   }, []);
 
+  // Track if basicInfo has unsaved changes
+  useEffect(() => {
+    if (!profile || !profile.basic_info) return;
+    const initial = {
+      parent_name: profile.basic_info.parent_name || '',
+      parent_contact: profile.basic_info.parent_contact || '',
+      address: profile.basic_info.address || '',
+      school_name: profile.basic_info.school_name || '',
+      section: profile.basic_info.section || '',
+      roll_no: profile.basic_info.roll_no || ''
+    };
+    const isBasicInfoDirty = JSON.stringify(initial) !== JSON.stringify(basicInfo);
+    setIsDirty(isBasicInfoDirty);
+  }, [basicInfo, profile]);
+
+  // Intercept back navigation
+  useEffect(() => {
+    if (!isDirty) return;
+
+    window.history.pushState(null, '', window.location.href);
+
+    const handlePopState = () => {
+      setShowUnsavedModal(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isDirty]);
+
   const handleSave = async () => {
     if (!profile) return;
     setSaving(true);
@@ -90,7 +124,31 @@ export default function StudentProfilePage() {
       alert("Failed to update profile: " + error.message);
     } finally {
       setSaving(false);
+      setIsDirty(false);
     }
+  };
+
+  const handleSaveAndExit = async () => {
+    await handleSave();
+    setShowUnsavedModal(false);
+    setIsDirty(false);
+    setTimeout(() => {
+      window.history.back();
+    }, 100);
+  };
+
+  const handleDiscardAndExit = () => {
+    setShowUnsavedModal(false);
+    setIsDirty(false);
+    setTimeout(() => {
+      window.history.back();
+    }, 100);
+  };
+
+  const handleCancelExit = () => {
+    setShowUnsavedModal(false);
+    // Re-arm the blocker
+    window.history.pushState(null, '', window.location.href);
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,9 +315,9 @@ export default function StudentProfilePage() {
           <button 
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm shadow-blue-200"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-1.5 hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-sm shadow-blue-200 text-sm shrink-0"
           >
-            <Save size={18} /> {saving ? "Saving..." : "Save Changes"}
+            <Save size={16} /> {saving ? "Saving..." : "Save"}
           </button>
         </div>
 
@@ -539,6 +597,41 @@ export default function StudentProfilePage() {
                 {isDownloadingDoc ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                 {isDownloadingDoc ? "Downloading..." : "Download"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Unsaved Changes Modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-slate-800 mb-2">Unsaved Changes</h3>
+              <p className="text-slate-600 text-sm mb-6">
+                You have unsaved changes in your profile. Do you want to save them before leaving?
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleSaveAndExit}
+                  disabled={saving}
+                  className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors flex justify-center items-center gap-2"
+                >
+                  {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                  {saving ? "Saving..." : "Yes, Save & Leave"}
+                </button>
+                <button
+                  onClick={handleDiscardAndExit}
+                  className="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg font-semibold hover:bg-red-100 transition-colors"
+                >
+                  No, Discard Changes
+                </button>
+                <button
+                  onClick={handleCancelExit}
+                  className="w-full px-4 py-2.5 text-slate-600 font-semibold hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
