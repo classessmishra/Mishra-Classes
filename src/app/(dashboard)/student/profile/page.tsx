@@ -547,7 +547,7 @@ export default function StudentProfilePage() {
                                 <input 
                                   type="file" 
                                   className="hidden" 
-                                  accept={docType.id.includes('marksheet') ? "image/*,.jpg,.jpeg,.png,.pjp,.pdf" : "image/*,.jpg,.jpeg,.png,.pjp"} 
+                                  accept="image/*,application/pdf,.jpg,.jpeg,.png,.pdf" 
                                   onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
                                   disabled={uploadingDocId !== null}
                                 />
