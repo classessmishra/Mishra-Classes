@@ -521,7 +521,9 @@ export default function StudentProfilePage() {
                               </div>
                             )}
                             <div>
-                              <p className="text-sm font-semibold text-slate-800">{docType.label}</p>
+                              <p className="text-sm font-semibold text-slate-800">
+                                {docType.label} <span className="text-xs font-normal text-slate-500 ml-1">{docType.id.includes('marksheet') ? "(PDF/Image)" : "(Image)"}</span>
+                              </p>
                               {uploadedDoc && <p className="text-xs text-green-600 font-medium">Uploaded Successfully</p>}
                             </div>
                           </div>
@@ -547,7 +549,7 @@ export default function StudentProfilePage() {
                                 <input 
                                   type="file" 
                                   className="hidden" 
-                                  accept="image/*,application/pdf,.jpg,.jpeg,.png,.pdf" 
+                                  accept={docType.id.includes('marksheet') ? "image/*,application/pdf,.jpg,.jpeg,.png,.pdf" : "image/*,.jpg,.jpeg,.png"} 
                                   onChange={(e) => handleSpecificDocUpload(e, docType.id)} 
                                   disabled={uploadingDocId !== null}
                                 />
