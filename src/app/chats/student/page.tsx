@@ -99,6 +99,7 @@ export default function StudentChatPage() {
   
   // For scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatClearedAtRef = useRef<string>("1970-01-01T00:00:00.000Z");
   
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -197,6 +198,7 @@ export default function StudentChatPage() {
           .from('messages')
           .select('*, users(*), reply_to:messages(id, content, sender_id, users(*))')
           .eq('group_id', activeGroupId)
+          .gte('created_at', chatClearedAtRef.current)
           .order('created_at', { ascending: false })
           .limit(15);
           
@@ -425,6 +427,7 @@ export default function StudentChatPage() {
     if (memberData?.cleared_at) {
       chatClearedAt = memberData.cleared_at;
     }
+    chatClearedAtRef.current = chatClearedAt;
 
     const { data } = await supabase
       .from('messages')
@@ -440,6 +443,8 @@ export default function StudentChatPage() {
   const handleClearChat = async () => {
     if (!activeGroupId || !userId) return;
     if (confirm("Are you sure you want to clear this chat from your view?")) {
+      const clearTime = new Date().toISOString();
+      chatClearedAtRef.current = clearTime;
       await supabase.rpc('clear_user_chat', { p_group_id: activeGroupId, p_user_id: userId });
       setMessages([]);
       setShowMenu(false);
