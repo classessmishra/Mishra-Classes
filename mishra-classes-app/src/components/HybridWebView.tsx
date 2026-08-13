@@ -404,18 +404,50 @@ export default React.memo(function HybridWebView({ path }: HybridWebViewProps) {
         userAgent="Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.5735.196 Mobile Safari/537.36 MishraClassesApp"
         injectedJavaScript={`
           (function() {
+            try {
+              // Backup cookies to localStorage to prevent loss on Android when app is killed
+              function backupCookies() {
+                if (document.cookie && document.cookie.includes('auth_role=')) {
+                  window.localStorage.setItem('rn_cookie_backup', document.cookie);
+                }
+              }
+              
+              // Restore cookies from localStorage on cold boot
+              function restoreCookies() {
+                if (!document.cookie.includes('auth_role=')) {
+                  var backup = window.localStorage.getItem('rn_cookie_backup');
+                  if (backup) {
+                    var cookies = backup.split(';');
+                    for (var i = 0; i < cookies.length; i++) {
+                      // Re-set each cookie with a long max-age
+                      document.cookie = cookies[i].trim() + '; path=/; max-age=31536000';
+                    }
+                    // Only reload if we actually restored cookies to prevent infinite reload loops
+                    if (document.cookie.includes('auth_role=')) {
+                       window.location.reload();
+                    }
+                  }
+                }
+              }
+              
+              restoreCookies();
+              setInterval(backupCookies, 3000);
+            } catch (e) {
+              console.error('Cookie backup error:', e);
+            }
+
             const meta = document.createElement('meta');
             meta.setAttribute('name', 'viewport');
             meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0');
             document.getElementsByTagName('head')[0].appendChild(meta);
             
             const style = document.createElement('style');
-            style.innerHTML = \`
+            style.innerHTML = \\`
               body { -webkit-user-select: none; user-select: none; }
               ::-webkit-scrollbar { display: none !important; }
               #web-bottom-nav { display: none !important; }
               @keyframes ptrSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            \`;
+            \\`;
             document.head.appendChild(style);
 
             // Pull-To-Refresh Engine (Active on all main browsing screens including Chats list)

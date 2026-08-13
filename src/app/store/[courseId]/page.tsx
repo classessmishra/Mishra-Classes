@@ -300,9 +300,13 @@ export default function CourseDetailsPage() {
             <div className="flex items-end gap-4 mb-6 pb-6 border-b border-gray-100 lg:hidden">
               <div className="flex items-end gap-3">
                 <span className="text-3xl font-black text-gray-900">
-                  {course.is_free || course.price === 0 ? "FREE" : `₹${course.price}`}
+                  {course.is_free || course.price === 0 ? "FREE" : appliedCoupon ? `₹${appliedCoupon.final_amount}` : `₹${course.price}`}
                 </span>
-                {(!course.is_free && course.original_price > course.price) && (
+                {appliedCoupon ? (
+                  <span className="text-sm font-semibold text-gray-400 line-through mb-1">
+                    ₹{course.price}
+                  </span>
+                ) : (!course.is_free && course.original_price > course.price) && (
                   <span className="text-sm font-semibold text-gray-400 line-through mb-1">
                     ₹{course.original_price}
                   </span>
@@ -403,7 +407,7 @@ export default function CourseDetailsPage() {
                   <div className="flex items-center justify-between bg-green-50 border border-green-200 p-3 rounded-lg">
                     <div>
                       <p className="text-green-700 font-bold text-sm uppercase">APPLIED!</p>
-                      <p className="text-green-600 text-xs">You saved ₹{course.price - appliedCoupon.final_amount}</p>
+                      <p className="text-green-600 text-xs">You saved ₹{(course.price - appliedCoupon.final_amount).toFixed(2).replace(/\.00$/, '')}</p>
                     </div>
                     <button onClick={removeCoupon} className="text-red-500 p-1 hover:bg-red-50 rounded-full">
                       <X size={16} />
@@ -465,9 +469,13 @@ export default function CourseDetailsPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-24">
               <div className="flex items-end gap-3 mb-6">
                 <span className="text-3xl font-black text-gray-900">
-                  {course.is_free || course.price === 0 ? "FREE" : `₹${course.price}`}
+                  {course.is_free || course.price === 0 ? "FREE" : appliedCoupon ? `₹${appliedCoupon.final_amount}` : `₹${course.price}`}
                 </span>
-                {(!course.is_free && course.original_price > course.price) && (
+                {appliedCoupon ? (
+                  <span className="text-sm font-semibold text-gray-400 line-through mb-1">
+                    ₹{course.price}
+                  </span>
+                ) : (!course.is_free && course.original_price > course.price) && (
                   <span className="text-sm font-semibold text-gray-400 line-through mb-1">
                     ₹{course.original_price}
                   </span>
@@ -511,7 +519,7 @@ export default function CourseDetailsPage() {
                     <div className="flex items-center justify-between bg-green-50 border border-green-200 p-3 rounded-lg">
                       <div>
                         <p className="text-green-700 font-bold text-sm uppercase">APPLIED!</p>
-                        <p className="text-green-600 text-xs">You saved ₹{course.price - appliedCoupon.final_amount}</p>
+                        <p className="text-green-600 text-xs">You saved ₹{(course.price - appliedCoupon.final_amount).toFixed(2).replace(/\.00$/, '')}</p>
                       </div>
                       <button onClick={removeCoupon} className="text-red-500 p-1 hover:bg-red-50 rounded-full">
                         <X size={16} />

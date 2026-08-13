@@ -127,8 +127,13 @@ export default function StudentProfilePage() {
   const handleSpecificDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: string) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Warning: Maximum file size allowed is 5MB. Please choose a smaller file.");
+        return;
+      }
       try {
         setUploadingDocId(docType);
+        
         let url = '';
         if (file.type === "application/pdf") {
           const res = await uploadFiles("coursePdfUploader", { files: [file] });
@@ -442,7 +447,7 @@ export default function StudentProfilePage() {
               
               {openSection === 'docs' && (
                 <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-                  <p className="text-sm text-slate-500 mb-6">Please upload clear images or PDF files for the required documents.</p>
+                  <p className="text-sm text-slate-500 mb-6">Please upload clear images or PDF files for the required documents. <strong className="text-red-500">Upload limit: less than 5MB per file.</strong></p>
                   
                   <div className="space-y-4">
                     {REQUIRED_DOCS.map(docType => {
